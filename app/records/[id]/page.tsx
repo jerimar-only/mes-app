@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 import { notFound } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { permissions, type Role } from "@/lib/permissions";
