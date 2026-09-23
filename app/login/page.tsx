@@ -19,7 +19,7 @@ export default function LoginPage() {
 
   return (
     <form action={formAction}>
-      <input type="email" name="email" placeholder="Email" required />
+      <input type="text" name="email" placeholder="Username" required />
       <input type="password" name="password" placeholder="Password" required />
       <button type="submit" disabled={isPending}>
         {isPending ? 'Logging in...' : 'Log in'}
