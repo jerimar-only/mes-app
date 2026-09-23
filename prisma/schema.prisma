@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─── Users & Auth ───────────────────────────────
+
+enum UserRole {
+  ADMINISTRATOR
+  ENCODER
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique // used as the login username
+  passwordHash String
+  fullName     String
+  role         UserRole @default(ENCODER)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+}
+
+// ─── Apprehension Tracking ──────────────────────
+
+enum ApprehensionStatus {
+  FOR_RESOLUTION
+  UNDER_ADJUDICATION
+  CONFISCATED
+  DONATED
+  RELEASED
+  UNKNOWN
+}
+
+model CenroOffice {
+  id      Int                  @id @default(autoincrement())
+  name    String               @unique
+  records ApprehensionRecord[]
+}
+
+model ApprehensionRecord {
+  id                   Int                @id @default(autoincrement())
+  cenroOfficeId        Int
+  year                 Int
+  dateOfApprehension   String?
+  placeOfApprehension  String?
+  circumstances        String?
+  custodianLocation    String?
+  otherAgencies        String?
+  conveyanceEquipment  String?
+  remarks              String?            @db.Text
+  status               ApprehensionStatus @default(UNKNOWN)
+  docketNumber         String?
+  orderOfFinalityDate  String?
+  isDeleted            Boolean            @default(false)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  cenroOffice CenroOffice         @relation(fields: [cenroOfficeId], references: [id])
+  items       ForestProductItem[]
+
+  @@index([cenroOfficeId])
+  @@index([year])
+  @@index([status])
+}
+
+model ForestProductItem {
+  id                   Int      @id @default(autoincrement())
+  apprehensionRecordId Int
+  description          String?
+  volumeCuM            Float?
+  estimatedValue       Float?
+
+  apprehensionRecord ApprehensionRecord @relation(fields: [apprehensionRecordId], references: [id])
+
+  @@index([apprehensionRecordId])
+}
