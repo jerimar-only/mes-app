@@ -7,10 +7,6 @@
 //   1. Place apprehension_data.json in your prisma/ folder
 //   2. Run: npx tsx prisma/seed-apprehensions.ts
 //      (install tsx first if needed: npm install -D tsx)
-//
-// This is separate from your regular seed.ts (reference data like
-// categories) so you can re-run it independently, and so accidentally
-// re-running `prisma db seed` doesn't re-import 1,300+ records.
 
 import { PrismaClient, ApprehensionStatus } from '@prisma/client';
 import fs from 'node:fs';
@@ -40,9 +36,6 @@ type ParsedYear = {
   cenros: Record<string, ParsedRecord[]>;
 };
 
-// Best-effort status classification from the free-text remarks.
-// Everything else stays UNKNOWN until a records officer reviews it —
-// do not treat this as legally authoritative on its own.
 function classifyStatus(remarks: string | null): ApprehensionStatus {
   if (!remarks) return ApprehensionStatus.UNKNOWN;
   const r = remarks.toLowerCase();
@@ -54,17 +47,17 @@ function classifyStatus(remarks: string | null): ApprehensionStatus {
   return ApprehensionStatus.UNKNOWN;
 }
 
-// Best-effort docket number extraction, e.g. "Docket No. R2-F-1036" or "docket no. R2-ED-2024-0041"
 function extractDocketNumber(remarks: string | null): string | null {
   if (!remarks) return null;
   const match = remarks.match(/docket\s*no\.?\s*([A-Z0-9-]+)/i);
   return match ? match[1] : null;
 }
 
-// Best-effort finality date extraction, e.g. "With Order of Finality received on Sept. 11, 2024"
 function extractFinalityDate(remarks: string | null): string | null {
   if (!remarks) return null;
-  const match = remarks.match(/order of finality (?:received|date received)[^.]*?on\s+([A-Za-z.]+\s+\d{1,2},?\s+\d{4})/i);
+  const match = remarks.match(
+    /order of finality (?:received|date received)[^.]*?on\s+([A-Za-z.]+\s+\d{1,2},?\s+\d{4})/i
+  );
   return match ? match[1] : null;
 }
 
@@ -76,6 +69,7 @@ async function main() {
   // Ensure all known CENRO offices exist
   const officeNames = ['APARRI', 'ALCALA', 'SOLANA', 'SANCHEZ MIRA', 'TUGUEGARAO', 'SUB OFFICE'];
   const officeMap = new Map<string, number>();
+
   for (const name of officeNames) {
     const office = await prisma.cenroOffice.upsert({
       where: { name },
@@ -95,7 +89,9 @@ async function main() {
     for (const [cenroName, records] of Object.entries(yearData.cenros)) {
       const officeId = officeMap.get(cenroName);
       if (!officeId) {
-        console.warn(`Skipping unrecognized CENRO office "${cenroName}" (${records.length} records) — add it to officeNames if legitimate.`);
+        console.warn(
+          `Skipping unrecognized CENRO office "${cenroName}" (${records.length} records) — add it to officeNames if legitimate.`
+        );
         skippedUnknownOffice += records.length;
         continue;
       }
@@ -105,7 +101,32 @@ async function main() {
         const docketNumber = extractDocketNumber(rec.remarks);
         const orderOfFinalityDate = extractFinalityDate(rec.remarks);
 
-        const created = await prisma.apprehensionRecord.create({
+        // Build nested conveyances / equipment from the free-text field
+        const conveyancesCreate =
+          rec.conveyanceEquipment && rec.conveyanceEquipment.trim()
+            ? {
+                create: [
+                  {
+                    type: rec.conveyanceEquipment.trim(),
+                    quantity: 1,
+                  },
+                ],
+              }
+            : undefined;
+
+        const equipmentCreate =
+          rec.conveyanceEquipment && rec.conveyanceEquipment.trim()
+            ? {
+                create: [
+                  {
+                    type: rec.conveyanceEquipment.trim(),
+                    quantity: 1,
+                  },
+                ],
+              }
+            : undefined;
+
+        await prisma.apprehensionRecord.create({
           data: {
             cenroOfficeId: officeId,
             year: yearNum,
@@ -114,11 +135,11 @@ async function main() {
             circumstances: rec.circumstances,
             custodianLocation: rec.custodian,
             otherAgencies: rec.otherAgencies,
-           // conveyanceEquipment: rec.conveyanceEquipment,
             remarks: rec.remarks,
             status,
             docketNumber,
             orderOfFinalityDate,
+
             items: {
               create: rec.items.map((item) => ({
                 description: item.description,
@@ -126,19 +147,25 @@ async function main() {
                 estimatedValue: item.estimatedValue,
               })),
             },
+
+            // Put the free-text into both relations for now
+            // (you can refine later if needed)
+            ...(conveyancesCreate && { conveyances: conveyancesCreate }),
+            ...(equipmentCreate && { equipment: equipmentCreate }),
           },
         });
 
         totalRecords += 1;
         totalItems += rec.items.length;
-        void created;
       }
     }
   }
 
   console.log(`Imported ${totalRecords} apprehension records with ${totalItems} product line items.`);
   if (skippedUnknownOffice > 0) {
-    console.warn(`${skippedUnknownOffice} records were skipped due to unrecognized CENRO office names — review the warnings above.`);
+    console.warn(
+      `${skippedUnknownOffice} records were skipped due to unrecognized CENRO office names — review the warnings above.`
+    );
   }
 }
 
