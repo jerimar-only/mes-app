@@ -62,6 +62,8 @@ export default function BurgerMenu({
           <MenuLink href="/dashboard" onClick={() => setOpen(false)}>Dashboard</MenuLink>
           <MenuLink href="/records" onClick={() => setOpen(false)}>Records</MenuLink>
           <MenuLink href="/new" onClick={() => setOpen(false)}>Log new apprehension</MenuLink>
+          <MenuLink href="/upload" onClick={() => setOpen(false)}>Upload Excel file</MenuLink>
+          <MenuLink href="/export" onClick={() => setOpen(false)}>Export to Excel</MenuLink>
 
           {isAdmin && (
             <>
