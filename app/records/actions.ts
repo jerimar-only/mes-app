@@ -25,6 +25,7 @@ export async function updateRecordStatus(formData: FormData) {
   revalidatePath(`/records/${id}`);
   revalidatePath("/records");
   revalidatePath("/dashboard");
+  revalidatePath("/reports");
 }
 
 export async function createRecord(formData: FormData) {
@@ -35,41 +36,68 @@ export async function createRecord(formData: FormData) {
 
   const cenroOfficeId = parseInt(formData.get("cenroOfficeId") as string, 10);
   const year = parseInt(formData.get("year") as string, 10);
+  const month = formData.get("month") ? parseInt(formData.get("month") as string, 10) : null;
   const dateOfApprehension = (formData.get("dateOfApprehension") as string) || null;
   const placeOfApprehension = (formData.get("placeOfApprehension") as string) || null;
   const circumstances = (formData.get("circumstances") as string) || null;
+  const apprehendingAgency = (formData.get("apprehendingAgency") as string) || null;
+  const claimantRespondent = (formData.get("claimantRespondent") as string) || null;
   const custodianLocation = (formData.get("custodianLocation") as string) || null;
   const otherAgencies = (formData.get("otherAgencies") as string) || null;
   const remarks = (formData.get("remarks") as string) || null;
 
-  const descriptions = formData.getAll("itemDescription") as string[];
-  const volumes = formData.getAll("itemVolume") as string[];
-  const values = formData.getAll("itemValue") as string[];
+  const itemQty = formData.getAll("itemQty") as string[];
+  const itemSpecies = formData.getAll("itemSpecies") as string[];
+  const itemForms = formData.getAll("itemForms") as string[];
+  const itemVolumeBdFt = formData.getAll("itemVolumeBdFt") as string[];
+  const itemVolumeCuM = formData.getAll("itemVolumeCuM") as string[];
+  const itemValue = formData.getAll("itemValue") as string[];
 
-  const items = descriptions
-    .map((description, i) => ({
-      description: description || null,
-      volumeCuM: volumes[i] ? parseFloat(volumes[i]) : null,
-      estimatedValue: values[i] ? parseFloat(values[i]) : null,
+  const items = itemSpecies
+    .map((species, i) => ({
+      quantity: itemQty[i] || null,
+      species: species || null,
+      forms: itemForms[i] || null,
+      volumeBdFt: itemVolumeBdFt[i] ? parseFloat(itemVolumeBdFt[i]) : null,
+      volumeCuM: itemVolumeCuM[i] ? parseFloat(itemVolumeCuM[i]) : null,
+      estimatedValue: itemValue[i] ? parseFloat(itemValue[i]) : null,
     }))
-    .filter((item) => item.description || item.volumeCuM || item.estimatedValue);
+    .filter((item) => item.species || item.forms || item.volumeBdFt || item.volumeCuM || item.estimatedValue);
+
+  const convType = formData.getAll("convType") as string[];
+  const convQty = formData.getAll("convQty") as string[];
+  const conveyances = convType
+    .map((type, i) => ({ type: type || null, quantity: parseInt(convQty[i] || "1", 10) || 1 }))
+    .filter((c) => c.type);
+
+  const equipType = formData.getAll("equipType") as string[];
+  const equipQty = formData.getAll("equipQty") as string[];
+  const equipment = equipType
+    .map((type, i) => ({ type: type || null, quantity: parseInt(equipQty[i] || "1", 10) || 1 }))
+    .filter((e) => e.type);
 
   const record = await prisma.apprehensionRecord.create({
     data: {
       cenroOfficeId,
       year,
+      month,
       dateOfApprehension,
       placeOfApprehension,
       circumstances,
+      apprehendingAgency,
+      claimantRespondent,
       custodianLocation,
       otherAgencies,
       remarks,
       status: "UNKNOWN",
-      items: { create: items },
+      items: items.length ? { create: items } : undefined,
+      conveyances: conveyances.length ? { create: conveyances } : undefined,
+      equipment: equipment.length ? { create: equipment } : undefined,
     },
   });
 
   revalidatePath("/records");
   revalidatePath("/dashboard");
+  revalidatePath("/reports");
   redirect(`/records/${record.id}`);
 }

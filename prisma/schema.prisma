@@ -43,37 +43,68 @@ model CenroOffice {
 }
 
 model ApprehensionRecord {
-  id                   Int                @id @default(autoincrement())
-  cenroOfficeId        Int
-  year                 Int
-  dateOfApprehension   String?
-  placeOfApprehension  String?
-  circumstances        String?
-  custodianLocation    String?
-  otherAgencies        String?
-  conveyanceEquipment  String?
-  remarks              String?            @db.Text
-  status               ApprehensionStatus @default(UNKNOWN)
-  docketNumber         String?
-  orderOfFinalityDate  String?
-  isDeleted            Boolean            @default(false)
-  createdAt            DateTime           @default(now())
-  updatedAt            DateTime           @updatedAt
+  id                    Int                @id @default(autoincrement())
+  cenroOfficeId         Int
+  year                  Int
+  month                 Int?               // 1–12, derived from dateOfApprehension when parseable
+  dateOfApprehension    String?
+  placeOfApprehension   String?
+  circumstances         String?
+  apprehendingAgency    String?            // e.g. "PNP Gattaran"
+  claimantRespondent    String?            // e.g. "Alfredo B. Pavo"
+  custodianLocation     String?
+  otherAgencies         String?
+  remarks               String?            @db.Text
+  status                ApprehensionStatus @default(UNKNOWN)
+  docketNumber          String?
+  orderOfFinalityDate   String?
+  isDeleted             Boolean            @default(false)
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
 
   cenroOffice CenroOffice         @relation(fields: [cenroOfficeId], references: [id])
   items       ForestProductItem[]
+  conveyances Conveyance[]
+  equipment   Equipment[]
 
   @@index([cenroOfficeId])
   @@index([year])
+  @@index([month])
   @@index([status])
 }
 
 model ForestProductItem {
   id                   Int      @id @default(autoincrement())
   apprehensionRecordId Int
-  description          String?
-  volumeCuM            Float?
-  estimatedValue       Float?
+  quantity              String?  // e.g. "7 & 1" (kept as text — source data mixes counts)
+  species                String?  // e.g. "Gmelina", "Mahogany"
+  forms                 String?  // e.g. "Lumber & Round logs", "Bed & TV Rack"
+  description            String?  // free-text fallback / combined description
+  volumeCuM              Float?
+  volumeBdFt             Float?
+  estimatedValue          Float?
+
+  apprehensionRecord ApprehensionRecord @relation(fields: [apprehensionRecordId], references: [id])
+
+  @@index([apprehensionRecordId])
+}
+
+model Conveyance {
+  id                   Int    @id @default(autoincrement())
+  apprehensionRecordId Int
+  type                  String? // e.g. "Utility vehicle"
+  quantity               Int     @default(1)
+
+  apprehensionRecord ApprehensionRecord @relation(fields: [apprehensionRecordId], references: [id])
+
+  @@index([apprehensionRecordId])
+}
+
+model Equipment {
+  id                   Int    @id @default(autoincrement())
+  apprehensionRecordId Int
+  type                  String? // e.g. "Chainsaw with defaced serial number"
+  quantity               Int     @default(1)
 
   apprehensionRecord ApprehensionRecord @relation(fields: [apprehensionRecordId], references: [id])
 

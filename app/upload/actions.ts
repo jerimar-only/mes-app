@@ -27,9 +27,6 @@ export async function uploadExcel(formData: FormData): Promise<{
   const workbook = XLSX.read(buffer, { type: "buffer", cellDates: false });
   const sheet = workbook.Sheets[workbook.SheetNames[0]];
   const rows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null });
-
-  // rows[0] is the header row — skip it. Skip the example row (row 2) only if it's
-  // clearly still the shipped example (CENRO = APARRI, Year = 2026, place contains "Burubur").
   const dataRows = rows.slice(1);
 
   const officeCache = new Map<string, number>();
@@ -46,32 +43,22 @@ export async function uploadExcel(formData: FormData): Promise<{
   let imported = 0;
 
   for (let i = 0; i < dataRows.length; i++) {
-    const rowNum = i + 2; // actual spreadsheet row number (1-indexed, header is row 1)
+    const rowNum = i + 2;
     const row = dataRows[i];
     if (!row || row.every((cell) => cell === null || cell === "")) continue;
 
     const [
-      officeName,
-      year,
-      dateOfApprehension,
-      placeOfApprehension,
-      circumstances,
-      custodianLocation,
-      otherAgencies,
-      conveyanceEquipment,
-      remarks,
-      itemDescription,
-      volumeCuM,
-      estimatedValue,
+      officeName, year, month, dateOfApprehension, placeOfApprehension,
+      apprehendingAgency, claimantRespondent, circumstances, custodianLocation,
+      otherAgencies, remarks,
+      itemQty, itemSpecies, itemForms, itemVolumeBdFt, itemVolumeCuM, itemValue,
+      convType, convQty,
+      equipType, equipQty,
     ] = row;
 
     const normalizedOffice = String(officeName ?? "").trim().toUpperCase();
     if (!VALID_OFFICES.includes(normalizedOffice)) {
-      results.push({
-        row: rowNum,
-        ok: false,
-        message: `Invalid CENRO Office "${officeName}". Must be one of: ${VALID_OFFICES.join(", ")}.`,
-      });
+      results.push({ row: rowNum, ok: false, message: `Invalid CENRO Office "${officeName}".` });
       continue;
     }
 
@@ -81,29 +68,48 @@ export async function uploadExcel(formData: FormData): Promise<{
       continue;
     }
 
+    const monthNum = month ? parseInt(String(month), 10) : null;
+    if (monthNum !== null && (monthNum < 1 || monthNum > 12)) {
+      results.push({ row: rowNum, ok: false, message: `Invalid Month "${month}" \u2014 must be 1\u201312.` });
+      continue;
+    }
+
     try {
+      const hasItem = itemQty || itemSpecies || itemForms || itemVolumeBdFt || itemVolumeCuM || itemValue;
+      const hasConv = convType;
+      const hasEquip = equipType;
+
       await prisma.apprehensionRecord.create({
         data: {
           cenroOfficeId: officeCache.get(normalizedOffice)!,
           year: yearNum,
+          month: monthNum,
           dateOfApprehension: dateOfApprehension ? String(dateOfApprehension) : null,
           placeOfApprehension: placeOfApprehension ? String(placeOfApprehension) : null,
+          apprehendingAgency: apprehendingAgency ? String(apprehendingAgency) : null,
+          claimantRespondent: claimantRespondent ? String(claimantRespondent) : null,
           circumstances: circumstances ? String(circumstances) : null,
           custodianLocation: custodianLocation ? String(custodianLocation) : null,
           otherAgencies: otherAgencies ? String(otherAgencies) : null,
-          conveyanceEquipment: conveyanceEquipment ? String(conveyanceEquipment) : null,
           remarks: remarks ? String(remarks) : null,
           status: "UNKNOWN",
-          items: itemDescription || volumeCuM || estimatedValue
+          items: hasItem
             ? {
-                create: [
-                  {
-                    description: itemDescription ? String(itemDescription) : null,
-                    volumeCuM: volumeCuM ? parseFloat(String(volumeCuM)) : null,
-                    estimatedValue: estimatedValue ? parseFloat(String(estimatedValue)) : null,
-                  },
-                ],
+                create: [{
+                  quantity: itemQty ? String(itemQty) : null,
+                  species: itemSpecies ? String(itemSpecies) : null,
+                  forms: itemForms ? String(itemForms) : null,
+                  volumeBdFt: itemVolumeBdFt ? parseFloat(String(itemVolumeBdFt)) : null,
+                  volumeCuM: itemVolumeCuM ? parseFloat(String(itemVolumeCuM)) : null,
+                  estimatedValue: itemValue ? parseFloat(String(itemValue)) : null,
+                }],
               }
+            : undefined,
+          conveyances: hasConv
+            ? { create: [{ type: String(convType), quantity: convQty ? parseInt(String(convQty), 10) : 1 }] }
+            : undefined,
+          equipment: hasEquip
+            ? { create: [{ type: String(equipType), quantity: equipQty ? parseInt(String(equipQty), 10) : 1 }] }
             : undefined,
         },
       });
