@@ -114,7 +114,7 @@ async function main() {
             circumstances: rec.circumstances,
             custodianLocation: rec.custodian,
             otherAgencies: rec.otherAgencies,
-            conveyanceEquipment: rec.conveyanceEquipment,
+           // conveyanceEquipment: rec.conveyanceEquipment,
             remarks: rec.remarks,
             status,
             docketNumber,
