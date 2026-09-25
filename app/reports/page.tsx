@@ -19,23 +19,66 @@ export default async function ReportsPage({
   const years = yearsResult.map((r) => r.year);
   const selectedYear = params.year ? parseInt(params.year, 10) : years[0] ?? new Date().getFullYear();
 
-  const monthlyData = [];
-  for (let m = 1; m <= 12; m++) {
-    const records = await prisma.apprehensionRecord.findMany({
-      where: { year: selectedYear, month: m, isDeleted: false },
-      include: { items: true, conveyances: true, equipment: true },
-    });
-    monthlyData.push({
-      month: m,
-      incidents: records.length,
-      volumeBdFt: records.reduce((s, r) => s + r.items.reduce((si, i) => si + (i.volumeBdFt ?? 0), 0), 0),
-      conveyances: records.reduce((s, r) => s + r.conveyances.reduce((si, c) => si + c.quantity, 0), 0),
-      equipment: records.reduce((s, r) => s + r.equipment.reduce((si, e) => si + e.quantity, 0), 0),
-    });
+  // Fetch ALL records for the year (no month filter)
+  const allRecords = await prisma.apprehensionRecord.findMany({
+    where: { year: selectedYear, isDeleted: false },
+    include: { items: true, conveyances: true, equipment: true },
+  });
+
+  // Group by month
+  const monthlyData = Array.from({ length: 12 }, (_, i) => ({
+    month: i + 1,
+    incidents: 0,
+    volumeBdFt: 0,
+    conveyances: 0,
+    equipment: 0,
+  }));
+
+  let unparsedCount = 0;
+
+  for (const r of allRecords) {
+    let m = r.month;
+
+    // Fallback: try to extract month from dateOfApprehension string
+    if (m == null && r.dateOfApprehension) {
+      const d = r.dateOfApprehension.toLowerCase();
+      const monthNames = [
+        "january", "february", "march", "april", "may", "june",
+        "july", "august", "september", "october", "november", "december",
+      ];
+      for (let i = 0; i < 12; i++) {
+        if (d.includes(monthNames[i])) {
+          m = i + 1;
+          break;
+        }
+      }
+      // Try numeric formats
+      if (m == null) {
+        const match = d.match(/(\d{1,2})[\/\-](\d{1,2})/) || d.match(/(\d{4})[\/\-](\d{1,2})/);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (num >= 1 && num <= 12) m = num;
+          else if (match[2]) {
+            const num2 = parseInt(match[2], 10);
+            if (num2 >= 1 && num2 <= 12) m = num2;
+          }
+        }
+      }
+    }
+
+    if (m != null && m >= 1 && m <= 12) {
+      const idx = m - 1;
+      monthlyData[idx].incidents += 1;
+      monthlyData[idx].volumeBdFt += r.items.reduce((s, i) => s + (i.volumeBdFt ?? 0), 0);
+      monthlyData[idx].conveyances += r.conveyances.reduce((s, c) => s + c.quantity, 0);
+      monthlyData[idx].equipment += r.equipment.reduce((s, e) => s + e.quantity, 0);
+    } else {
+      unparsedCount += 1;
+    }
   }
 
   const maxIncidents = Math.max(...monthlyData.map((d) => d.incidents), 1);
-  const totalIncidents = monthlyData.reduce((s, d) => s + d.incidents, 0);
+  const totalIncidents = allRecords.length; // real total
   const totalVolume = monthlyData.reduce((s, d) => s + d.volumeBdFt, 0);
   const totalConv = monthlyData.reduce((s, d) => s + d.conveyances, 0);
   const totalEquip = monthlyData.reduce((s, d) => s + d.equipment, 0);
@@ -47,6 +90,11 @@ export default async function ReportsPage({
           <h1 className="text-2xl font-semibold tracking-tight">Reports</h1>
           <p className="mt-1 text-[15px] text-[#5B6156]">
             Summary of apprehensions from January to present — {selectedYear}
+            {unparsedCount > 0 && (
+              <span className="ml-2 text-amber-700">
+                ({unparsedCount} record{unparsedCount > 1 ? "s" : ""} could not be assigned to a month)
+              </span>
+            )}
           </p>
         </div>
         <form method="get" className="flex items-center gap-2">
