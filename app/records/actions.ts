@@ -101,3 +101,22 @@ export async function createRecord(formData: FormData) {
   revalidatePath("/reports");
   redirect(`/records/${record.id}`);
 }
+
+export async function deleteRecord(formData: FormData) {
+  const session = await getSession();
+  if (!session || !permissions.editSavedRecord(session.role as Role)) {
+    throw new Error("You don't have permission to delete records.");
+  }
+
+  const id = parseInt(formData.get("id") as string, 10);
+
+  await prisma.apprehensionRecord.update({
+    where: { id },
+    data: { isDeleted: true },
+  });
+
+  revalidatePath("/records");
+  revalidatePath("/dashboard");
+  revalidatePath("/reports");
+  redirect("/records");
+}
