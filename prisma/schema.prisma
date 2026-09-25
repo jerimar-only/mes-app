@@ -66,6 +66,7 @@ model ApprehensionRecord {
   items       ForestProductItem[]
   conveyances Conveyance[]
   equipment   Equipment[]
+  fieldValues FieldValue[]
 
   @@index([cenroOfficeId])
   @@index([year])
@@ -109,4 +110,35 @@ model Equipment {
   apprehensionRecord ApprehensionRecord @relation(fields: [apprehensionRecordId], references: [id])
 
   @@index([apprehensionRecordId])
+}
+
+// ─── Dynamic Custom Fields ───────────────────────
+
+enum FieldType {
+  TEXT
+  NUMBER
+}
+
+model FieldDefinition {
+  id        Int          @id @default(autoincrement())
+  name      String       @unique
+  type      FieldType    @default(TEXT)
+  order     Int          @default(0)
+  disabled  Boolean      @default(false)
+  createdAt DateTime     @default(now())
+  values    FieldValue[]
+}
+
+model FieldValue {
+  id                   Int      @id @default(autoincrement())
+  apprehensionRecordId Int
+  fieldDefinitionId    Int
+  textValue            String?  @db.Text
+  numberValue          Float?
+
+  apprehensionRecord ApprehensionRecord @relation(fields: [apprehensionRecordId], references: [id])
+  fieldDefinition    FieldDefinition    @relation(fields: [fieldDefinitionId], references: [id])
+
+  @@unique([apprehensionRecordId, fieldDefinitionId])
+  @@index([fieldDefinitionId])
 }
