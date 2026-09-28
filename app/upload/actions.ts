@@ -1,3 +1,5 @@
+// FILE: app/upload/actions.ts  (replace the whole file)
+
 "use server";
 
 import { prisma } from "@/lib/prisma";
@@ -7,7 +9,32 @@ import * as XLSX from "xlsx";
 
 const VALID_OFFICES = ["APARRI", "ALCALA", "SOLANA", "SANCHEZ MIRA", "TUGUEGARAO", "SUB OFFICE"];
 
+const MONTHS = [
+  "january", "february", "march", "april", "may", "june",
+  "july", "august", "september", "october", "november", "december",
+];
+
 type RowResult = { row: number; ok: boolean; message: string };
+
+// Accepts 1-12, "9", "Sept", "September". Returns null if it can't tell.
+function monthFromValue(v: unknown): number | null {
+  if (v === null || v === undefined || v === "") return null;
+  const s = String(v).trim().toLowerCase();
+  if (/^\d{1,2}$/.test(s)) {
+    const n = parseInt(s, 10);
+    return n >= 1 && n <= 12 ? n : null;
+  }
+  if (s.length < 3) return null;
+  const idx = MONTHS.findIndex((m) => m.startsWith(s.slice(0, 3)));
+  return idx >= 0 ? idx + 1 : null;
+}
+
+// Fallback: find a month name anywhere in the date text, e.g. "September 21, 2026".
+function monthFromDateText(v: unknown): number | null {
+  if (v === null || v === undefined || v === "") return null;
+  const m = String(v).toLowerCase().match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\b/);
+  return m ? monthFromValue(m[1]) : null;
+}
 
 export async function uploadExcel(formData: FormData): Promise<{
   imported: number;
@@ -68,9 +95,14 @@ export async function uploadExcel(formData: FormData): Promise<{
       continue;
     }
 
-    const monthNum = month ? parseInt(String(month), 10) : null;
-    if (monthNum !== null && (monthNum < 1 || monthNum > 12)) {
-      results.push({ row: rowNum, ok: false, message: `Invalid Month "${month}" \u2014 must be 1\u201312.` });
+    // Month column first; if blank/invalid, try to read it from the date text.
+    const monthNum = monthFromValue(month) ?? monthFromDateText(dateOfApprehension);
+    if (monthNum === null) {
+      results.push({
+        row: rowNum,
+        ok: false,
+        message: `Month is missing or invalid ("${month ?? ""}"). Enter 1\u201312 or a month name.`,
+      });
       continue;
     }
 
