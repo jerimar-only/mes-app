@@ -7,7 +7,9 @@ import { getSession } from "@/lib/auth";
 import { permissions, type Role } from "@/lib/permissions";
 import * as XLSX from "xlsx";
 
-const VALID_OFFICES = ["APARRI", "ALCALA", "SOLANA", "SANCHEZ MIRA", "TUGUEGARAO", "SUB OFFICE"];
+// "CENRO APARRI" and "APARRI" both become "APARRI", so either spelling matches.
+const officeKey = (name: unknown) =>
+  String(name ?? "").trim().toUpperCase().replace(/^CENRO\s+/, "").replace(/\s+/g, " ");
 
 const MONTHS = [
   "january", "february", "march", "april", "may", "june",
@@ -56,15 +58,11 @@ export async function uploadExcel(formData: FormData): Promise<{
   const rows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null });
   const dataRows = rows.slice(1);
 
-  const officeCache = new Map<string, number>();
-  for (const name of VALID_OFFICES) {
-    const office = await prisma.cenroOffice.upsert({
-      where: { name },
-      update: {},
-      create: { name },
-    });
-    officeCache.set(name, office.id);
-  }
+  // Use the offices that already exist in the database. Never create new ones.
+  const existingOffices = await prisma.cenroOffice.findMany();
+  const officeByKey = new Map<string, { id: number; name: string }>();
+  for (const o of existingOffices) officeByKey.set(officeKey(o.name), o);
+  const validList = existingOffices.map((o) => o.name).join(", ");
 
   const results: RowResult[] = [];
   let imported = 0;
@@ -83,9 +81,13 @@ export async function uploadExcel(formData: FormData): Promise<{
       equipType, equipQty,
     ] = row;
 
-    const normalizedOffice = String(officeName ?? "").trim().toUpperCase();
-    if (!VALID_OFFICES.includes(normalizedOffice)) {
-      results.push({ row: rowNum, ok: false, message: `Invalid CENRO Office "${officeName}".` });
+    const office = officeByKey.get(officeKey(officeName));
+    if (!office) {
+      results.push({
+        row: rowNum,
+        ok: false,
+        message: `Unknown CENRO Office "${officeName ?? ""}". Valid offices: ${validList}.`,
+      });
       continue;
     }
 
@@ -113,7 +115,7 @@ export async function uploadExcel(formData: FormData): Promise<{
 
       await prisma.apprehensionRecord.create({
         data: {
-          cenroOfficeId: officeCache.get(normalizedOffice)!,
+          cenroOfficeId: office.id,
           year: yearNum,
           month: monthNum,
           dateOfApprehension: dateOfApprehension ? String(dateOfApprehension) : null,
