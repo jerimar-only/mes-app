@@ -1,9 +1,13 @@
+// FILE: app/records/[id]/page.tsx  (replace the whole file)
+
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { permissions, type Role } from "@/lib/permissions";
-import { updateRecordStatus } from "../actions";
+import { updateRecordStatus, restoreRecord } from "../actions";
 import { DeleteButton } from "./DeleteButton";
+import { PermanentDeleteButton } from "./PermanentDeleteButton";
+import { EditModal } from "../EditModal";
 
 const STATUS_OPTIONS = [
   ["FOR_RESOLUTION", "For resolution"],
@@ -29,9 +33,16 @@ export default async function RecordDetailPage({
 
   const session = await getSession();
   const canEdit = session ? permissions.editSavedRecord(session.role as Role) : false;
+  const isAdmin = session?.role === "ADMINISTRATOR";
 
   return (
     <div className="space-y-8">
+      {record.isDeleted && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-[14px] text-red-800">
+          This record was deleted. It is not counted in the dashboard or reports.
+        </div>
+      )}
+
       <div>
         <p className="text-[13px] text-[#5B6156]">
           {record.cenroOffice.name} &middot; {record.year}{record.month ? `-${String(record.month).padStart(2, "0")}` : ""}
@@ -63,6 +74,7 @@ export default async function RecordDetailPage({
                     <th className="px-4 py-2 font-medium">Forms</th>
                     <th className="px-4 py-2 font-medium">Volume (bd.ft.)</th>
                     <th className="px-4 py-2 font-medium">Volume (cu.m.)</th>
+                    <th className="px-4 py-2 font-medium">Value</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -73,46 +85,74 @@ export default async function RecordDetailPage({
                       <td className="px-4 py-2">{item.forms || item.description || "—"}</td>
                       <td className="px-4 py-2">{item.volumeBdFt ?? "—"}</td>
                       <td className="px-4 py-2">{item.volumeCuM ?? "—"}</td>
+                      <td className="px-4 py-2">
+                        {item.estimatedValue != null ? `₱${item.estimatedValue.toLocaleString()}` : "—"}
+                      </td>
                     </tr>
                   ))}
                   {record.items.length === 0 && (
-                    <tr><td colSpan={5} className="px-4 py-4 text-center text-[#5B6156]">No product items recorded.</td></tr>
+                    <tr>
+                      <td colSpan={6} className="px-4 py-4 text-center text-[#5B6156]">
+                        No product items recorded.
+                      </td>
+                    </tr>
                   )}
                 </tbody>
               </table>
             </div>
           </div>
 
-          {(record.conveyances.length > 0 || record.equipment.length > 0) && (
-            <div className="grid gap-6 sm:grid-cols-2">
-              <div>
-                <h2 className="mb-2 text-[13px] font-medium text-[#5B6156]">Conveyances</h2>
-                <ul className="rounded-lg border border-[#E9E5D8] divide-y divide-[#F0EDE3]">
-                  {record.conveyances.map((c) => (
-                    <li key={c.id} className="px-4 py-2 text-[14px] flex justify-between">
-                      <span>{c.type}</span><span className="text-[#5B6156]">x{c.quantity}</span>
-                    </li>
-                  ))}
-                  {record.conveyances.length === 0 && <li className="px-4 py-3 text-[13px] text-[#5B6156]">None</li>}
-                </ul>
-              </div>
-              <div>
-                <h2 className="mb-2 text-[13px] font-medium text-[#5B6156]">Equipment / tools</h2>
-                <ul className="rounded-lg border border-[#E9E5D8] divide-y divide-[#F0EDE3]">
-                  {record.equipment.map((e) => (
-                    <li key={e.id} className="px-4 py-2 text-[14px] flex justify-between">
-                      <span>{e.type}</span><span className="text-[#5B6156]">x{e.quantity}</span>
-                    </li>
-                  ))}
-                  {record.equipment.length === 0 && <li className="px-4 py-3 text-[13px] text-[#5B6156]">None</li>}
-                </ul>
-              </div>
+          <div className="grid gap-6 sm:grid-cols-2">
+            <div>
+              <h2 className="mb-2 text-[13px] font-medium text-[#5B6156]">Conveyances</h2>
+              <ul className="rounded-lg border border-[#E9E5D8] divide-y divide-[#F0EDE3]">
+                {record.conveyances.map((c) => (
+                  <li key={c.id} className="px-4 py-2 text-[14px] flex justify-between gap-4">
+                    <span>{c.type}</span>
+                    <span className="text-[#5B6156] whitespace-nowrap">
+                      x{c.quantity} · {c.estimatedValue != null ? `₱${c.estimatedValue.toLocaleString()}` : "—"}
+                    </span>
+                  </li>
+                ))}
+                {record.conveyances.length === 0 && (
+                  <li className="px-4 py-3 text-[13px] text-[#5B6156]">None</li>
+                )}
+              </ul>
             </div>
-          )}
+            <div>
+              <h2 className="mb-2 text-[13px] font-medium text-[#5B6156]">Equipment / tools</h2>
+              <ul className="rounded-lg border border-[#E9E5D8] divide-y divide-[#F0EDE3]">
+                {record.equipment.map((e) => (
+                  <li key={e.id} className="px-4 py-2 text-[14px] flex justify-between gap-4">
+                    <span>{e.type}</span>
+                    <span className="text-[#5B6156] whitespace-nowrap">
+                      x{e.quantity} · {e.estimatedValue != null ? `₱${e.estimatedValue.toLocaleString()}` : "—"}
+                    </span>
+                  </li>
+                ))}
+                {record.equipment.length === 0 && (
+                  <li className="px-4 py-3 text-[13px] text-[#5B6156]">None</li>
+                )}
+              </ul>
+            </div>
+          </div>
         </div>
 
         <aside>
-          {canEdit ? (
+          {canEdit && record.isDeleted ? (
+            <div className="space-y-4">
+              <form action={restoreRecord}>
+                <input type="hidden" name="id" value={record.id} />
+                <button
+                  type="submit"
+                  className="w-full rounded-md bg-[#4A6741] px-4 py-2 text-[14px] text-white hover:bg-[#3D5636]"
+                >
+                  Restore record
+                </button>
+              </form>
+              {isAdmin && <PermanentDeleteButton recordId={record.id} />}
+            </div>
+          ) : canEdit ? (
             <div className="space-y-4">
               <form action={updateRecordStatus} className="space-y-4 rounded-lg border border-[#E9E5D8] bg-white p-4">
                 <input type="hidden" name="id" value={record.id} />
@@ -134,6 +174,12 @@ export default async function RecordDetailPage({
                   Save changes
                 </button>
               </form>
+
+              <EditModal
+                recordId={record.id}
+                label="Edit record details"
+                className="block w-full rounded-md border border-[#D8D3C4] bg-white px-4 py-2 text-center text-[14px] hover:bg-[#F0EDE3]"
+              />
 
               <DeleteButton recordId={record.id} />
             </div>

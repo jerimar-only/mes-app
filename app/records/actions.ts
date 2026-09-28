@@ -5,6 +5,7 @@ import { getSession } from "@/lib/auth";
 import { permissions, type Role } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import bcrypt from "bcryptjs";
 
 export async function updateRecordStatus(formData: FormData) {
   const session = await getSession();
@@ -119,4 +120,203 @@ export async function deleteRecord(formData: FormData) {
   revalidatePath("/dashboard");
   revalidatePath("/reports");
   redirect("/records");
+}
+
+// ─── Edit record (shared save logic) ───────────────────────────
+
+async function saveRecord(formData: FormData) {
+  const session = await getSession();
+  if (!session || !permissions.editSavedRecord(session.role as Role)) {
+    throw new Error("You don't have permission to edit saved records.");
+  }
+
+  const id = parseInt(formData.get("id") as string, 10);
+  const str = (k: string) => ((formData.get(k) as string) || "").trim() || null;
+  const num = (v: string | undefined) => {
+    if (!v) return null;
+    const n = parseFloat(v.replace(/,/g, ""));
+    return Number.isNaN(n) ? null : n;
+  };
+
+  const itemQty = formData.getAll("itemQty") as string[];
+  const itemSpecies = formData.getAll("itemSpecies") as string[];
+  const itemForms = formData.getAll("itemForms") as string[];
+  const itemVolumeBdFt = formData.getAll("itemVolumeBdFt") as string[];
+  const itemVolumeCuM = formData.getAll("itemVolumeCuM") as string[];
+  const itemValue = formData.getAll("itemValue") as string[];
+
+  const items = itemQty
+    .map((qty, i) => ({
+      quantity: qty.trim() || null,
+      species: itemSpecies[i]?.trim() || null,
+      forms: itemForms[i]?.trim() || null,
+      volumeBdFt: num(itemVolumeBdFt[i]),
+      volumeCuM: num(itemVolumeCuM[i]),
+      estimatedValue: num(itemValue[i]),
+    }))
+    .filter(
+      (x) => x.quantity || x.species || x.forms || x.volumeBdFt || x.volumeCuM || x.estimatedValue
+    );
+
+  const pairs = (typeKey: string, qtyKey: string, valueKey: string) => {
+    const types = formData.getAll(typeKey) as string[];
+    const qtys = formData.getAll(qtyKey) as string[];
+    const values = formData.getAll(valueKey) as string[];
+    return types
+      .map((type, i) => ({
+        type: type.trim() || null,
+        quantity: parseInt(qtys[i] || "1", 10) || 1,
+        estimatedValue: num(values[i]),
+      }))
+      .filter((r) => r.type);
+  };
+
+  await prisma.apprehensionRecord.update({
+    where: { id },
+    data: {
+      dateOfApprehension: str("dateOfApprehension"),
+      placeOfApprehension: str("placeOfApprehension"),
+      apprehendingAgency: str("apprehendingAgency"),
+      claimantRespondent: str("claimantRespondent"),
+      circumstances: str("circumstances"),
+      custodianLocation: str("custodianLocation"),
+      otherAgencies: str("otherAgencies"),
+      remarks: str("remarks"),
+      items: { deleteMany: {}, create: items },
+      conveyances: { deleteMany: {}, create: pairs("convType", "convQty", "convValue") },
+      equipment: { deleteMany: {}, create: pairs("equipType", "equipQty", "equipValue") },
+    },
+  });
+
+  revalidatePath(`/records/${id}`);
+  revalidatePath("/records");
+  revalidatePath("/dashboard");
+  revalidatePath("/reports");
+
+  return id;
+}
+
+// Used by the full edit page (saves, then goes to the record)
+export async function updateRecord(formData: FormData) {
+  const id = await saveRecord(formData);
+  redirect(`/records/${id}`);
+}
+
+// Used by the modal (saves, stays on the page)
+export async function updateRecordInline(formData: FormData) {
+  await saveRecord(formData);
+}
+
+// Used by the modal to load one record's data
+export async function getRecordForEdit(id: number) {
+  const session = await getSession();
+  if (!session || !permissions.editSavedRecord(session.role as Role)) {
+    throw new Error("You don't have permission to edit saved records.");
+  }
+
+  const r = await prisma.apprehensionRecord.findUnique({
+    where: { id },
+    include: { items: true, conveyances: true, equipment: true },
+  });
+  if (!r || r.isDeleted) return null;
+
+  return {
+    id: r.id,
+    dateOfApprehension: r.dateOfApprehension ?? "",
+    placeOfApprehension: r.placeOfApprehension ?? "",
+    apprehendingAgency: r.apprehendingAgency ?? "",
+    claimantRespondent: r.claimantRespondent ?? "",
+    circumstances: r.circumstances ?? "",
+    custodianLocation: r.custodianLocation ?? "",
+    otherAgencies: r.otherAgencies ?? "",
+    remarks: r.remarks ?? "",
+    items: r.items.map((i) => ({
+      qty: i.quantity ?? "",
+      species: i.species ?? "",
+      forms: i.forms ?? i.description ?? "",
+      bdft: i.volumeBdFt != null ? String(i.volumeBdFt) : "",
+      cum: i.volumeCuM != null ? String(i.volumeCuM) : "",
+      value: i.estimatedValue != null ? String(i.estimatedValue) : "",
+    })),
+    conveyances: r.conveyances.map((c) => ({
+      type: c.type ?? "",
+      qty: String(c.quantity),
+      value: c.estimatedValue != null ? String(c.estimatedValue) : "",
+    })),
+    equipment: r.equipment.map((e) => ({
+      type: e.type ?? "",
+      qty: String(e.quantity),
+      value: e.estimatedValue != null ? String(e.estimatedValue) : "",
+    })),
+  };
+}
+
+// ─── Restore / permanent delete ─────────────────────────────────
+
+export async function restoreRecord(formData: FormData) {
+  const session = await getSession();
+  if (!session || !permissions.editSavedRecord(session.role as Role)) {
+    throw new Error("You don't have permission to restore records.");
+  }
+
+  const id = parseInt(formData.get("id") as string, 10);
+
+  await prisma.apprehensionRecord.update({
+    where: { id },
+    data: { isDeleted: false },
+  });
+
+  revalidatePath(`/records/${id}`);
+  revalidatePath("/records");
+  revalidatePath("/dashboard");
+  revalidatePath("/reports");
+}
+
+export async function permanentlyDeleteRecord(
+  formData: FormData
+): Promise<{ ok: boolean; error?: string }> {
+  const session = await getSession();
+  if (!session || session.role !== "ADMINISTRATOR") {
+    return { ok: false, error: "Only administrators can permanently delete records." };
+  }
+
+  const id = parseInt(formData.get("id") as string, 10);
+  const password = (formData.get("password") as string) || "";
+  if (!password) return { ok: false, error: "Please enter your password." };
+
+  // Find the logged-in admin (works whether your session stores userId, id, or email)
+  const s = session as any;
+  const userId = Number(s.userId ?? s.id);
+  const user = await prisma.user.findFirst({
+    where: Number.isFinite(userId) && userId > 0 ? { id: userId } : { email: s.email },
+  });
+  if (!user || !user.isActive) {
+    return { ok: false, error: "Could not verify your account." };
+  }
+
+  const valid = await bcrypt.compare(password, user.passwordHash);
+  if (!valid) return { ok: false, error: "Incorrect password." };
+
+  const record = await prisma.apprehensionRecord.findUnique({
+    where: { id },
+    select: { isDeleted: true },
+  });
+  if (!record) return { ok: false, error: "Record not found." };
+  if (!record.isDeleted) {
+    return { ok: false, error: "Delete the record first, then permanently delete it." };
+  }
+
+  await prisma.$transaction([
+    prisma.forestProductItem.deleteMany({ where: { apprehensionRecordId: id } }),
+    prisma.conveyance.deleteMany({ where: { apprehensionRecordId: id } }),
+    prisma.equipment.deleteMany({ where: { apprehensionRecordId: id } }),
+    prisma.fieldValue.deleteMany({ where: { apprehensionRecordId: id } }),
+    prisma.apprehensionRecord.delete({ where: { id } }),
+  ]);
+
+  revalidatePath("/records");
+  revalidatePath("/dashboard");
+  revalidatePath("/reports");
+
+  return { ok: true };
 }

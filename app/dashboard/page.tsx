@@ -92,7 +92,7 @@ export default async function DashboardPage({
         />
         <StatCard
           label="Estimated value"
-          value={`₱${(itemTotals._sum.estimatedValue ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+          value={`₱${(itemTotals._sum.estimatedValue ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2,maximumFractionDigits: 2 })}`}
         />
         <StatCard label="Needs review" value={needsReview.toLocaleString()} accent />
       </div>

@@ -1,6 +1,11 @@
+// FILE: app/records/page.tsx  (replace the whole file)
+
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { getSession } from "@/lib/auth";
+import { permissions, type Role } from "@/lib/permissions";
 import type { Prisma } from "@prisma/client";
+import { EditModal } from "./EditModal";
 
 const STATUS_LABEL: Record<string, string> = {
   FOR_RESOLUTION: "For resolution",
@@ -19,6 +24,7 @@ export default async function RecordsPage({
     year?: string;
     office?: string;
     status?: string;
+    deleted?: string;
     page?: string;
   }>;
 }) {
@@ -26,10 +32,17 @@ export default async function RecordsPage({
   const page = Math.max(1, parseInt(params.page ?? "1", 10) || 1);
   const pageSize = 25;
 
+  const session = await getSession();
+  const canEdit = session ? permissions.editSavedRecord(session.role as Role) : false;
+
   const offices = await prisma.cenroOffice.findMany({ orderBy: { name: "asc" } });
 
   const where: Prisma.ApprehensionRecordWhereInput = {
-    isDeleted: false,
+    ...(params.deleted === "only"
+      ? { isDeleted: true }
+      : params.deleted === "all"
+      ? {}
+      : { isDeleted: false }),
     ...(params.year ? { year: parseInt(params.year, 10) } : {}),
     ...(params.office ? { cenroOfficeId: parseInt(params.office, 10) } : {}),
     ...(params.status ? { status: params.status as any } : {}),
@@ -105,6 +118,15 @@ export default async function RecordsPage({
             <option key={value} value={value}>{label}</option>
           ))}
         </select>
+        <select
+          name="deleted"
+          defaultValue={params.deleted ?? ""}
+          className="rounded-md border border-[#D8D3C4] bg-white px-3 py-2 text-[14px]"
+        >
+          <option value="">Active records</option>
+          <option value="only">Deleted records</option>
+          <option value="all">Active + deleted</option>
+        </select>
         <button
           type="submit"
           className="rounded-md bg-[#4A6741] px-4 py-2 text-[14px] text-white hover:bg-[#3D5636]"
@@ -123,6 +145,7 @@ export default async function RecordsPage({
               <th className="px-4 py-3 font-medium">Items</th>
               <th className="px-4 py-3 font-medium">Status</th>
               <th className="px-4 py-3 font-medium">Docket No.</th>
+              {canEdit && <th className="px-4 py-3 text-right font-medium">Action</th>}
             </tr>
           </thead>
           <tbody>
@@ -134,17 +157,31 @@ export default async function RecordsPage({
                   <Link href={`/records/${r.id}`} className="text-[#4A6741] hover:underline">
                     {r.placeOfApprehension || r.dateOfApprehension || "—"}
                   </Link>
+                  {r.isDeleted && (
+                    <span className="ml-2 rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-medium text-red-800">
+                      Deleted
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-[#5B6156]">{r.items.length}</td>
                 <td className="px-4 py-3">
                   <StatusBadge status={r.status} />
                 </td>
                 <td className="px-4 py-3 text-[#5B6156]">{r.docketNumber || "—"}</td>
+                {canEdit && (
+                  <td className="px-4 py-3 text-right">
+                    {r.isDeleted ? (
+                      <span className="text-[13px] text-[#5B6156]">—</span>
+                    ) : (
+                      <EditModal recordId={r.id} />
+                    )}
+                  </td>
+                )}
               </tr>
             ))}
             {records.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-[#5B6156]">
+                <td colSpan={canEdit ? 7 : 6} className="px-4 py-8 text-center text-[#5B6156]">
                   No records match these filters.
                 </td>
               </tr>

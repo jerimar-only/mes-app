@@ -95,6 +95,8 @@ model Conveyance {
   apprehensionRecordId Int
   type                  String? // e.g. "Utility vehicle"
   quantity               Int     @default(1)
+  estimatedValue         Float?
+
 
   apprehensionRecord ApprehensionRecord @relation(fields: [apprehensionRecordId], references: [id])
 
@@ -106,6 +108,7 @@ model Equipment {
   apprehensionRecordId Int
   type                  String? // e.g. "Chainsaw with defaced serial number"
   quantity               Int     @default(1)
+  estimatedValue         Float?
 
   apprehensionRecord ApprehensionRecord @relation(fields: [apprehensionRecordId], references: [id])
 
