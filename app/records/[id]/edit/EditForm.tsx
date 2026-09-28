@@ -4,7 +4,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { updateRecord } from "../../actions";
+import { updateRecord, updateRecordInline } from "../../actions";
 
 const inputCls = "w-full rounded-md border border-[#D8D3C4] px-3 py-2 text-[14px]";
 const labelCls = "mb-1 block text-[13px] font-medium text-[#5B6156]";
@@ -15,7 +15,15 @@ const nextKey = () => ++counter;
 type Item = { qty: string; species: string; forms: string; bdft: string; cum: string; value: string };
 type Pair = { type: string; qty: string; value: string };
 
-export function EditForm({ record }: { record: any }) {
+type EditFormProps = {
+  record: any;
+  // Provided by the modal. When absent (full edit page), the form
+  // submits to updateRecord, which redirects to the record page.
+  onSaved?: () => void;
+  onCancel?: () => void;
+};
+
+export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
   const [items, setItems] = useState<any[]>(() =>
     record.items.map((i: Item) => ({ ...i, k: nextKey() }))
   );
@@ -25,6 +33,21 @@ export function EditForm({ record }: { record: any }) {
   const [equip, setEquip] = useState<any[]>(() =>
     record.equipment.map((e: Pair) => ({ ...e, k: nextKey() }))
   );
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleInlineSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setBusy(true);
+    setError("");
+    try {
+      await updateRecordInline(new FormData(e.currentTarget));
+      onSaved?.();
+    } catch {
+      setError("Could not save changes. Please try again.");
+      setBusy(false);
+    }
+  }
 
   const field = (name: string, title: string, multiline = false) => (
     <div>
@@ -37,8 +60,13 @@ export function EditForm({ record }: { record: any }) {
     </div>
   );
 
+  // Modal mode: handle submit in the browser. Page mode: use the server action directly.
+  const formProps = onSaved
+    ? { onSubmit: handleInlineSubmit }
+    : { action: updateRecord };
+
   return (
-    <form action={updateRecord} className="space-y-6">
+    <form {...formProps} className="space-y-6">
       <input type="hidden" name="id" value={record.id} />
 
       {field("dateOfApprehension", "Date of apprehension")}
@@ -104,19 +132,33 @@ export function EditForm({ record }: { record: any }) {
         />
       </div>
 
+      {error && <p className="text-[13px] text-red-600">{error}</p>}
+
       <div className="flex gap-3">
         <button
           type="submit"
-          className="rounded-md bg-[#4A6741] px-4 py-2 text-[14px] text-white hover:bg-[#3D5636]"
+          disabled={busy}
+          className="rounded-md bg-[#4A6741] px-4 py-2 text-[14px] text-white hover:bg-[#3D5636] disabled:opacity-60"
         >
-          Save changes
+          {busy ? "Saving..." : "Save changes"}
         </button>
-        <Link
-          href={`/records/${record.id}`}
-          className="rounded-md border border-[#D8D3C4] px-4 py-2 text-[14px]"
-        >
-          Cancel
-        </Link>
+        {onCancel ? (
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={busy}
+            className="rounded-md border border-[#D8D3C4] px-4 py-2 text-[14px] hover:bg-[#F0EDE3]"
+          >
+            Cancel
+          </button>
+        ) : (
+          <Link
+            href={`/records/${record.id}`}
+            className="rounded-md border border-[#D8D3C4] px-4 py-2 text-[14px]"
+          >
+            Cancel
+          </Link>
+        )}
       </div>
     </form>
   );
