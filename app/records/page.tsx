@@ -76,6 +76,12 @@ export default async function RecordsPage({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Records</h1>
+            <Link
+              href="/records/full"
+              className="rounded-md border border-[#D8D3C4] bg-white px-4 py-2 text-[14px] hover:bg-[#F0EDE3]"
+            >
+              Full view
+            </Link>          
           <p className="mt-1 text-[15px] text-[#5B6156]">{total.toLocaleString()} apprehension records</p>
         </div>
       </div>

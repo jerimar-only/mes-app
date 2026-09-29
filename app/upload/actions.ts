@@ -5,6 +5,7 @@
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { permissions, type Role } from "@/lib/permissions";
+import { revalidatePath } from "next/cache";
 import * as XLSX from "xlsx";
 
 // "CENRO APARRI" and "APARRI" both become "APARRI", so either spelling matches.
@@ -18,23 +19,43 @@ const MONTHS = [
 
 type RowResult = { row: number; ok: boolean; message: string };
 
+const cellText = (v: unknown) => {
+  if (v === null || v === undefined) return null;
+  const s = String(v).trim();
+  return s === "" ? null : s;
+};
+
+// Reads numbers like "1,234.50", "1, 549.0" or "₱1,234.50". Returns null if it can't.
+const toNum = (v: unknown) => {
+  const s = cellText(v);
+  if (!s) return null;
+  const n = parseFloat(s.replace(/[₱,\s]/g, ""));
+  return Number.isNaN(n) ? null : n;
+};
+
+const toQty = (v: unknown) => {
+  const n = parseInt(String(v ?? ""), 10);
+  return Number.isNaN(n) || n < 1 ? 1 : n;
+};
+
 // Accepts 1-12, "9", "Sept", "September". Returns null if it can't tell.
 function monthFromValue(v: unknown): number | null {
-  if (v === null || v === undefined || v === "") return null;
-  const s = String(v).trim().toLowerCase();
+  const s = cellText(v);
+  if (!s) return null;
   if (/^\d{1,2}$/.test(s)) {
     const n = parseInt(s, 10);
     return n >= 1 && n <= 12 ? n : null;
   }
   if (s.length < 3) return null;
-  const idx = MONTHS.findIndex((m) => m.startsWith(s.slice(0, 3)));
+  const idx = MONTHS.findIndex((m) => m.startsWith(s.toLowerCase().slice(0, 3)));
   return idx >= 0 ? idx + 1 : null;
 }
 
 // Fallback: find a month name anywhere in the date text, e.g. "September 21, 2026".
 function monthFromDateText(v: unknown): number | null {
-  if (v === null || v === undefined || v === "") return null;
-  const m = String(v).toLowerCase().match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\b/);
+  const s = cellText(v);
+  if (!s) return null;
+  const m = s.toLowerCase().match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\b/);
   return m ? monthFromValue(m[1]) : null;
 }
 
@@ -67,83 +88,118 @@ export async function uploadExcel(formData: FormData): Promise<{
   const results: RowResult[] = [];
   let imported = 0;
 
+  // Carried down from the last row where each was given explicitly.
+  // Many rows leave Office / Year / Month blank on purpose, meaning
+  // "same as the row above" rather than "missing".
+  let lastOffice: { id: number; name: string } | null = null;
+  let lastYear: number | null = null;
+  let lastMonth: number | null = null;
+
   for (let i = 0; i < dataRows.length; i++) {
     const rowNum = i + 2;
     const row = dataRows[i];
     if (!row || row.every((cell) => cell === null || cell === "")) continue;
 
     const [
-      officeName, year, month, dateOfApprehension, placeOfApprehension,
+      officeCell, yearCell, monthCell, dateOfApprehension, placeOfApprehension,
       apprehendingAgency, claimantRespondent, circumstances, custodianLocation,
       otherAgencies, remarks,
       itemQty, itemSpecies, itemForms, itemVolumeBdFt, itemVolumeCuM, itemValue,
       convType, convQty,
       equipType, equipQty,
+      convValue, equipValue, // optional columns V and W
     ] = row;
 
-    const office = officeByKey.get(officeKey(officeName));
-    if (!office) {
-      results.push({
-        row: rowNum,
-        ok: false,
-        message: `Unknown CENRO Office "${officeName ?? ""}". Valid offices: ${validList}.`,
-      });
-      continue;
+    // ---- Office: use this row's value, or carry down the last one ----
+    let office: { id: number; name: string } | null = null;
+    if (cellText(officeCell)) {
+      office = officeByKey.get(officeKey(officeCell)) ?? null;
+      if (!office) {
+        results.push({
+          row: rowNum,
+          ok: false,
+          message: `Unknown CENRO Office "${officeCell}". Valid offices: ${validList}.`,
+        });
+        continue;
+      }
+      lastOffice = office;
+    } else {
+      office = lastOffice;
+      if (!office) {
+        results.push({ row: rowNum, ok: false, message: "No CENRO Office given yet to carry down to this row." });
+        continue;
+      }
     }
 
-    const yearNum = parseInt(String(year), 10);
-    if (!yearNum || yearNum < 2000 || yearNum > 2100) {
-      results.push({ row: rowNum, ok: false, message: `Invalid Year "${year}".` });
-      continue;
+    // ---- Year: same carry-down rule ----
+    let yearNum: number | null = null;
+    if (cellText(yearCell)) {
+      yearNum = parseInt(String(yearCell), 10);
+      if (!yearNum || yearNum < 2000 || yearNum > 2100) {
+        results.push({ row: rowNum, ok: false, message: `Invalid Year "${yearCell}".` });
+        continue;
+      }
+      lastYear = yearNum;
+    } else {
+      yearNum = lastYear;
+      if (!yearNum) {
+        results.push({ row: rowNum, ok: false, message: "No Year given yet to carry down to this row." });
+        continue;
+      }
     }
 
-    // Month column first; if blank/invalid, try to read it from the date text.
-    const monthNum = monthFromValue(month) ?? monthFromDateText(dateOfApprehension);
+    // ---- Month: cell, then carried-down value, then parsed from the date text ----
+    let monthNum: number | null = monthFromValue(monthCell);
+    if (monthNum !== null) {
+      lastMonth = monthNum;
+    } else if (cellText(monthCell)) {
+      // something was typed but it wasn't a recognizable month
+      results.push({ row: rowNum, ok: false, message: `Month is invalid ("${monthCell}"). Enter 1\u201312 or a month name.` });
+      continue;
+    } else {
+      monthNum = lastMonth ?? monthFromDateText(dateOfApprehension);
+    }
     if (monthNum === null) {
-      results.push({
-        row: rowNum,
-        ok: false,
-        message: `Month is missing or invalid ("${month ?? ""}"). Enter 1\u201312 or a month name.`,
-      });
+      results.push({ row: rowNum, ok: false, message: "Month is missing and there is no prior month to carry down." });
       continue;
     }
 
     try {
-      const hasItem = itemQty || itemSpecies || itemForms || itemVolumeBdFt || itemVolumeCuM || itemValue;
-      const hasConv = convType;
-      const hasEquip = equipType;
+      const hasItem = cellText(itemQty) || cellText(itemSpecies) || cellText(itemForms) || cellText(itemVolumeBdFt) || cellText(itemVolumeCuM) || cellText(itemValue);
+      const hasConv = cellText(convType);
+      const hasEquip = cellText(equipType);
 
       await prisma.apprehensionRecord.create({
         data: {
           cenroOfficeId: office.id,
           year: yearNum,
           month: monthNum,
-          dateOfApprehension: dateOfApprehension ? String(dateOfApprehension) : null,
-          placeOfApprehension: placeOfApprehension ? String(placeOfApprehension) : null,
-          apprehendingAgency: apprehendingAgency ? String(apprehendingAgency) : null,
-          claimantRespondent: claimantRespondent ? String(claimantRespondent) : null,
-          circumstances: circumstances ? String(circumstances) : null,
-          custodianLocation: custodianLocation ? String(custodianLocation) : null,
-          otherAgencies: otherAgencies ? String(otherAgencies) : null,
-          remarks: remarks ? String(remarks) : null,
+          dateOfApprehension: cellText(dateOfApprehension),
+          placeOfApprehension: cellText(placeOfApprehension),
+          apprehendingAgency: cellText(apprehendingAgency),
+          claimantRespondent: cellText(claimantRespondent),
+          circumstances: cellText(circumstances),
+          custodianLocation: cellText(custodianLocation),
+          otherAgencies: cellText(otherAgencies),
+          remarks: cellText(remarks),
           status: "UNKNOWN",
           items: hasItem
             ? {
                 create: [{
-                  quantity: itemQty ? String(itemQty) : null,
-                  species: itemSpecies ? String(itemSpecies) : null,
-                  forms: itemForms ? String(itemForms) : null,
-                  volumeBdFt: itemVolumeBdFt ? parseFloat(String(itemVolumeBdFt)) : null,
-                  volumeCuM: itemVolumeCuM ? parseFloat(String(itemVolumeCuM)) : null,
-                  estimatedValue: itemValue ? parseFloat(String(itemValue)) : null,
+                  quantity: cellText(itemQty),
+                  species: cellText(itemSpecies),
+                  forms: cellText(itemForms),
+                  volumeBdFt: toNum(itemVolumeBdFt),
+                  volumeCuM: toNum(itemVolumeCuM),
+                  estimatedValue: toNum(itemValue),
                 }],
               }
             : undefined,
           conveyances: hasConv
-            ? { create: [{ type: String(convType), quantity: convQty ? parseInt(String(convQty), 10) : 1 }] }
+            ? { create: [{ type: String(convType).trim(), quantity: toQty(convQty), estimatedValue: toNum(convValue) }] }
             : undefined,
           equipment: hasEquip
-            ? { create: [{ type: String(equipType), quantity: equipQty ? parseInt(String(equipQty), 10) : 1 }] }
+            ? { create: [{ type: String(equipType).trim(), quantity: toQty(equipQty), estimatedValue: toNum(equipValue) }] }
             : undefined,
         },
       });
@@ -153,6 +209,10 @@ export async function uploadExcel(formData: FormData): Promise<{
       results.push({ row: rowNum, ok: false, message: "Database error while saving this row." });
     }
   }
+
+  revalidatePath("/records");
+  revalidatePath("/dashboard");
+  revalidatePath("/reports");
 
   return { imported, errors: results.filter((r) => !r.ok) };
 }
