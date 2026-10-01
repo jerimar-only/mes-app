@@ -31,16 +31,18 @@ export default function DashboardFilters({
   const hasFilters = Boolean(year || office);
 
   return (
-    <div className="flex flex-wrap items-end gap-4">
+    <div className="flex flex-wrap items-end gap-4 rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm">
       <div>
-        <label className="mb-1 block text-[13px] font-medium text-[#5B6156]">1. Select year</label>
+        <label className="mb-1.5 block text-[13px] font-medium text-[var(--muted)]">
+          Year
+        </label>
         <select
           value={year}
           onChange={(e) => {
             setYear(e.target.value);
             go(e.target.value, office);
           }}
-          className="rounded-md border border-[#D8D3C4] bg-white px-3 py-2 text-[14px]"
+          className="min-w-[120px] rounded-lg border border-[var(--border-strong)] bg-[var(--card)] px-3 py-2 text-[14px] text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none"
         >
           <option value="">All years</option>
           {years.map((y) => (
@@ -50,14 +52,16 @@ export default function DashboardFilters({
       </div>
 
       <div>
-        <label className="mb-1 block text-[13px] font-medium text-[#5B6156]">2. Select CENRO</label>
+        <label className="mb-1.5 block text-[13px] font-medium text-[var(--muted)]">
+          CENRO Office
+        </label>
         <select
           value={office}
           onChange={(e) => {
             setOffice(e.target.value);
             go(year, e.target.value);
           }}
-          className="rounded-md border border-[#D8D3C4] bg-white px-3 py-2 text-[14px]"
+          className="min-w-[160px] rounded-lg border border-[var(--border-strong)] bg-[var(--card)] px-3 py-2 text-[14px] text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none"
         >
           <option value="">All CENRO</option>
           {offices.map((o) => (
@@ -74,7 +78,7 @@ export default function DashboardFilters({
             setOffice("");
             go("", "");
           }}
-          className="pb-2 text-[13px] text-[#4A6741] hover:underline"
+          className="mb-0.5 rounded-lg px-3 py-2 text-[13px] font-medium text-[var(--accent)] hover:bg-[var(--accent-soft)] transition-colors"
         >
           Clear filters
         </button>

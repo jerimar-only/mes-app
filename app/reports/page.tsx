@@ -19,13 +19,11 @@ export default async function ReportsPage({
   const years = yearsResult.map((r) => r.year);
   const selectedYear = params.year ? parseInt(params.year, 10) : years[0] ?? new Date().getFullYear();
 
-  // Fetch ALL records for the year (no month filter)
   const allRecords = await prisma.apprehensionRecord.findMany({
     where: { year: selectedYear, isDeleted: false },
     include: { items: true, conveyances: true, equipment: true },
   });
 
-  // Group by month
   const monthlyData = Array.from({ length: 12 }, (_, i) => ({
     month: i + 1,
     incidents: 0,
@@ -39,7 +37,6 @@ export default async function ReportsPage({
   for (const r of allRecords) {
     let m = r.month;
 
-    // Fallback: try to extract month from dateOfApprehension string
     if (m == null && r.dateOfApprehension) {
       const d = r.dateOfApprehension.toLowerCase();
       const monthNames = [
@@ -52,7 +49,6 @@ export default async function ReportsPage({
           break;
         }
       }
-      // Try numeric formats
       if (m == null) {
         const match = d.match(/(\d{1,2})[\/\-](\d{1,2})/) || d.match(/(\d{4})[\/\-](\d{1,2})/);
         if (match) {
@@ -78,20 +74,20 @@ export default async function ReportsPage({
   }
 
   const maxIncidents = Math.max(...monthlyData.map((d) => d.incidents), 1);
-  const totalIncidents = allRecords.length; // real total
+  const totalIncidents = allRecords.length;
   const totalVolume = monthlyData.reduce((s, d) => s + d.volumeBdFt, 0);
   const totalConv = monthlyData.reduce((s, d) => s + d.conveyances, 0);
   const totalEquip = monthlyData.reduce((s, d) => s + d.equipment, 0);
 
   return (
     <div className="space-y-10">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Reports</h1>
-          <p className="mt-1 text-[15px] text-[#5B6156]">
+          <h1 className="text-2xl font-semibold tracking-tight text-[var(--foreground)]">Reports</h1>
+          <p className="mt-1 text-[15px] text-[var(--muted)]">
             Summary of apprehensions from January to present — {selectedYear}
             {unparsedCount > 0 && (
-              <span className="ml-2 text-amber-700">
+              <span className="ml-2 text-amber-600 dark:text-amber-400">
                 ({unparsedCount} record{unparsedCount > 1 ? "s" : ""} could not be assigned to a month)
               </span>
             )}
@@ -101,13 +97,16 @@ export default async function ReportsPage({
           <select
             name="year"
             defaultValue={selectedYear}
-            className="rounded-md border border-[#D8D3C4] bg-white px-3 py-2 text-[14px]"
+            className="rounded-md border border-[var(--border-strong)] bg-[var(--card)] px-3 py-2 text-[14px] text-[var(--foreground)]"
           >
             {years.map((y) => (
               <option key={y} value={y}>{y}</option>
             ))}
           </select>
-          <button type="submit" className="rounded-md bg-[#4A6741] px-4 py-2 text-[14px] text-white hover:bg-[#3D5636]">
+          <button
+            type="submit"
+            className="rounded-md bg-[var(--accent)] px-4 py-2 text-[14px] text-white hover:bg-[var(--accent-hover)]"
+          >
             View
           </button>
         </form>
@@ -120,45 +119,47 @@ export default async function ReportsPage({
         <StatCard label="Tools/equipment" value={totalEquip.toLocaleString()} />
       </div>
 
-      <section>
-        <h2 className="mb-4 text-[15px] font-semibold">Incidents by month</h2>
-        <div className="space-y-2">
+      <section className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm">
+        <h2 className="mb-5 text-[15px] font-semibold text-[var(--foreground)]">Incidents by month</h2>
+        <div className="space-y-3">
           {monthlyData.map((d) => (
             <div key={d.month} className="flex items-center gap-3">
-              <span className="w-24 shrink-0 text-[13px] text-[#5B6156]">{MONTH_NAMES[d.month]}</span>
-              <div className="h-6 flex-1 rounded bg-[#E9E5D8]">
+              <span className="w-24 shrink-0 text-[13px] text-[var(--muted)]">{MONTH_NAMES[d.month]}</span>
+              <div className="h-7 flex-1 overflow-hidden rounded-full bg-[var(--border)]">
                 <div
-                  className="h-6 rounded bg-[#4A6741]"
+                  className="h-7 rounded-full bg-[var(--accent)]"
                   style={{ width: `${(d.incidents / maxIncidents) * 100}%` }}
                 />
               </div>
-              <span className="w-10 shrink-0 text-right text-[13px] text-[#5B6156]">{d.incidents}</span>
+              <span className="w-10 shrink-0 text-right text-[13px] text-[var(--muted)]">{d.incidents}</span>
             </div>
           ))}
         </div>
       </section>
 
       <section>
-        <h2 className="mb-4 text-[15px] font-semibold">Monthly breakdown</h2>
-        <div className="overflow-hidden rounded-lg border border-[#E9E5D8] bg-white">
+        <h2 className="mb-4 text-[15px] font-semibold text-[var(--foreground)]">Monthly breakdown</h2>
+        <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)]">
           <table className="w-full text-left text-[14px]">
-            <thead className="border-b border-[#E9E5D8] bg-[#FAFAF6] text-[13px] text-[#5B6156]">
+            <thead className="border-b border-[var(--border)] bg-[var(--background)] text-[13px] text-[var(--muted)]">
               <tr>
-                <th className="px-4 py-2 font-medium">Month</th>
-                <th className="px-4 py-2 font-medium">No. Incidents</th>
-                <th className="px-4 py-2 font-medium">Volume (bd. ft.)</th>
-                <th className="px-4 py-2 font-medium">No. of Conveyances</th>
-                <th className="px-4 py-2 font-medium">No. of Tool/Implements</th>
+                <th className="px-4 py-3 font-medium">Month</th>
+                <th className="px-4 py-3 font-medium">No. Incidents</th>
+                <th className="px-4 py-3 font-medium">Volume (bd. ft.)</th>
+                <th className="px-4 py-3 font-medium">No. of Conveyances</th>
+                <th className="px-4 py-3 font-medium">No. of Tool/Implements</th>
               </tr>
             </thead>
             <tbody>
               {monthlyData.map((d) => (
-                <tr key={d.month} className="border-b border-[#F0EDE3] last:border-0">
-                  <td className="px-4 py-2">{MONTH_NAMES[d.month]}</td>
-                  <td className="px-4 py-2">{d.incidents}</td>
-                  <td className="px-4 py-2">{d.volumeBdFt.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
-                  <td className="px-4 py-2">{d.conveyances}</td>
-                  <td className="px-4 py-2">{d.equipment}</td>
+                <tr key={d.month} className="border-b border-[var(--border)] last:border-0">
+                  <td className="px-4 py-2.5 text-[var(--foreground)]">{MONTH_NAMES[d.month]}</td>
+                  <td className="px-4 py-2.5 text-[var(--foreground)]">{d.incidents}</td>
+                  <td className="px-4 py-2.5 text-[var(--foreground)]">
+                    {d.volumeBdFt.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                  </td>
+                  <td className="px-4 py-2.5 text-[var(--foreground)]">{d.conveyances}</td>
+                  <td className="px-4 py-2.5 text-[var(--foreground)]">{d.equipment}</td>
                 </tr>
               ))}
             </tbody>
@@ -167,44 +168,83 @@ export default async function ReportsPage({
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-[15px] font-semibold">Download reports</h2>
+        <h2 className="text-[15px] font-semibold text-[var(--foreground)]">Download reports</h2>
 
-        <form action="/api/export/detailed" method="get" className="flex flex-wrap items-end gap-3 rounded-lg border border-[#E9E5D8] bg-white p-4">
+        <form
+          action="/api/export/detailed"
+          method="get"
+          className="flex flex-wrap items-end gap-3 rounded-xl border border-[var(--border)] bg-[var(--card)] p-4"
+        >
           <div>
-            <label className="mb-1 block text-[13px] font-medium text-[#5B6156]">Detailed monthly report</label>
+            <label className="mb-1 block text-[13px] font-medium text-[var(--muted)]">
+              Detailed monthly report
+            </label>
             <div className="flex gap-2">
-              <input type="number" name="year" defaultValue={selectedYear} className="w-24 rounded-md border border-[#D8D3C4] px-3 py-2 text-[14px]" />
-              <select name="month" className="rounded-md border border-[#D8D3C4] px-3 py-2 text-[14px]">
+              <input
+                type="number"
+                name="year"
+                defaultValue={selectedYear}
+                className="w-24 rounded-md border border-[var(--border-strong)] bg-[var(--card)] px-3 py-2 text-[14px] text-[var(--foreground)]"
+              />
+              <select
+                name="month"
+                className="rounded-md border border-[var(--border-strong)] bg-[var(--card)] px-3 py-2 text-[14px] text-[var(--foreground)]"
+              >
                 {MONTH_NAMES.slice(1).map((name, i) => (
                   <option key={i + 1} value={i + 1}>{name}</option>
                 ))}
               </select>
             </div>
           </div>
-          <button type="submit" className="rounded-md bg-[#4A6741] px-4 py-2 text-[14px] text-white hover:bg-[#3D5636]">
+          <button
+            type="submit"
+            className="rounded-md bg-[var(--accent)] px-4 py-2 text-[14px] text-white hover:bg-[var(--accent-hover)]"
+          >
             Download
           </button>
         </form>
 
-        <form action="/api/export/quarterly" method="get" className="flex flex-wrap items-end gap-3 rounded-lg border border-[#E9E5D8] bg-white p-4">
+        <form
+          action="/api/export/quarterly"
+          method="get"
+          className="flex flex-wrap items-end gap-3 rounded-xl border border-[var(--border)] bg-[var(--card)] p-4"
+        >
           <div>
-            <label className="mb-1 block text-[13px] font-medium text-[#5B6156]">Quarterly / date-range summary</label>
+            <label className="mb-1 block text-[13px] font-medium text-[var(--muted)]">
+              Quarterly / date-range summary
+            </label>
             <div className="flex gap-2">
-              <input type="number" name="year" defaultValue={selectedYear} className="w-24 rounded-md border border-[#D8D3C4] px-3 py-2 text-[14px]" />
-              <select name="startMonth" defaultValue={4} className="rounded-md border border-[#D8D3C4] px-3 py-2 text-[14px]">
+              <input
+                type="number"
+                name="year"
+                defaultValue={selectedYear}
+                className="w-24 rounded-md border border-[var(--border-strong)] bg-[var(--card)] px-3 py-2 text-[14px] text-[var(--foreground)]"
+              />
+              <select
+                name="startMonth"
+                defaultValue={4}
+                className="rounded-md border border-[var(--border-strong)] bg-[var(--card)] px-3 py-2 text-[14px] text-[var(--foreground)]"
+              >
                 {MONTH_NAMES.slice(1).map((name, i) => (
                   <option key={i + 1} value={i + 1}>{name}</option>
                 ))}
               </select>
-              <span className="self-center text-[13px] text-[#5B6156]">to</span>
-              <select name="endMonth" defaultValue={6} className="rounded-md border border-[#D8D3C4] px-3 py-2 text-[14px]">
+              <span className="self-center text-[13px] text-[var(--muted)]">to</span>
+              <select
+                name="endMonth"
+                defaultValue={6}
+                className="rounded-md border border-[var(--border-strong)] bg-[var(--card)] px-3 py-2 text-[14px] text-[var(--foreground)]"
+              >
                 {MONTH_NAMES.slice(1).map((name, i) => (
                   <option key={i + 1} value={i + 1}>{name}</option>
                 ))}
               </select>
             </div>
           </div>
-          <button type="submit" className="rounded-md bg-[#4A6741] px-4 py-2 text-[14px] text-white hover:bg-[#3D5636]">
+          <button
+            type="submit"
+            className="rounded-md bg-[var(--accent)] px-4 py-2 text-[14px] text-white hover:bg-[var(--accent-hover)]"
+          >
             Download
           </button>
         </form>
@@ -215,9 +255,11 @@ export default async function ReportsPage({
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-[#E9E5D8] bg-white p-4">
-      <p className="text-[13px] text-[#5B6156]">{label}</p>
-      <p className="mt-1 text-xl font-semibold text-[#1F2A1E]">{value}</p>
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm">
+      <p className="text-[13px] font-medium text-[var(--muted)]">{label}</p>
+      <p className="mt-1.5 text-xl font-semibold tracking-tight text-[var(--foreground)]">
+        {value}
+      </p>
     </div>
   );
 }

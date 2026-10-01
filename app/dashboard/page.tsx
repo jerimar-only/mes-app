@@ -20,7 +20,6 @@ export default async function DashboardPage({
   const selectedYear = params.year ? parseInt(params.year, 10) || undefined : undefined;
   const selectedOffice = params.office ? parseInt(params.office, 10) || undefined : undefined;
 
-  // One filter object shared by every query below, so all panels stay consistent.
   const where: Prisma.ApprehensionRecordWhereInput = {
     isDeleted: false,
     ...(selectedYear ? { year: selectedYear } : {}),
@@ -69,10 +68,12 @@ export default async function DashboardPage({
   ].join(" · ");
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-        <p className="mt-1 text-[15px] text-[#5B6156]">
+        <h1 className="text-2xl font-semibold tracking-tight text-[var(--foreground)]">
+          Dashboard
+        </h1>
+        <p className="mt-1 text-[15px] text-[var(--muted)]">
           Live totals from recorded apprehensions — {scopeLabel}
         </p>
       </div>
@@ -88,67 +89,98 @@ export default async function DashboardPage({
         <StatCard label="Total records" value={total.toLocaleString()} />
         <StatCard
           label="Total volume"
-          value={`${(itemTotals._sum.volumeCuM ?? 0).toLocaleString(undefined, { maximumFractionDigits: 1 })} cu.m.`}
+          value={`${(itemTotals._sum.volumeCuM ?? 0).toLocaleString(undefined, {
+            maximumFractionDigits: 1,
+          })} cu.m.`}
         />
         <StatCard
           label="Estimated value"
-          value={`₱${(itemTotals._sum.estimatedValue ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2,maximumFractionDigits: 2 })}`}
+          value={`₱${(itemTotals._sum.estimatedValue ?? 0).toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}`}
         />
         <StatCard label="Needs review" value={needsReview.toLocaleString()} accent />
       </div>
 
-      <section>
-        <h2 className="mb-4 text-[15px] font-semibold">Apprehensions by year</h2>
+      <section className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm">
+        <h2 className="mb-5 text-[15px] font-semibold text-[var(--foreground)]">
+          Apprehensions by year
+        </h2>
         {byYear.length === 0 ? (
-          <p className="text-[14px] text-[#5B6156]">No records match these filters.</p>
+          <p className="text-[14px] text-[var(--muted)]">No records match these filters.</p>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-3">
             {byYear.map((y) => (
               <div key={y.year} className="flex items-center gap-3">
-                <span className="w-12 shrink-0 text-[13px] text-[#5B6156]">{y.year}</span>
-                <div className="h-6 flex-1 rounded bg-[#E9E5D8]">
+                <span className="w-12 shrink-0 text-[13px] font-medium text-[var(--muted)]">
+                  {y.year}
+                </span>
+                <div className="h-7 flex-1 overflow-hidden rounded-full bg-[var(--border)]">
                   <div
-                    className="h-6 rounded bg-[#4A6741]"
+                    className="h-7 rounded-full bg-[var(--accent)] transition-all"
                     style={{ width: `${(y._count._all / maxYearCount) * 100}%` }}
                   />
                 </div>
-                <span className="w-10 shrink-0 text-right text-[13px] text-[#5B6156]">{y._count._all}</span>
+                <span className="w-10 shrink-0 text-right text-[13px] font-medium text-[var(--foreground)]">
+                  {y._count._all}
+                </span>
               </div>
             ))}
           </div>
         )}
       </section>
 
-      <div className="grid gap-8 sm:grid-cols-2">
-        <section>
-          <h2 className="mb-4 text-[15px] font-semibold">By CENRO office</h2>
-          <ul className="divide-y divide-[#E9E5D8] rounded-lg border border-[#E9E5D8] bg-white">
+      <div className="grid gap-6 sm:grid-cols-2">
+        <section className="rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-sm">
+          <div className="border-b border-[var(--border)] px-5 py-4">
+            <h2 className="text-[15px] font-semibold text-[var(--foreground)]">By CENRO office</h2>
+          </div>
+          <ul className="divide-y divide-[var(--border)]">
             {byOffice.length === 0 && (
-              <li className="px-4 py-3 text-[14px] text-[#5B6156]">No records match these filters.</li>
+              <li className="px-5 py-4 text-[14px] text-[var(--muted)]">
+                No records match these filters.
+              </li>
             )}
             {[...byOffice]
               .sort((a, b) => b._count._all - a._count._all)
               .map((o) => (
-                <li key={o.cenroOfficeId} className="flex items-center justify-between px-4 py-2.5 text-[14px]">
-                  <span>{officeName(o.cenroOfficeId)}</span>
-                  <span className="text-[#5B6156]">{o._count._all}</span>
+                <li
+                  key={o.cenroOfficeId}
+                  className="flex items-center justify-between px-5 py-3 text-[14px]"
+                >
+                  <span className="text-[var(--foreground)]">{officeName(o.cenroOfficeId)}</span>
+                  <span className="rounded-full bg-[var(--background)] px-2.5 py-0.5 text-[13px] font-medium text-[var(--muted)]">
+                    {o._count._all}
+                  </span>
                 </li>
               ))}
           </ul>
         </section>
 
-        <section>
-          <h2 className="mb-4 text-[15px] font-semibold">By status</h2>
-          <ul className="divide-y divide-[#E9E5D8] rounded-lg border border-[#E9E5D8] bg-white">
+        <section className="rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-sm">
+          <div className="border-b border-[var(--border)] px-5 py-4">
+            <h2 className="text-[15px] font-semibold text-[var(--foreground)]">By status</h2>
+          </div>
+          <ul className="divide-y divide-[var(--border)]">
             {byStatus.length === 0 && (
-              <li className="px-4 py-3 text-[14px] text-[#5B6156]">No records match these filters.</li>
+              <li className="px-5 py-4 text-[14px] text-[var(--muted)]">
+                No records match these filters.
+              </li>
             )}
             {[...byStatus]
               .sort((a, b) => b._count._all - a._count._all)
               .map((s) => (
-                <li key={s.status} className="flex items-center justify-between px-4 py-2.5 text-[14px]">
-                  <span>{STATUS_LABEL[s.status] ?? s.status}</span>
-                  <span className="text-[#5B6156]">{s._count._all}</span>
+                <li
+                  key={s.status}
+                  className="flex items-center justify-between px-5 py-3 text-[14px]"
+                >
+                  <span className="text-[var(--foreground)]">
+                    {STATUS_LABEL[s.status] ?? s.status}
+                  </span>
+                  <span className="rounded-full bg-[var(--background)] px-2.5 py-0.5 text-[13px] font-medium text-[var(--muted)]">
+                    {s._count._all}
+                  </span>
                 </li>
               ))}
           </ul>
@@ -158,11 +190,25 @@ export default async function DashboardPage({
   );
 }
 
-function StatCard({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+function StatCard({
+  label,
+  value,
+  accent,
+}: {
+  label: string;
+  value: string;
+  accent?: boolean;
+}) {
   return (
-    <div className="rounded-lg border border-[#E9E5D8] bg-white p-4">
-      <p className="text-[13px] text-[#5B6156]">{label}</p>
-      <p className={`mt-1 text-xl font-semibold ${accent ? "text-[#B45309]" : "text-[#1F2A1E]"}`}>{value}</p>
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm">
+      <p className="text-[13px] font-medium text-[var(--muted)]">{label}</p>
+      <p
+        className={`mt-1.5 text-xl font-semibold tracking-tight ${
+          accent ? "text-amber-600 dark:text-amber-400" : "text-[var(--foreground)]"
+        }`}
+      >
+        {value}
+      </p>
     </div>
   );
 }
