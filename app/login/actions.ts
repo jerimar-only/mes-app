@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { createSession } from '@/lib/auth';
+import { redirect } from 'next/navigation';
 
 type LoginState = { error: string };
 
@@ -28,5 +29,7 @@ export async function login(
   }
 
   await createSession(user.id, user.role);
-  return { error: '' };
+
+  // Redirect immediately after successful login
+  redirect('/dashboard');
 }
