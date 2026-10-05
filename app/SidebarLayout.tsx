@@ -14,7 +14,7 @@ export default function SidebarLayout({ children }: { children: React.ReactNode 
 
     update();
     window.addEventListener("sidebar-change", update);
-    const interval = setInterval(update, 150); // smooth while dragging
+    const interval = setInterval(update, 150);
 
     return () => {
       window.removeEventListener("sidebar-change", update);
@@ -25,9 +25,9 @@ export default function SidebarLayout({ children }: { children: React.ReactNode 
   return (
     <div
       style={{ marginLeft: margin }}
-      className="min-h-screen transition-[margin] duration-200 sm:transition-none"
+      className="min-h-screen transition-[margin] duration-200"
     >
-      {/* On mobile we don't apply the margin */}
+      {/* On mobile ignore the margin */}
       <style jsx>{`
         @media (max-width: 639px) {
           div {

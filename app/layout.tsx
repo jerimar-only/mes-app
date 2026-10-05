@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Sidebar from "./Sidebar";
+import SidebarLayout from "./SidebarLayout";   // ← add this
 import InactivityLogout from "./InactivityLogout";
-import ThemeToggle from "./ThemeToggle";
+import Header from "./Header";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -27,26 +28,20 @@ export default async function RootLayout({
           <>
             <InactivityLogout />
 
-            {/* Left Sidebar */}
             <Sidebar
               isAdmin={user.role === "ADMINISTRATOR"}
               userName={user.fullName}
             />
 
-            {/* Main content area (shifted right) */}
-            <div className="pl-64">
-              {/* Top bar with theme toggle only */}
-              <header className="sticky top-0 z-30 flex h-14 items-center justify-end border-b border-white/10 bg-black/30 px-6 backdrop-blur-xl">
-                <ThemeToggle />
-              </header>
+            <SidebarLayout>
+              <Header />
 
               <main className="mx-auto max-w-6xl px-6 py-8">
                 {children}
               </main>
-            </div>
+            </SidebarLayout>
           </>
         ) : (
-          // Login page - full screen, no sidebar
           children
         )}
       </body>
