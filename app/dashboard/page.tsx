@@ -69,6 +69,7 @@ export default async function DashboardPage({
 
   return (
     <div className="space-y-8">
+      {/* Page header */}
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-[var(--foreground)]">
           Dashboard
@@ -85,6 +86,7 @@ export default async function DashboardPage({
         selectedOffice={selectedOffice}
       />
 
+      {/* Stat cards - glass style */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <StatCard label="Total records" value={total.toLocaleString()} />
         <StatCard
@@ -103,7 +105,8 @@ export default async function DashboardPage({
         <StatCard label="Needs review" value={needsReview.toLocaleString()} accent />
       </div>
 
-      <section className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm">
+      {/* Apprehensions by year */}
+      <section className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-xl backdrop-blur-xl">
         <h2 className="mb-5 text-[15px] font-semibold text-[var(--foreground)]">
           Apprehensions by year
         </h2>
@@ -116,7 +119,7 @@ export default async function DashboardPage({
                 <span className="w-12 shrink-0 text-[13px] font-medium text-[var(--muted)]">
                   {y.year}
                 </span>
-                <div className="h-7 flex-1 overflow-hidden rounded-full bg-[var(--border)]">
+                <div className="h-7 flex-1 overflow-hidden rounded-full bg-white/10">
                   <div
                     className="h-7 rounded-full bg-[var(--accent)] transition-all"
                     style={{ width: `${(y._count._all / maxYearCount) * 100}%` }}
@@ -131,12 +134,13 @@ export default async function DashboardPage({
         )}
       </section>
 
+      {/* Two columns */}
       <div className="grid gap-6 sm:grid-cols-2">
-        <section className="rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-sm">
-          <div className="border-b border-[var(--border)] px-5 py-4">
+        <section className="rounded-2xl border border-white/10 bg-white/5 shadow-xl backdrop-blur-xl">
+          <div className="border-b border-white/10 px-5 py-4">
             <h2 className="text-[15px] font-semibold text-[var(--foreground)]">By CENRO office</h2>
           </div>
-          <ul className="divide-y divide-[var(--border)]">
+          <ul className="divide-y divide-white/10">
             {byOffice.length === 0 && (
               <li className="px-5 py-4 text-[14px] text-[var(--muted)]">
                 No records match these filters.
@@ -150,7 +154,7 @@ export default async function DashboardPage({
                   className="flex items-center justify-between px-5 py-3 text-[14px]"
                 >
                   <span className="text-[var(--foreground)]">{officeName(o.cenroOfficeId)}</span>
-                  <span className="rounded-full bg-[var(--background)] px-2.5 py-0.5 text-[13px] font-medium text-[var(--muted)]">
+                  <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-[13px] font-medium text-[var(--muted)]">
                     {o._count._all}
                   </span>
                 </li>
@@ -158,11 +162,11 @@ export default async function DashboardPage({
           </ul>
         </section>
 
-        <section className="rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-sm">
-          <div className="border-b border-[var(--border)] px-5 py-4">
+        <section className="rounded-2xl border border-white/10 bg-white/5 shadow-xl backdrop-blur-xl">
+          <div className="border-b border-white/10 px-5 py-4">
             <h2 className="text-[15px] font-semibold text-[var(--foreground)]">By status</h2>
           </div>
-          <ul className="divide-y divide-[var(--border)]">
+          <ul className="divide-y divide-white/10">
             {byStatus.length === 0 && (
               <li className="px-5 py-4 text-[14px] text-[var(--muted)]">
                 No records match these filters.
@@ -178,7 +182,7 @@ export default async function DashboardPage({
                   <span className="text-[var(--foreground)]">
                     {STATUS_LABEL[s.status] ?? s.status}
                   </span>
-                  <span className="rounded-full bg-[var(--background)] px-2.5 py-0.5 text-[13px] font-medium text-[var(--muted)]">
+                  <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-[13px] font-medium text-[var(--muted)]">
                     {s._count._all}
                   </span>
                 </li>
@@ -200,11 +204,11 @@ function StatCard({
   accent?: boolean;
 }) {
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm">
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-xl backdrop-blur-xl">
       <p className="text-[13px] font-medium text-[var(--muted)]">{label}</p>
       <p
         className={`mt-1.5 text-xl font-semibold tracking-tight ${
-          accent ? "text-amber-600 dark:text-amber-400" : "text-[var(--foreground)]"
+          accent ? "text-amber-400" : "text-[var(--foreground)]"
         }`}
       >
         {value}

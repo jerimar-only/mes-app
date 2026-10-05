@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import BurgerMenu from "./BurgerMenu";
+import Sidebar from "./Sidebar";
 import InactivityLogout from "./InactivityLogout";
 import ThemeToggle from "./ThemeToggle";
 import "./globals.css";
@@ -28,31 +27,26 @@ export default async function RootLayout({
           <>
             <InactivityLogout />
 
-            <header className="border-b border-[var(--border-strong)] bg-[var(--header)]">
-              <div className="mx-auto flex max-w-6xl items-center gap-4 px-6 py-4">
-                <BurgerMenu
-                  isAdmin={user.role === "ADMINISTRATOR"}
-                  userName={user.fullName}
-                />
-                <Link
-                  href="/dashboard"
-                  className="text-[15px] font-semibold tracking-tight text-[var(--header-text)]"
-                >
-                  EMS Apprehension Tracker
-                </Link>
+            {/* Left Sidebar */}
+            <Sidebar
+              isAdmin={user.role === "ADMINISTRATOR"}
+              userName={user.fullName}
+            />
 
-                <div className="ml-auto">
-                  <ThemeToggle />
-                </div>
-              </div>
-            </header>
+            {/* Main content area (shifted right) */}
+            <div className="pl-64">
+              {/* Top bar with theme toggle only */}
+              <header className="sticky top-0 z-30 flex h-14 items-center justify-end border-b border-white/10 bg-black/30 px-6 backdrop-blur-xl">
+                <ThemeToggle />
+              </header>
 
-            <main className="mx-auto max-w-6xl px-6 py-10">
-              {children}
-            </main>
+              <main className="mx-auto max-w-6xl px-6 py-8">
+                {children}
+              </main>
+            </div>
           </>
         ) : (
-          // Login page - no header, no padding
+          // Login page - full screen, no sidebar
           children
         )}
       </body>

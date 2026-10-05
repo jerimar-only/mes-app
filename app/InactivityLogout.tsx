@@ -34,7 +34,6 @@ export default function InactivityLogout() {
       window.addEventListener(event, resetTimer, { passive: true });
     });
 
-    // Check every second
     intervalRef.current = setInterval(() => {
       const elapsed = Date.now() - lastActivityRef.current;
       const left = TOTAL_INACTIVITY_MS - elapsed;
@@ -66,12 +65,14 @@ export default function InactivityLogout() {
   if (!showWarning || remaining === null) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="mx-4 w-full max-w-md rounded-xl border border-[#E9E5D8] bg-white p-6 shadow-2xl">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      {/* Glass card */}
+      <div className="mx-4 w-full max-w-md rounded-2xl border border-white/20 bg-white/10 p-8 shadow-2xl backdrop-blur-xl">
         <div className="text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-100">
+          {/* Icon */}
+          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-amber-500/20">
             <svg
-              className="h-7 w-7 text-amber-600"
+              className="h-7 w-7 text-amber-400"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -85,22 +86,23 @@ export default function InactivityLogout() {
             </svg>
           </div>
 
-          <h2 className="text-lg font-semibold text-[#1F2A1E]">
+          <h2 className="text-xl font-semibold tracking-tight text-white">
             Session about to expire
           </h2>
-          <p className="mt-2 text-[15px] text-[#5B6156]">
+          <p className="mt-2 text-[15px] text-white/70">
             You will be logged out due to inactivity in
           </p>
 
-          <div className="my-5 text-5xl font-bold tabular-nums text-amber-600">
+          {/* Countdown */}
+          <div className="my-6 text-5xl font-bold tabular-nums text-amber-400">
             {remaining}
           </div>
+          <p className="mb-8 text-[14px] text-white/60">seconds</p>
 
-          <p className="mb-6 text-[14px] text-[#5B6156]">seconds</p>
-
+          {/* Stay logged in button */}
           <button
             onClick={resetTimer}
-            className="w-full rounded-lg bg-[#4A6741] px-4 py-3 text-[15px] font-medium text-white transition-colors hover:bg-[#3D5636]"
+            className="w-full rounded-lg bg-white px-4 py-3 text-[15px] font-medium text-gray-900 transition hover:bg-white/90"
           >
             Stay logged in
           </button>

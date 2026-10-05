@@ -30,6 +30,6 @@ export async function login(
 
   await createSession(user.id, user.role);
 
-  // Redirect immediately after successful login
+  // Server-side redirect is the most reliable way
   redirect('/dashboard');
 }
