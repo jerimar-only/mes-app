@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import Sidebar from "./Sidebar";
-import SidebarLayout from "./SidebarLayout";   // ← add this
-import InactivityLogout from "./InactivityLogout";
-import Header from "./Header";
+import Sidebar from "@/components/layout/Sidebar";
+import SidebarLayout from "@/components/layout/SidebarLayout";   // ← add this
+import InactivityLogout from "@/components/layout/InactivityLogout";
+import Header from "@/components/layout/Header";
 import "./globals.css";
 
 export const metadata: Metadata = {

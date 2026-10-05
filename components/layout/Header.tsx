@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import ThemeToggle from "./ThemeToggle";
+import ThemeToggle from "@/components/layout/ThemeToggle";
 
 export default function Header() {
   const [collapsed, setCollapsed] = useState(false);
@@ -34,8 +34,8 @@ export default function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-white/10 bg-black/30 px-6 backdrop-blur-xl">
-      {/* Left side – can add breadcrumbs later */}
+<header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-white/10 bg-black/30 pl-14 pr-6 backdrop-blur-xl sm:pl-6">
+    {/* Left side – can add breadcrumbs later */}
       <div className="text-sm text-white/50">
         {/* optional page title area */}
       </div>

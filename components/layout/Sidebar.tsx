@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { logout } from "./actions";
+import { logout } from "@/app/actions";
 
 const MIN_WIDTH = 72;
 const MAX_WIDTH = 360;
@@ -19,7 +19,7 @@ export default function Sidebar({
 }) {
   const pathname = usePathname();
   const [width, setWidth] = useState(DEFAULT_WIDTH);
-  const [collapsed, setCollapsed] = useState(false);
+  const [desktopCollapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const sidebarRef = useRef<HTMLElement>(null);
@@ -32,14 +32,14 @@ export default function Sidebar({
     if (savedCollapsed === "true") setCollapsed(true);
   }, []);
 
-  // Persist
+  // Persist + notify layout
   useEffect(() => {
     localStorage.setItem("sidebar-width", String(width));
-    localStorage.setItem("sidebar-collapsed", String(collapsed));
-    // Notify layout
+    localStorage.setItem("sidebar-collapsed", String(desktopCollapsed));
     window.dispatchEvent(new Event("sidebar-change"));
-  }, [width, collapsed]);
+  }, [width, desktopCollapsed]);
 
+  // Close the mobile drawer when the page changes
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
@@ -74,27 +74,36 @@ export default function Sidebar({
     setCollapsed((c) => !c);
   };
 
-  const currentWidth = collapsed ? COLLAPSED_WIDTH : width;
+  // The mobile drawer always opens fully expanded
+  const collapsed = desktopCollapsed && !mobileOpen;
+  const currentWidth = mobileOpen
+    ? DEFAULT_WIDTH
+    : collapsed
+    ? COLLAPSED_WIDTH
+    : width;
+
   const isActive = (href: string) =>
     pathname === href || (href !== "/dashboard" && pathname.startsWith(href));
 
   return (
     <>
-      {/* Mobile hamburger */}
-      <button
-        onClick={() => setMobileOpen(true)}
-        type="button"
-        className="fixed left-3 top-3 z-50 inline-flex items-center rounded-lg p-2 text-sm text-[var(--foreground)] hover:bg-white/10 focus:outline-none sm:hidden"
-      >
-        <span className="sr-only">Open sidebar</span>
-        <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 20 20">
-          <path
-            clipRule="evenodd"
-            fillRule="evenodd"
-            d="M2 4.75A.75.75 0 012.75 4h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 4.75zm0 10.5a.75.75 0 01.75-.75h7.5a.75.75 0 010 1.5h-7.5a.75.75 0 01-.75-.75zM2 10a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 10z"
-          />
-        </svg>
-      </button>
+      {/* Mobile hamburger (hidden while the drawer is open) */}
+      {!mobileOpen && (
+        <button
+          onClick={() => setMobileOpen(true)}
+          type="button"
+        className="fixed left-3 top-3 z-50 inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-black/60 text-white shadow-lg backdrop-blur-xl transition hover:bg-black/80 focus:outline-none focus:ring-2 focus:ring-white/30 sm:hidden"
+        >
+          <span className="sr-only">Open sidebar</span>
+          <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 20 20">
+            <path
+              clipRule="evenodd"
+              fillRule="evenodd"
+              d="M2 4.75A.75.75 0 012.75 4h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 4.75zm0 10.5a.75.75 0 01.75-.75h7.5a.75.75 0 010 1.5h-7.5a.75.75 0 01-.75-.75zM2 10a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 10z"
+            />
+          </svg>
+        </button>
+      )}
 
       {/* Mobile overlay */}
       {mobileOpen && (
@@ -126,7 +135,7 @@ export default function Sidebar({
             )}
 
             <div className="flex items-center gap-1">
-              {/* Collapse / Expand */}
+              {/* Collapse / Expand (desktop only) */}
               <button
                 onClick={toggleCollapse}
                 className="hidden rounded-lg p-1.5 text-white/60 hover:bg-white/10 hover:text-white sm:inline-flex"

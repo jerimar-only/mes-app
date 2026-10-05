@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { logout } from "./actions";
+import { logout } from "@/app/actions";
 
 const TOTAL_INACTIVITY_MS = 30 * 1000; // 30 seconds total
 const WARNING_THRESHOLD_MS = 10 * 1000; // show warning in the last 10 seconds
