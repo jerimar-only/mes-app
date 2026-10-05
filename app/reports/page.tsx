@@ -139,8 +139,9 @@ export default async function ReportsPage({
 
       <section>
         <h2 className="mb-4 text-[15px] font-semibold text-[var(--foreground)]">Monthly breakdown</h2>
-        <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)]">
-          <table className="w-full text-left text-[14px]">
+        {/* overflow-x-auto lets the table scroll sideways on phones instead of clipping */}
+        <div className="overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--card)]">
+          <table className="w-full min-w-[560px] text-left text-[14px]">
             <thead className="border-b border-[var(--border)] bg-[var(--background)] text-[13px] text-[var(--muted)]">
               <tr>
                 <th className="px-4 py-3 font-medium">Month</th>
@@ -179,7 +180,7 @@ export default async function ReportsPage({
             <label className="mb-1 block text-[13px] font-medium text-[var(--muted)]">
               Detailed monthly report
             </label>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <input
                 type="number"
                 name="year"
@@ -198,7 +199,7 @@ export default async function ReportsPage({
           </div>
           <button
             type="submit"
-            className="rounded-md bg-[var(--accent)] px-4 py-2 text-[14px] text-white hover:bg-[var(--accent-hover)]"
+            className="w-full rounded-md bg-[var(--accent)] px-4 py-2 text-[14px] text-white hover:bg-[var(--accent-hover)] sm:w-auto"
           >
             Download
           </button>
@@ -213,7 +214,8 @@ export default async function ReportsPage({
             <label className="mb-1 block text-[13px] font-medium text-[var(--muted)]">
               Quarterly / date-range summary
             </label>
-            <div className="flex gap-2">
+            {/* flex-wrap keeps the selects inside the card on narrow screens */}
+            <div className="flex flex-wrap items-center gap-2">
               <input
                 type="number"
                 name="year"
@@ -229,7 +231,7 @@ export default async function ReportsPage({
                   <option key={i + 1} value={i + 1}>{name}</option>
                 ))}
               </select>
-              <span className="self-center text-[13px] text-[var(--muted)]">to</span>
+              <span className="text-[13px] text-[var(--muted)]">to</span>
               <select
                 name="endMonth"
                 defaultValue={6}
@@ -243,7 +245,7 @@ export default async function ReportsPage({
           </div>
           <button
             type="submit"
-            className="rounded-md bg-[var(--accent)] px-4 py-2 text-[14px] text-white hover:bg-[var(--accent-hover)]"
+            className="w-full rounded-md bg-[var(--accent)] px-4 py-2 text-[14px] text-white hover:bg-[var(--accent-hover)] sm:w-auto"
           >
             Download
           </button>
