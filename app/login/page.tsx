@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect } from "react";
 import { login } from "./actions";
+import Image from "next/image";
 
 const initialState = { error: "" };
 
@@ -32,9 +33,16 @@ export default function LoginPage() {
       <div className="relative z-10 w-full max-w-[400px] px-4">
         <div className="rounded-2xl border border-white/20 bg-white/10 p-8 shadow-2xl backdrop-blur-xl sm:p-10">
           {/* Title */}
-          <h1 className="mb-10 text-center text-3xl font-semibold tracking-wide text-white">
-            Login
-          </h1>
+          <div className="mb-10 flex flex-col items-center gap-4">
+            <Image
+              src="/seal.png"
+              alt="Monitoring and Enforcement Seal"
+              width={112}
+              height={112}
+              priority
+              className="h-28 w-28 object-contain drop-shadow-lg"
+            />
+          </div>
 
           <form action={formAction} className="space-y-8">
             {/* Username */}
