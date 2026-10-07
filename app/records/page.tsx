@@ -101,7 +101,7 @@ export default async function RecordsPage({
         </div>
         <Link
           href="/records/full"
-          className="inline-flex shrink-0 items-center rounded-md border border-[#D8D3C4] bg-white px-4 py-2 text-[14px] hover:bg-[#F0EDE3]"
+          className="inline-flex shrink-0 items-center rounded-md border border-gray-200 bg-white px-4 py-2 text-[14px] font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 dark:border-white/10 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
         >
           Full view →
         </Link>

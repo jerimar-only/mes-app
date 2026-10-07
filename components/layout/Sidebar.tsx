@@ -124,8 +124,8 @@ export default function Sidebar({
           ${isDragging ? "transition-none select-none" : ""}
         `}
         aria-label="Sidebar"
-      >
-        <div className="relative flex h-full flex-col overflow-y-auto border-r border-white/10 bg-black/40 px-3 py-4 backdrop-blur-xl">
+        >
+          <div className="relative flex h-full flex-col overflow-y-auto border-r border-white/10 bg-black/70 px-3 py-4 backdrop-blur-xl">
           {/* Brand + controls */}
           <div className="mb-5 flex items-center justify-between gap-2 px-1">
             {!collapsed && (
