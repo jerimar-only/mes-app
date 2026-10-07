@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { uploadExcel } from "./actions";
 
 type Row = { row: number; message: string };
@@ -17,6 +17,7 @@ export default function UploadForm() {
   const [loading, setLoading] = useState(false);
   const [fileName, setFileName] = useState("");
   const [result, setResult] = useState<UploadResult | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -29,12 +30,7 @@ export default function UploadForm() {
     } catch (err) {
       setResult({
         imported: 0,
-        errors: [
-          {
-            row: 0,
-            message: err instanceof Error ? err.message : "Upload failed.",
-          },
-        ],
+        errors: [{ row: 0, message: err instanceof Error ? err.message : "Upload failed." }],
       });
     } finally {
       setLoading(false);
@@ -45,41 +41,56 @@ export default function UploadForm() {
   const errorCount = result?.errors.length ?? 0;
 
   return (
-    <div className="space-y-4">
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <label className="block">
-          <span className="mb-1 block text-sm font-medium">Excel file (.xlsx)</span>
+    <div className="space-y-5">
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-4 rounded-lg border border-[var(--border)] bg-[var(--card,transparent)] p-4 sm:p-5"
+      >
+        <div>
+          <span className="mb-1.5 block text-[14px] font-medium text-[var(--foreground)]">
+            Excel file (.xlsx)
+          </span>
+
+          {/* Real input is hidden; the button below matches the other buttons */}
           <input
+            ref={inputRef}
             type="file"
             name="file"
             accept=".xlsx,.xls"
             required
+            className="sr-only"
             onChange={(e) => setFileName(e.target.files?.[0]?.name ?? "")}
-            className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-blue-600 file:px-3 file:py-2 file:text-white hover:file:bg-blue-700"
           />
-        </label>
-        {fileName && (
-          <p className="text-xs text-gray-500 dark:text-gray-400 break-all">
-            Selected: {fileName}
-          </p>
-        )}
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              className="w-full rounded-md border border-[#D8D3C4] bg-white px-4 py-2 text-[14px] text-[#4A6741] hover:bg-[#F0EDE3] sm:w-auto"
+            >
+              Choose file
+            </button>
+            <span className="min-w-0 truncate text-[14px] text-[var(--muted)]">
+              {fileName || "No file selected"}
+            </span>
+          </div>
+        </div>
+
         <button
           type="submit"
           disabled={loading || !fileName}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          className="w-full rounded-md bg-[var(--accent)] px-4 py-2 text-[14px] text-white hover:bg-[var(--accent-hover)] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
         >
           {loading ? "Uploading… please wait" : "Upload"}
         </button>
       </form>
 
       {result && (
-        <div className="space-y-3 text-sm">
-          {/* Summary */}
+        <div className="space-y-3 text-[14px]">
           <p
             className={`rounded-md border p-3 ${
               result.imported > 0
-                ? "border-green-300 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200"
-                : "border-gray-300 bg-gray-50 text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
+                ? "border-[#4A6741]/40 bg-[#4A6741]/10 text-[var(--foreground)]"
+                : "border-[var(--border)] text-[var(--foreground)]"
             }`}
           >
             {result.totalRead !== undefined && (
@@ -94,9 +105,8 @@ export default function UploadForm() {
             {errorCount} with problems
           </p>
 
-          {/* Skipped rows */}
           {skipped > 0 && result.skippedRows && result.skippedRows.length > 0 && (
-            <details className="rounded-md border border-yellow-300 bg-yellow-50 p-3 text-yellow-900 dark:border-yellow-800 dark:bg-yellow-950 dark:text-yellow-200">
+            <details className="rounded-md border border-yellow-500/40 bg-yellow-500/10 p-3 text-[var(--foreground)]">
               <summary className="cursor-pointer font-medium">
                 {skipped} row{skipped === 1 ? "" : "s"} skipped because they already exist
               </summary>
@@ -110,9 +120,8 @@ export default function UploadForm() {
             </details>
           )}
 
-          {/* Errors */}
           {errorCount > 0 && (
-            <div className="rounded-md border border-red-300 bg-red-50 p-3 text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200">
+            <div className="rounded-md border border-red-500/40 bg-red-500/10 p-3 text-[var(--foreground)]">
               <p className="font-medium">
                 {errorCount} row{errorCount === 1 ? "" : "s"} had problems:
               </p>
