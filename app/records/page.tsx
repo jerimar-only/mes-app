@@ -1,5 +1,3 @@
-// FILE: app/records/page.tsx  (replace the whole file)
-
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
@@ -106,7 +104,7 @@ export default async function RecordsPage({
         </div>
         <Link
           href="/records/full"
-          className="inline-flex shrink-0 items-center rounded-md border border-gray-200 bg-white px-4 py-2 text-[14px] font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 dark:border-white/10 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+          className="inline-flex shrink-0 items-center rounded-md border border-gray-200 bg-white px-4 py-2 text-[14px] font-medium text-gray-700 shadow-sm transition hover:bg-gray-50"
         >
           Full view →
         </Link>
@@ -115,9 +113,9 @@ export default async function RecordsPage({
       {/* Filters */}
       <form
         method="get"
-        className="flex flex-wrap items-end gap-2.5 rounded-lg border border-[#E9E5D8] bg-[#FAFAF6] p-3"
+        className="grid grid-cols-2 gap-2.5 rounded-lg border border-[#E9E5D8] bg-[#FAFAF6] p-3 sm:flex sm:flex-wrap sm:items-end"
       >
-        <div className="min-w-[200px] flex-1">
+        <div className="col-span-2 min-w-0 sm:min-w-[200px] sm:flex-1">
           <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-[#5B6156]">
             Search
           </label>
@@ -137,13 +135,11 @@ export default async function RecordsPage({
           <select
             name="year"
             defaultValue={params.year ?? ""}
-            className="rounded-md border border-[#D8D3C4] bg-white px-3 py-2 text-[13px]"
+            className="w-full rounded-md border border-[#D8D3C4] bg-white px-3 py-2 text-[13px]"
           >
             <option value="">All</option>
             {Array.from({ length: 13 }, (_, i) => 2014 + i).map((y) => (
-              <option key={y} value={y}>
-                {y}
-              </option>
+              <option key={y} value={y}>{y}</option>
             ))}
           </select>
         </div>
@@ -155,13 +151,11 @@ export default async function RecordsPage({
           <select
             name="office"
             defaultValue={params.office ?? ""}
-            className="max-w-[160px] rounded-md border border-[#D8D3C4] bg-white px-3 py-2 text-[13px]"
+            className="w-full rounded-md border border-[#D8D3C4] bg-white px-3 py-2 text-[13px]"
           >
             <option value="">All</option>
             {offices.map((o) => (
-              <option key={o.id} value={o.id}>
-                {o.name}
-              </option>
+              <option key={o.id} value={o.id}>{o.name}</option>
             ))}
           </select>
         </div>
@@ -173,13 +167,11 @@ export default async function RecordsPage({
           <select
             name="status"
             defaultValue={params.status ?? ""}
-            className="rounded-md border border-[#D8D3C4] bg-white px-3 py-2 text-[13px]"
+            className="w-full rounded-md border border-[#D8D3C4] bg-white px-3 py-2 text-[13px]"
           >
             <option value="">All</option>
             {Object.entries(STATUS_LABEL).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
+              <option key={value} value={value}>{label}</option>
             ))}
           </select>
         </div>
@@ -191,7 +183,7 @@ export default async function RecordsPage({
           <select
             name="deleted"
             defaultValue={params.deleted ?? ""}
-            className="rounded-md border border-[#D8D3C4] bg-white px-3 py-2 text-[13px]"
+            className="w-full rounded-md border border-[#D8D3C4] bg-white px-3 py-2 text-[13px]"
           >
             <option value="">Active</option>
             <option value="only">Deleted</option>
@@ -206,7 +198,7 @@ export default async function RecordsPage({
           <select
             name="pageSize"
             defaultValue={params.pageSize ?? "25"}
-            className="rounded-md border border-[#D8D3C4] bg-white px-3 py-2 text-[13px]"
+            className="w-full rounded-md border border-[#D8D3C4] bg-white px-3 py-2 text-[13px]"
           >
             <option value="25">25</option>
             <option value="50">50</option>
@@ -215,17 +207,66 @@ export default async function RecordsPage({
           </select>
         </div>
 
-        <button
-          type="submit"
-          className="rounded-md bg-[#4A6741] px-4 py-2 text-[13px] font-medium text-white hover:bg-[#3D5636]"
-        >
-          Apply
-        </button>
+        <div className="col-span-2 sm:col-span-1 sm:self-end">
+          <button
+            type="submit"
+            className="w-full rounded-md bg-[#4A6741] px-4 py-2 text-[13px] font-medium text-white hover:bg-[#3D5636] sm:w-auto"
+          >
+            Apply
+          </button>
+        </div>
       </form>
 
-      {/* Table */}
+      {/* ========== MOBILE: Card list ========== */}
+      <div className="space-y-3 md:hidden">
+        {records.map((r) => (
+          <div
+            key={r.id}
+            className="rounded-lg border border-[#E9E5D8] bg-white p-4 shadow-sm"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <Link
+                  href={`/records/${r.id}`}
+                  className="block text-[15px] font-medium leading-snug text-[#4A6741] hover:underline"
+                >
+                  {r.placeOfApprehension || r.dateOfApprehension || `Record #${r.id}`}
+                </Link>
+                <p className="mt-1 text-[13px] text-[#5B6156]">
+                  {r.cenroOffice.name} · {r.year}
+                  {r.isDeleted && (
+                    <span className="ml-2 rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-medium text-red-800">
+                      Deleted
+                    </span>
+                  )}
+                </p>
+              </div>
+              <StatusBadge status={r.status} />
+            </div>
+
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-[#5B6156]">
+              <span>{r.items.length} item{r.items.length !== 1 ? "s" : ""}</span>
+              {r.docketNumber && <span>Docket: {r.docketNumber}</span>}
+            </div>
+
+            {canEdit && !r.isDeleted && (
+              <div className="mt-3 border-t border-[#F0EDE3] pt-3">
+                <EditModal recordId={r.id} />
+              </div>
+            )}
+          </div>
+        ))}
+
+        {records.length === 0 && (
+          <div className="rounded-lg border border-[#E9E5D8] bg-white px-4 py-12 text-center text-[14px] text-[#5B6156]">
+            No records match these filters.
+          </div>
+        )}
+      </div>
+
+      {/* ========== DESKTOP: Table ========== */}
       <div
-        className="relative overflow-auto rounded-lg border border-[#E9E5D8] bg-white shadow-sm"
+        className="relative hidden overflow-auto rounded-lg border border-[#E9E5D8] bg-white shadow-sm md:block"
         style={{ maxHeight: "70vh" }}
       >
         <table className="w-full border-collapse text-left text-[13px]">
@@ -316,23 +357,16 @@ export default async function RecordsPage({
           </span>
 
           {totalPages > 1 && (
-            <div className="flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center justify-center gap-1.5">
               {page > 1 && <PageLink params={params} page={1} label="First" />}
-              {page > 1 && (
-                <PageLink params={params} page={page - 1} label="← Prev" />
-              )}
+              {page > 1 && <PageLink params={params} page={page - 1} label="← Prev" />}
 
               {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                 let p: number;
-                if (totalPages <= 5) {
-                  p = i + 1;
-                } else if (page <= 3) {
-                  p = i + 1;
-                } else if (page >= totalPages - 2) {
-                  p = totalPages - 4 + i;
-                } else {
-                  p = page - 2 + i;
-                }
+                if (totalPages <= 5) p = i + 1;
+                else if (page <= 3) p = i + 1;
+                else if (page >= totalPages - 2) p = totalPages - 4 + i;
+                else p = page - 2 + i;
                 return (
                   <PageLink
                     key={p}
@@ -344,12 +378,8 @@ export default async function RecordsPage({
                 );
               })}
 
-              {page < totalPages && (
-                <PageLink params={params} page={page + 1} label="Next →" />
-              )}
-              {page < totalPages && (
-                <PageLink params={params} page={totalPages} label="Last" />
-              )}
+              {page < totalPages && <PageLink params={params} page={page + 1} label="Next →" />}
+              {page < totalPages && <PageLink params={params} page={totalPages} label="Last" />}
             </div>
           )}
         </div>
@@ -400,7 +430,7 @@ function StatusBadge({ status }: { status: string }) {
   };
   return (
     <span
-      className={`rounded-full px-2.5 py-1 text-[12px] font-medium ${
+      className={`shrink-0 rounded-full px-2.5 py-1 text-[12px] font-medium ${
         colors[status] ?? "bg-gray-100"
       }`}
     >
