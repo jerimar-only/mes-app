@@ -18,6 +18,11 @@ const PAGE_SIZE_OPTIONS = [25, 50, 100, 500] as const;
 const dash = (v: string | number | null | undefined) =>
   v === null || v === undefined || v === "" ? "—" : String(v);
 
+const fmtDate = (d: Date | null) =>
+  d
+    ? d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", timeZone: "UTC" })
+    : null;
+
 export default async function FullRecordsPage({
   searchParams,
 }: {
@@ -65,9 +70,14 @@ export default async function FullRecordsPage({
       ? {
           OR: [
             { placeOfApprehension: { contains: params.q, mode: "insensitive" } },
+            { sourcePlace: { contains: params.q, mode: "insensitive" } },
+            { claimantRespondent: { contains: params.q, mode: "insensitive" } },
+            { apprehendingAgency: { contains: params.q, mode: "insensitive" } },
             { circumstances: { contains: params.q, mode: "insensitive" } },
             { docketNumber: { contains: params.q, mode: "insensitive" } },
             { remarks: { contains: params.q, mode: "insensitive" } },
+            { otherRemarks: { contains: params.q, mode: "insensitive" } },
+            { caseStatus: { contains: params.q, mode: "insensitive" } },
           ],
         }
       : {}),
@@ -129,7 +139,7 @@ export default async function FullRecordsPage({
             type="text"
             name="q"
             defaultValue={params.q}
-            placeholder="Place, docket, remarks…"
+            placeholder="Place, claimant, docket, remarks…"
             className="w-full rounded-md border border-[#D8D3C4] bg-white px-3 py-2 text-[13px]"
           />
         </div>
@@ -229,7 +239,7 @@ export default async function FullRecordsPage({
 
       {/* Table */}
       <div className="relative overflow-auto rounded-lg border border-[#E9E5D8] bg-white shadow-sm" style={{ maxHeight: "70vh" }}>
-        <table className="w-full border-collapse text-left text-[12.5px]" style={{ minWidth: "1600px" }}>
+        <table className="w-full border-collapse text-left text-[12.5px]" style={{ minWidth: "2600px" }}>
           <thead className="sticky top-0 z-20">
             <tr className="border-b border-[#E9E5D8] bg-[#F5F3EB] text-[11px] uppercase tracking-wide text-[#5B6156]">
               <th className="sticky left-0 z-30 whitespace-nowrap bg-[#F5F3EB] px-3 py-2.5 font-semibold shadow-[2px_0_4px_-2px_rgba(0,0,0,0.08)]">
@@ -240,12 +250,19 @@ export default async function FullRecordsPage({
               <th className="whitespace-nowrap px-3 py-2.5 font-semibold">Month</th>
               <th className="whitespace-nowrap px-3 py-2.5 font-semibold">Date</th>
               <th className="min-w-[140px] px-3 py-2.5 font-semibold">Place</th>
-              <th className="min-w-[120px] px-3 py-2.5 font-semibold">Agency/s</th>
-              <th className="min-w-[120px] px-3 py-2.5 font-semibold">Claimant</th>
+              <th className="min-w-[140px] px-3 py-2.5 font-semibold">Source of products</th>
+              <th className="min-w-[120px] px-3 py-2.5 font-semibold">GPS</th>
+              <th className="min-w-[110px] px-3 py-2.5 font-semibold">Land class.</th>
+              <th className="min-w-[120px] px-3 py-2.5 font-semibold">Apprehending officers</th>
+              <th className="min-w-[120px] px-3 py-2.5 font-semibold">Claimant/owner</th>
               <th className="min-w-[180px] px-3 py-2.5 font-semibold">Circumstances</th>
-              <th className="min-w-[110px] px-3 py-2.5 font-semibold">Custodian</th>
+              <th className="min-w-[110px] px-3 py-2.5 font-semibold">Place impounded</th>
               <th className="min-w-[110px] px-3 py-2.5 font-semibold">Other agencies</th>
+              <th className="min-w-[160px] px-3 py-2.5 font-semibold">Other remarks</th>
               <th className="min-w-[160px] px-3 py-2.5 font-semibold">Remarks</th>
+              <th className="whitespace-nowrap px-3 py-2.5 font-semibold">ACP to PENRO</th>
+              <th className="whitespace-nowrap px-3 py-2.5 font-semibold">ACP to RO</th>
+              <th className="min-w-[220px] px-3 py-2.5 font-semibold">Case status</th>
               <th className="whitespace-nowrap px-3 py-2.5 font-semibold">Status</th>
               <th className="whitespace-nowrap px-3 py-2.5 font-semibold">Docket #</th>
               <th className="whitespace-nowrap px-3 py-2.5 font-semibold">Finality date</th>
@@ -294,14 +311,22 @@ export default async function FullRecordsPage({
                   <td className="whitespace-nowrap px-3 py-2">{dash(r.month)}</td>
                   <td className="whitespace-nowrap px-3 py-2">{dash(r.dateOfApprehension)}</td>
 
+
                   {/* Wrapping cells */}
                   <td className="max-w-[180px] px-3 py-2 break-words leading-snug">{dash(r.placeOfApprehension)}</td>
+                  <td className="max-w-[180px] px-3 py-2 break-words leading-snug">{dash(r.sourcePlace)}</td>
+                  <td className="max-w-[140px] px-3 py-2 break-words leading-snug">{dash(r.gpsCoordinates)}</td>
+                  <td className="max-w-[130px] px-3 py-2 break-words leading-snug">{dash(r.landClassification)}</td>
                   <td className="max-w-[140px] px-3 py-2 break-words leading-snug">{dash(r.apprehendingAgency)}</td>
                   <td className="max-w-[140px] px-3 py-2 break-words leading-snug">{dash(r.claimantRespondent)}</td>
                   <td className="max-w-[220px] px-3 py-2 break-words leading-snug">{dash(r.circumstances)}</td>
                   <td className="max-w-[130px] px-3 py-2 break-words leading-snug">{dash(r.custodianLocation)}</td>
                   <td className="max-w-[130px] px-3 py-2 break-words leading-snug">{dash(r.otherAgencies)}</td>
+                  <td className="max-w-[200px] px-3 py-2 break-words leading-snug">{dash(r.otherRemarks)}</td>
                   <td className="max-w-[200px] px-3 py-2 break-words leading-snug">{dash(r.remarks)}</td>
+                  <td className="whitespace-nowrap px-3 py-2">{dash(fmtDate(r.acpEndorsedToPenro))}</td>
+                  <td className="whitespace-nowrap px-3 py-2">{dash(fmtDate(r.acpEndorsedToRo))}</td>
+                  <td className="max-w-[260px] px-3 py-2 break-words leading-snug">{dash(r.caseStatus)}</td>
 
                   <td className="whitespace-nowrap px-3 py-2">{STATUS_LABEL[r.status] ?? r.status}</td>
                   <td className="whitespace-nowrap px-3 py-2">{dash(r.docketNumber)}</td>
@@ -336,7 +361,7 @@ export default async function FullRecordsPage({
 
             {records.length === 0 && (
               <tr>
-                <td colSpan={19 + fieldDefs.length} className="px-4 py-12 text-center text-[14px] text-[#5B6156]">
+                <td colSpan={26 + fieldDefs.length} className="px-4 py-12 text-center text-[14px] text-[#5B6156]">
                   No records match these filters.
                 </td>
               </tr>

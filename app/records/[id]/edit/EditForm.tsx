@@ -1,5 +1,3 @@
-// FILE: app/records/[id]/edit/EditForm.tsx  (replace the whole file)
-
 "use client";
 
 import { useState } from "react";
@@ -60,6 +58,13 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
     </div>
   );
 
+  const dateField = (name: string, title: string) => (
+    <div>
+      <label className={labelCls}>{title}</label>
+      <input type="date" name={name} defaultValue={record[name]} className={inputCls} />
+    </div>
+  );
+
   // Modal mode: handle submit in the browser. Page mode: use the server action directly.
   const formProps = onSaved
     ? { onSubmit: handleInlineSubmit }
@@ -69,14 +74,19 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
     <form {...formProps} className="space-y-6">
       <input type="hidden" name="id" value={record.id} />
 
-      {field("dateOfApprehension", "Date of apprehension")}
-      {field("placeOfApprehension", "Place of apprehension")}
-      {field("apprehendingAgency", "Apprehending agency/s")}
-      {field("claimantRespondent", "Name of claimant/respondent")}
+      <div className="grid gap-4 sm:grid-cols-2">
+        {field("dateOfApprehension", "Date of apprehension")}
+        {field("placeOfApprehension", "Place of apprehension")}
+        {field("sourcePlace", "Place of the source of forest products")}
+        {field("gpsCoordinates", "GPS coordinates")}
+        {field("landClassification", "Land classification")}
+        {field("apprehendingAgency", "Apprehending officers")}
+        {field("claimantRespondent", "Name of claimant/owner")}
+        {field("custodianLocation", "Place impounded / custodian")}
+        {field("otherAgencies", "Other agencies involved")}
+      </div>
+
       {field("circumstances", "Circumstances", true)}
-      {field("custodianLocation", "Custodian / stockpile location")}
-      {field("otherAgencies", "Other agencies involved")}
-      {field("remarks", "Remarks (original)", true)}
 
       <div>
         <h2 className="mb-2 text-[13px] font-medium text-[#5B6156]">Forest products</h2>
@@ -131,6 +141,15 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
           setRows={setEquip}
         />
       </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        {dateField("acpEndorsedToPenro", "ACP endorsed to PENRO")}
+        {dateField("acpEndorsedToRo", "ACP endorsed to RO")}
+      </div>
+
+      {field("otherRemarks", "Other remarks (condition, status of criminal complaint)", true)}
+      {field("remarks", "Remarks", true)}
+      {field("caseStatus", "Case status (filed in court or prosecutor's office)", true)}
 
       {error && <p className="text-[13px] text-red-600">{error}</p>}
 

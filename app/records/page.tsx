@@ -62,9 +62,14 @@ export default async function RecordsPage({
       ? {
           OR: [
             { placeOfApprehension: { contains: params.q, mode: "insensitive" } },
+            { sourcePlace: { contains: params.q, mode: "insensitive" } },
+            { claimantRespondent: { contains: params.q, mode: "insensitive" } },
+            { apprehendingAgency: { contains: params.q, mode: "insensitive" } },
             { circumstances: { contains: params.q, mode: "insensitive" } },
             { docketNumber: { contains: params.q, mode: "insensitive" } },
             { remarks: { contains: params.q, mode: "insensitive" } },
+            { otherRemarks: { contains: params.q, mode: "insensitive" } },
+            { caseStatus: { contains: params.q, mode: "insensitive" } },
           ],
         }
       : {}),

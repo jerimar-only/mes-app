@@ -46,7 +46,11 @@ export async function createRecord(formData: FormData) {
   const custodianLocation = (formData.get("custodianLocation") as string) || null;
   const otherAgencies = (formData.get("otherAgencies") as string) || null;
   const remarks = (formData.get("remarks") as string) || null;
-
+  const str = (k: string) => ((formData.get(k) as string) || "").trim() || null;
+  const dateField = (k: string) => {
+    const v = formData.get(k) as string;
+    return v ? new Date(v) : null;
+  };
   const itemQty = formData.getAll("itemQty") as string[];
   const itemSpecies = formData.getAll("itemSpecies") as string[];
   const itemForms = formData.getAll("itemForms") as string[];
@@ -90,6 +94,13 @@ export async function createRecord(formData: FormData) {
       custodianLocation,
       otherAgencies,
       remarks,
+      sourcePlace: str("sourcePlace"),
+      gpsCoordinates: str("gpsCoordinates"),
+      landClassification: str("landClassification"),
+      otherRemarks: str("otherRemarks"),
+      caseStatus: str("caseStatus"),
+      acpEndorsedToPenro: dateField("acpEndorsedToPenro"),
+      acpEndorsedToRo: dateField("acpEndorsedToRo"),
       status: "UNKNOWN",
       items: items.length ? { create: items } : undefined,
       conveyances: conveyances.length ? { create: conveyances } : undefined,
@@ -137,6 +148,10 @@ async function saveRecord(formData: FormData) {
     const n = parseFloat(v.replace(/,/g, ""));
     return Number.isNaN(n) ? null : n;
   };
+  const dateField = (k: string) => {
+    const v = formData.get(k) as string;
+    return v ? new Date(v) : null;
+  };
 
   const itemQty = formData.getAll("itemQty") as string[];
   const itemSpecies = formData.getAll("itemSpecies") as string[];
@@ -182,6 +197,13 @@ async function saveRecord(formData: FormData) {
       custodianLocation: str("custodianLocation"),
       otherAgencies: str("otherAgencies"),
       remarks: str("remarks"),
+      sourcePlace: str("sourcePlace"),
+      gpsCoordinates: str("gpsCoordinates"),
+      landClassification: str("landClassification"),
+      otherRemarks: str("otherRemarks"),
+      caseStatus: str("caseStatus"),
+      acpEndorsedToPenro: dateField("acpEndorsedToPenro"),
+      acpEndorsedToRo: dateField("acpEndorsedToRo"),     
       items: { deleteMany: {}, create: items },
       conveyances: { deleteMany: {}, create: pairs("convType", "convQty", "convValue") },
       equipment: { deleteMany: {}, create: pairs("equipType", "equipQty", "equipValue") },
@@ -230,6 +252,13 @@ export async function getRecordForEdit(id: number) {
     custodianLocation: r.custodianLocation ?? "",
     otherAgencies: r.otherAgencies ?? "",
     remarks: r.remarks ?? "",
+    sourcePlace: r.sourcePlace ?? "",
+    gpsCoordinates: r.gpsCoordinates ?? "",
+    landClassification: r.landClassification ?? "",
+    otherRemarks: r.otherRemarks ?? "",
+    caseStatus: r.caseStatus ?? "",
+    acpEndorsedToPenro: r.acpEndorsedToPenro ? r.acpEndorsedToPenro.toISOString().slice(0, 10) : "",
+    acpEndorsedToRo: r.acpEndorsedToRo ? r.acpEndorsedToRo.toISOString().slice(0, 10) : "",    
     items: r.items.map((i) => ({
       qty: i.quantity ?? "",
       species: i.species ?? "",

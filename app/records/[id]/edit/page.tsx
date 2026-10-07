@@ -1,10 +1,11 @@
-// FILE: app/records/[id]/edit/page.tsx  (replace the whole file)
-
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { permissions, type Role } from "@/lib/permissions";
 import { EditForm } from "./EditForm";
+
+// Date column → "YYYY-MM-DD" for <input type="date">
+const dateValue = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : "");
 
 export default async function EditRecordPage({
   params,
@@ -28,12 +29,19 @@ export default async function EditRecordPage({
     id: r.id,
     dateOfApprehension: r.dateOfApprehension ?? "",
     placeOfApprehension: r.placeOfApprehension ?? "",
+    sourcePlace: r.sourcePlace ?? "",
+    gpsCoordinates: r.gpsCoordinates ?? "",
+    landClassification: r.landClassification ?? "",
     apprehendingAgency: r.apprehendingAgency ?? "",
     claimantRespondent: r.claimantRespondent ?? "",
     circumstances: r.circumstances ?? "",
     custodianLocation: r.custodianLocation ?? "",
     otherAgencies: r.otherAgencies ?? "",
+    otherRemarks: r.otherRemarks ?? "",
     remarks: r.remarks ?? "",
+    acpEndorsedToPenro: dateValue(r.acpEndorsedToPenro),
+    acpEndorsedToRo: dateValue(r.acpEndorsedToRo),
+    caseStatus: r.caseStatus ?? "",
     items: r.items.map((i) => ({
       qty: i.quantity ?? "",
       species: i.species ?? "",

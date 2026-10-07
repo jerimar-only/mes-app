@@ -1,5 +1,3 @@
-// FILE: app/records/[id]/page.tsx  (replace the whole file)
-
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { getSession } from "@/lib/auth";
@@ -17,6 +15,12 @@ const STATUS_OPTIONS = [
   ["RELEASED", "Released"],
   ["UNKNOWN", "Needs review"],
 ] as const;
+
+// Date column → "March 11, 2026" (UTC so the day never shifts)
+const fmtDate = (d: Date | null) =>
+  d
+    ? d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", timeZone: "UTC" })
+    : null;
 
 export default async function RecordDetailPage({
   params,
@@ -54,19 +58,24 @@ export default async function RecordDetailPage({
 
       <div className="grid gap-8 sm:grid-cols-3">
         <div className="space-y-6 sm:col-span-2">
-          <Field label="Date of apprehension" value={record.dateOfApprehension} />
-          <Field label="Place of apprehension" value={record.placeOfApprehension} />
-          <Field label="Apprehending agency/s" value={record.apprehendingAgency} />
-          <Field label="Name of claimant/respondent" value={record.claimantRespondent} />
-          <Field label="Circumstances" value={record.circumstances} />
-          <Field label="Custodian / stockpile location" value={record.custodianLocation} />
-          <Field label="Other agencies involved" value={record.otherAgencies} />
-          <Field label="Remarks (original)" value={record.remarks} multiline />
+          <div className="grid gap-6 sm:grid-cols-2">
+            <Field label="Date of apprehension" value={record.dateOfApprehension} />
+            <Field label="Place of apprehension" value={record.placeOfApprehension} />
+            <Field label="Place of the source of forest products" value={record.sourcePlace} />
+            <Field label="GPS coordinates" value={record.gpsCoordinates} />
+            <Field label="Land classification" value={record.landClassification} />
+            <Field label="Apprehending officers" value={record.apprehendingAgency} />
+            <Field label="Name of claimant/owner" value={record.claimantRespondent} />
+            <Field label="Place impounded / custodian" value={record.custodianLocation} />
+            <Field label="Other agencies involved" value={record.otherAgencies} />
+          </div>
+
+          <Field label="Circumstances" value={record.circumstances} multiline />
 
           <div>
             <h2 className="mb-2 text-[13px] font-medium text-[#5B6156]">Forest products</h2>
-            <div className="overflow-hidden rounded-lg border border-[#E9E5D8]">
-              <table className="w-full text-left text-[14px]">
+            <div className="overflow-x-auto rounded-lg border border-[#E9E5D8]">
+              <table className="w-full min-w-[560px] text-left text-[14px]">
                 <thead className="border-b border-[#E9E5D8] bg-[#FAFAF6] text-[13px] text-[#5B6156]">
                   <tr>
                     <th className="px-4 py-2 font-medium">Qty</th>
@@ -136,6 +145,15 @@ export default async function RecordDetailPage({
               </ul>
             </div>
           </div>
+
+          <div className="grid gap-6 sm:grid-cols-2">
+            <Field label="ACP endorsed to PENRO" value={fmtDate(record.acpEndorsedToPenro)} />
+            <Field label="ACP endorsed to RO" value={fmtDate(record.acpEndorsedToRo)} />
+          </div>
+
+          <Field label="Other remarks (condition, status of criminal complaint)" value={record.otherRemarks} multiline />
+          <Field label="Remarks" value={record.remarks} multiline />
+          <Field label="Case status (filed in court or prosecutor's office)" value={record.caseStatus} multiline />
         </div>
 
         <aside>

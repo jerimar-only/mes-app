@@ -89,13 +89,25 @@ export default function NewRecordForm({
               className={inputClass}
             />
           </Field>
+
+          <Field label="Place of the source of forest products">
+            <input type="text" name="sourcePlace" className={inputClass} />
+          </Field>
+
+          <Field label="GPS coordinates">
+            <input type="text" name="gpsCoordinates" placeholder="e.g. 18.2512, 121.6334" className={inputClass} />
+          </Field>
+
+          <Field label="Land classification">
+            <input type="text" name="landClassification" className={inputClass} />
+          </Field>
         </div>
       </Section>
 
       {/* Parties involved */}
       <Section title="Parties involved">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Apprehending agency/s">
+          <Field label="Apprehending Officers">
             <input
               type="text"
               name="apprehendingAgency"
@@ -104,7 +116,7 @@ export default function NewRecordForm({
             />
           </Field>
 
-          <Field label="Name of claimant / respondent">
+          <Field label="Name of claimant/owner">
             <input
               type="text"
               name="claimantRespondent"
@@ -272,6 +284,28 @@ export default function NewRecordForm({
           placeholder="Additional notes..."
           className={inputClass}
         />
+      </Section>
+
+      {/* Endorsement and case */}
+      <Section title="Endorsement and case status">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="ACP endorsed to PENRO">
+            <input type="date" name="acpEndorsedToPenro" className={inputClass} />
+          </Field>
+          <Field label="ACP endorsed to RO">
+            <input type="date" name="acpEndorsedToRo" className={inputClass} />
+          </Field>
+        </div>
+        <div className="mt-4">
+          <Field label="Other remarks (condition, status of criminal complaint)">
+            <textarea name="otherRemarks" rows={2} className={inputClass} />
+          </Field>
+        </div>
+        <div className="mt-4">
+          <Field label="Case status (filed in court or prosecutor's office)">
+            <textarea name="caseStatus" rows={3} className={inputClass} />
+          </Field>
+        </div>
       </Section>
 
       {/* Submit */}

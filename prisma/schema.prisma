@@ -49,12 +49,19 @@ model ApprehensionRecord {
   month                 Int?               // 1–12, derived from dateOfApprehension when parseable
   dateOfApprehension    String?
   placeOfApprehension   String?
+  sourcePlace           String?            // NEW: place of the source of apprehended forest products
+  gpsCoordinates        String?            // NEW
+  landClassification    String?            // NEW
   circumstances         String?
-  apprehendingAgency    String?            // e.g. "PNP Gattaran"
-  claimantRespondent    String?            // e.g. "Alfredo B. Pavo"
-  custodianLocation     String?
+  apprehendingAgency    String?            // Excel: "Apprehending officers"
+  claimantRespondent    String?            // Excel: "Name of claimant/owner"
+  custodianLocation     String?            // Excel: "Place impounded"
   otherAgencies         String?
+  otherRemarks          String?            @db.Text // NEW: condition / status of criminal complaint
   remarks               String?            @db.Text
+  acpEndorsedToPenro    DateTime?          @db.Date // NEW
+  acpEndorsedToRo       DateTime?          @db.Date // NEW
+  caseStatus            String?            @db.Text // NEW: filed in court or prosecutor's office
   status                ApprehensionStatus @default(UNKNOWN)
   docketNumber          String?
   orderOfFinalityDate   String?
