@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { logout } from "@/app/actions";
+import Image from "next/image";
 
 const MIN_WIDTH = 72;
 const MAX_WIDTH = 360;
@@ -126,39 +127,63 @@ export default function Sidebar({
         aria-label="Sidebar"
         >
           <div className="relative flex h-full flex-col overflow-y-auto border-r border-white/10 bg-black/70 px-3 py-4 backdrop-blur-xl">
-          {/* Brand + controls */}
-          <div className="mb-5 flex items-center justify-between gap-2 px-1">
-            {!collapsed && (
-              <Link href="/dashboard" className="min-w-0 flex-1 truncate">
-                <span className="text-[15px] font-semibold text-white">EMS Tracker</span>
+         
+            {/* Brand + controls */}
+            <div
+              className={`mb-5 flex items-center px-1 ${
+                collapsed ? "flex-col gap-3" : "relative justify-center"
+              }`}
+            >
+              {/* Seal: centered in both expanded and collapsed states */}
+              <Link
+                href="/dashboard"
+                aria-label="EMS Tracker home"
+                className="flex items-center justify-center"
+              >
+                <Image
+                  src="/seal.png"
+                  alt="EMS Tracker"
+                  width={56}
+                  height={56}
+                  priority
+                  className={`shrink-0 object-contain drop-shadow transition-all ${
+                    collapsed ? "h-10 w-10" : "h-14 w-14"
+                  }`}
+                />
               </Link>
-            )}
 
-            <div className="flex items-center gap-1">
-              {/* Collapse / Expand (desktop only) */}
-              <button
-                onClick={toggleCollapse}
-                className="hidden rounded-lg p-1.5 text-white/60 hover:bg-white/10 hover:text-white sm:inline-flex"
-                title={collapsed ? "Expand" : "Collapse"}
+              {/* Controls: pinned to the right when expanded, below the seal when collapsed */}
+              <div
+                className={
+                  collapsed
+                    ? "flex items-center"
+                    : "absolute right-0 top-1/2 flex -translate-y-1/2 items-center gap-1"
+                }
               >
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  {collapsed ? (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-                  ) : (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-                  )}
-                </svg>
-              </button>
+                {/* Collapse / Expand (desktop only) */}
+                <button
+                  onClick={toggleCollapse}
+                  className="hidden rounded-lg p-1.5 text-white/60 hover:bg-white/10 hover:text-white sm:inline-flex"
+                  title={collapsed ? "Expand" : "Collapse"}
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    {collapsed ? (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                    ) : (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                    )}
+                  </svg>
+                </button>
 
-              {/* Mobile close */}
-              <button
-                onClick={() => setMobileOpen(false)}
-                className="rounded-lg p-1.5 text-white/60 hover:bg-white/10 sm:hidden"
-              >
-                ✕
-              </button>
+                {/* Mobile close */}
+                <button
+                  onClick={() => setMobileOpen(false)}
+                  className="rounded-lg p-1.5 text-white/60 hover:bg-white/10 sm:hidden"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
-          </div>
 
           {/* Navigation */}
           <ul className="space-y-1 font-medium">
