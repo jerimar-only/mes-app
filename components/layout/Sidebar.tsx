@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { logout } from "@/app/actions";
-import Image from "next/image";
 
 const MIN_WIDTH = 72;
 const MAX_WIDTH = 360;
@@ -93,7 +93,7 @@ export default function Sidebar({
         <button
           onClick={() => setMobileOpen(true)}
           type="button"
-        className="fixed left-3 top-3 z-50 inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-black/60 text-white shadow-lg backdrop-blur-xl transition hover:bg-black/80 focus:outline-none focus:ring-2 focus:ring-white/30 sm:hidden"
+          className="fixed left-3 top-3 z-50 inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-black/60 text-white shadow-lg backdrop-blur-xl transition hover:bg-black/80 focus:outline-none focus:ring-2 focus:ring-white/30 sm:hidden"
         >
           <span className="sr-only">Open sidebar</span>
           <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 20 20">
@@ -125,65 +125,64 @@ export default function Sidebar({
           ${isDragging ? "transition-none select-none" : ""}
         `}
         aria-label="Sidebar"
-        >
-          <div className="relative flex h-full flex-col overflow-y-auto border-r border-white/10 bg-black/70 px-3 py-4 backdrop-blur-xl">
-         
-            {/* Brand + controls */}
-            <div
-              className={`mb-5 flex items-center px-1 ${
-                collapsed ? "flex-col gap-3" : "relative justify-center"
-              }`}
+      >
+        <div className="relative flex h-full flex-col overflow-y-auto border-r border-white/10 bg-black/70 px-3 py-4 backdrop-blur-xl">
+          {/* Brand + controls */}
+          <div
+            className={`mb-5 flex items-center px-1 ${
+              collapsed ? "flex-col gap-3" : "relative justify-center"
+            }`}
+          >
+            {/* Seal: centered in both expanded and collapsed states */}
+            <Link
+              href="/dashboard"
+              aria-label="EMS Tracker home"
+              className="flex items-center justify-center"
             >
-              {/* Seal: centered in both expanded and collapsed states */}
-              <Link
-                href="/dashboard"
-                aria-label="EMS Tracker home"
-                className="flex items-center justify-center"
-              >
-                <Image
-                  src="/seal.png"
-                  alt="EMS Tracker"
-                  width={56}
-                  height={56}
-                  priority
-                  className={`shrink-0 object-contain drop-shadow transition-all ${
-                    collapsed ? "h-10 w-10" : "h-14 w-14"
-                  }`}
-                />
-              </Link>
+              <Image
+                src="/seal.png"
+                alt="EMS Tracker"
+                width={56}
+                height={56}
+                priority
+                className={`shrink-0 object-contain drop-shadow transition-all ${
+                  collapsed ? "h-10 w-10" : "h-14 w-14"
+                }`}
+              />
+            </Link>
 
-              {/* Controls: pinned to the right when expanded, below the seal when collapsed */}
-              <div
-                className={
-                  collapsed
-                    ? "flex items-center"
-                    : "absolute right-0 top-1/2 flex -translate-y-1/2 items-center gap-1"
-                }
+            {/* Controls: pinned to the right when expanded, below the seal when collapsed */}
+            <div
+              className={
+                collapsed
+                  ? "flex items-center"
+                  : "absolute right-0 top-1/2 flex -translate-y-1/2 items-center gap-1"
+              }
+            >
+              {/* Collapse / Expand (desktop only) */}
+              <button
+                onClick={toggleCollapse}
+                className="hidden rounded-lg p-1.5 text-white/60 hover:bg-white/10 hover:text-white sm:inline-flex"
+                title={collapsed ? "Expand" : "Collapse"}
               >
-                {/* Collapse / Expand (desktop only) */}
-                <button
-                  onClick={toggleCollapse}
-                  className="hidden rounded-lg p-1.5 text-white/60 hover:bg-white/10 hover:text-white sm:inline-flex"
-                  title={collapsed ? "Expand" : "Collapse"}
-                >
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    {collapsed ? (
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-                    ) : (
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-                    )}
-                  </svg>
-                </button>
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  {collapsed ? (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                  ) : (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                  )}
+                </svg>
+              </button>
 
-                {/* Mobile close */}
-                <button
-                  onClick={() => setMobileOpen(false)}
-                  className="rounded-lg p-1.5 text-white/60 hover:bg-white/10 sm:hidden"
-                >
-                  ✕
-                </button>
-              </div>
+              {/* Mobile close */}
+              <button
+                onClick={() => setMobileOpen(false)}
+                className="rounded-lg p-1.5 text-white/60 hover:bg-white/10 sm:hidden"
+              >
+                ✕
+              </button>
             </div>
+          </div>
 
           {/* Navigation */}
           <ul className="space-y-1 font-medium">
@@ -244,27 +243,31 @@ export default function Sidebar({
                 </NavItem>
               </>
             )}
+
+            {/* Log out: last item in the menu */}
+            <li className="mt-2 border-t border-white/10 pt-2">
+              <form action={logout}>
+                <button
+                  type="submit"
+                  title="Log out"
+                  className={`flex w-full items-center rounded-lg p-2 text-sm text-red-400 transition hover:bg-red-500/10 ${
+                    collapsed ? "justify-center" : ""
+                  }`}
+                >
+                  <LogoutIcon />
+                  {!collapsed && <span className="ms-3">Log out</span>}
+                </button>
+              </form>
+            </li>
           </ul>
 
-          {/* User + Logout */}
-          <div className="mt-auto border-t border-white/10 pt-4">
+          {/* Signed-in user (pinned to the bottom) */}
+          <div className="mt-auto pt-4">
             {!collapsed && (
-              <p className="mb-2 truncate px-2 text-xs text-white/50">
+              <p className="truncate px-2 text-xs text-white/50">
                 Signed in as <span className="text-white/90">{userName}</span>
               </p>
             )}
-            <form action={logout}>
-              <button
-                type="submit"
-                title="Log out"
-                className={`flex w-full items-center rounded-lg p-2 text-sm text-red-400 hover:bg-red-500/10 ${
-                  collapsed ? "justify-center" : ""
-                }`}
-              >
-                <LogoutIcon />
-                {!collapsed && <span className="ms-3">Log out</span>}
-              </button>
-            </form>
           </div>
 
           {/* Drag handle (desktop only) */}
