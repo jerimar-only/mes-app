@@ -2,19 +2,11 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { permissions, type Role } from "@/lib/permissions";
-import { updateRecordStatus, restoreRecord } from "../actions";
+import { restoreRecord } from "../actions";
 import { DeleteButton } from "./DeleteButton";
 import { PermanentDeleteButton } from "./PermanentDeleteButton";
 import { EditModal } from "../EditModal";
-
-const STATUS_OPTIONS = [
-  ["FOR_RESOLUTION", "For resolution"],
-  ["UNDER_ADJUDICATION", "Under adjudication"],
-  ["CONFISCATED", "Confiscated"],
-  ["DONATED", "Donated"],
-  ["RELEASED", "Released"],
-  ["UNKNOWN", "Needs review"],
-] as const;
+import { StatusForm } from "./StatusForm";
 
 // Date column → "March 11, 2026" (UTC so the day never shifts)
 const fmtDate = (d: Date | null) =>
@@ -172,26 +164,12 @@ export default async function RecordDetailPage({
             </div>
           ) : canEdit ? (
             <div className="space-y-4">
-              <form action={updateRecordStatus} className="space-y-4 rounded-lg border border-[#E9E5D8] bg-white p-4">
-                <input type="hidden" name="id" value={record.id} />
-                <div>
-                  <label className="mb-1 block text-[13px] font-medium text-[#5B6156]">Status</label>
-                  <select name="status" defaultValue={record.status} className="w-full rounded-md border border-[#D8D3C4] px-3 py-2 text-[14px]">
-                    {STATUS_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="mb-1 block text-[13px] font-medium text-[#5B6156]">Docket number</label>
-                  <input type="text" name="docketNumber" defaultValue={record.docketNumber ?? ""} placeholder="e.g. R2-F-1105" className="w-full rounded-md border border-[#D8D3C4] px-3 py-2 text-[14px]" />
-                </div>
-                <div>
-                  <label className="mb-1 block text-[13px] font-medium text-[#5B6156]">Order of finality date</label>
-                  <input type="text" name="orderOfFinalityDate" defaultValue={record.orderOfFinalityDate ?? ""} placeholder="e.g. Sept. 04, 2024" className="w-full rounded-md border border-[#D8D3C4] px-3 py-2 text-[14px]" />
-                </div>
-                <button type="submit" className="w-full rounded-md bg-[#4A6741] px-4 py-2 text-[14px] text-white hover:bg-[#3D5636]">
-                  Save changes
-                </button>
-              </form>
+              <StatusForm
+                recordId={record.id}
+                status={record.status}
+                docketNumber={record.docketNumber}
+                orderOfFinalityDate={record.orderOfFinalityDate}
+              />
 
               <EditModal
                 recordId={record.id}
