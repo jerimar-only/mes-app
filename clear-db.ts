@@ -7,8 +7,8 @@ async function main() {
   await prisma.conveyance.deleteMany();
   await prisma.equipment.deleteMany();
   await prisma.apprehensionRecord.deleteMany();
-  await prisma.cenroOffice.deleteMany();
-  console.log('All apprehension data deleted.');
+  // CenroOffice is intentionally kept
+  console.log('Apprehension data deleted. CenroOffice table retained.');
 }
 
 main()

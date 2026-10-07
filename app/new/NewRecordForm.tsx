@@ -33,7 +33,10 @@ export default function NewRecordForm({
       <Section title="Basic information">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Field label="CENRO office">
-            <select name="cenroOfficeId" required className={inputClass}>
+            <select name="cenroOfficeId" required defaultValue="" className={inputClass}>
+              <option value="" disabled>
+                — Please Select One —
+              </option>
               {offices.map((o) => (
                 <option key={o.id} value={o.id}>
                   {o.name}
