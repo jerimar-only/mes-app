@@ -1,9 +1,13 @@
-export type Role = "ADMINISTRATOR" | "ENCODER";
+export type Role = "SUPERADMIN" | "ADMINISTRATOR" | "ENCODER";
 
 export const permissions = {
-  createUser: (role: Role) => role === "ADMINISTRATOR",
-  editSavedRecord: (role: Role) => role === "ADMINISTRATOR",
-  createRecord: (role: Role) => role === "ADMINISTRATOR" || role === "ENCODER",
-  uploadExcel: (role: Role) => role === "ADMINISTRATOR" || role === "ENCODER",
-  printRecords: (role: Role) => role === "ADMINISTRATOR" || role === "ENCODER",
-} as const;
+  manageUsers: (role: Role) => role === "SUPERADMIN",
+
+  editSavedRecord: (role: Role) =>
+    role === "SUPERADMIN" || role === "ADMINISTRATOR",
+
+  viewRecords: (_role: Role) => true,
+
+  createRecord: (role: Role) =>
+    role === "SUPERADMIN" || role === "ADMINISTRATOR" || role === "ENCODER",
+};

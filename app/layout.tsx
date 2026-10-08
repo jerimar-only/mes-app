@@ -32,7 +32,8 @@ export default async function RootLayout({
           <>
             
             <Sidebar
-              isAdmin={user.role === "ADMINISTRATOR"}
+              isAdmin={user.role === "ADMINISTRATOR" || user.role === "SUPERADMIN"}
+              isSuperAdmin={user.role === "SUPERADMIN"}
               userName={user.fullName}
             />
 

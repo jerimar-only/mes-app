@@ -13,9 +13,11 @@ const COLLAPSED_WIDTH = 72;
 
 export default function Sidebar({
   isAdmin,
+  isSuperAdmin,
   userName,
 }: {
   isAdmin: boolean;
+  isSuperAdmin: boolean;
   userName: string;
 }) {
   const pathname = usePathname();
@@ -228,18 +230,20 @@ export default function Sidebar({
               Export to Excel
             </NavItem>
 
-            {isAdmin && (
+            {isSuperAdmin && (
               <>
                 {!collapsed && (
                   <li className="px-2 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wider text-white/40">
                     Administration
                   </li>
                 )}
-                <NavItem href="/users" active={isActive("/users")} collapsed={collapsed} icon={<UsersIcon />}>
-                  Create user account
-                </NavItem>
-                <NavItem href="/field-values" active={isActive("/field-values")} collapsed={collapsed} icon={<FieldIcon />}>
-                  Field Values
+                <NavItem
+                  href="/adminportal"
+                  active={isActive("/adminportal")}
+                  collapsed={collapsed}
+                  icon={<UsersIcon />}
+                >
+                  Admin Portal
                 </NavItem>
               </>
             )}
