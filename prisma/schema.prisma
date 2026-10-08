@@ -32,6 +32,10 @@ model LoginAttempt {
   email     String?
   success   Boolean  @default(false)
   createdAt DateTime @default(now())
+  country String?
+  region  String?
+  city    String?
+  userId  Int?
 
   @@index([ip, createdAt])
   @@index([email, createdAt])

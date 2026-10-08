@@ -4,19 +4,12 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { createSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
+import { getClientInfo } from "@/lib/get-ip";
 
 type LoginState = { error: string };
 
 const MAX_ATTEMPTS = 5;
 const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
-
-async function getClientIp(): Promise<string> {
-  const h = await headers();
-  const forwarded = h.get("x-forwarded-for");
-  if (forwarded) return forwarded.split(",")[0].trim();
-  return h.get("x-real-ip") ?? "unknown";
-}
 
 export async function login(
   prevState: LoginState,
@@ -29,7 +22,7 @@ export async function login(
     return { error: "Username and password are required." };
   }
 
-  const ip = await getClientIp();
+  const { ip, country, region, city } = await getClientInfo();
   const since = new Date(Date.now() - WINDOW_MS);
 
   // ── Rate limit: count recent failures by IP or email ──
@@ -53,12 +46,16 @@ export async function login(
     user.isActive &&
     (await bcrypt.compare(password, user.passwordHash));
 
-  // Always record the attempt
+  // Always record the attempt, with approximate location
   await prisma.loginAttempt.create({
     data: {
       ip,
       email,
       success: passwordMatches,
+      country,
+      region,
+      city,
+      userId: user?.id ?? null,
     },
   });
 
