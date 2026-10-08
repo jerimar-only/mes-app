@@ -5,6 +5,21 @@ const MONTH_NAMES = [
   "July", "August", "September", "October", "November", "December",
 ];
 
+const STATUS_LABEL: Record<string, string> = {
+  FOR_RESOLUTION: "For resolution",
+  UNDER_ADJUDICATION: "Under adjudication",
+  CONFISCATED: "Confiscated",
+  DONATED: "Donated",
+  RELEASED: "Released",
+  UNKNOWN: "Needs review",
+};
+
+const n = (v: number | null | undefined, decimals = 0) =>
+  (v ?? 0).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: decimals });
+
+const peso = (v: number | null | undefined) =>
+  `₱${(v ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
 export default async function ReportsPage({
   searchParams,
 }: {
@@ -19,10 +34,53 @@ export default async function ReportsPage({
   const years = yearsResult.map((r) => r.year);
   const selectedYear = params.year ? parseInt(params.year, 10) : years[0] ?? new Date().getFullYear();
 
-  const allRecords = await prisma.apprehensionRecord.findMany({
-    where: { year: selectedYear, isDeleted: false },
-    include: { items: true, conveyances: true, equipment: true },
-  });
+  const recordWhere = { year: selectedYear, isDeleted: false };
+  const childWhere = { apprehensionRecord: recordWhere };
+
+  const [allRecords, offices, byOffice, byStatus, byProduct, byConveyance, byEquipment] =
+    await Promise.all([
+      prisma.apprehensionRecord.findMany({
+        where: recordWhere,
+        include: { items: true, conveyances: true, equipment: true },
+      }),
+      prisma.cenroOffice.findMany({ orderBy: { name: "asc" } }),
+      // ApprehensionRecord, grouped by CENRO office
+      prisma.apprehensionRecord.groupBy({
+        by: ["cenroOfficeId"],
+        where: recordWhere,
+        _count: { _all: true },
+      }),
+      // ApprehensionRecord, grouped by status
+      prisma.apprehensionRecord.groupBy({
+        by: ["status"],
+        where: recordWhere,
+        _count: { _all: true },
+      }),
+      // ForestProductItem, grouped by species
+      prisma.forestProductItem.groupBy({
+        by: ["species"],
+        where: childWhere,
+        _count: { _all: true },
+        _sum: { volumeCuM: true, volumeBdFt: true, estimatedValue: true },
+        orderBy: { _sum: { volumeBdFt: "desc" } },
+      }),
+      // Conveyance, grouped by type
+      prisma.conveyance.groupBy({
+        by: ["type"],
+        where: childWhere,
+        _count: { _all: true },
+        _sum: { quantity: true, estimatedValue: true },
+        orderBy: { _sum: { quantity: "desc" } },
+      }),
+      // Equipment, grouped by type
+      prisma.equipment.groupBy({
+        by: ["type"],
+        where: childWhere,
+        _count: { _all: true },
+        _sum: { quantity: true, estimatedValue: true },
+        orderBy: { _sum: { quantity: "desc" } },
+      }),
+    ]);
 
   const monthlyData = Array.from({ length: 12 }, (_, i) => ({
     month: i + 1,
@@ -78,6 +136,46 @@ export default async function ReportsPage({
   const totalVolume = monthlyData.reduce((s, d) => s + d.volumeBdFt, 0);
   const totalConv = monthlyData.reduce((s, d) => s + d.conveyances, 0);
   const totalEquip = monthlyData.reduce((s, d) => s + d.equipment, 0);
+
+  // ---- Rows for the per-table sections ----
+  const officeName = (id: number) => offices.find((o) => o.id === id)?.name ?? "Unknown";
+
+  const officeRows = [...byOffice]
+    .sort((a, b) => b._count._all - a._count._all)
+    .map((o) => [officeName(o.cenroOfficeId), n(o._count._all)]);
+
+  const statusRows = [...byStatus]
+    .sort((a, b) => b._count._all - a._count._all)
+    .map((s) => [STATUS_LABEL[s.status] ?? s.status, n(s._count._all)]);
+
+  const productRows = byProduct.map((p) => [
+    p.species || "Unspecified",
+    n(p._count._all),
+    n(p._sum.volumeCuM, 2),
+    n(p._sum.volumeBdFt, 2),
+    peso(p._sum.estimatedValue),
+  ]);
+  const productFooter = [
+    "Total",
+    n(byProduct.reduce((s, p) => s + p._count._all, 0)),
+    n(byProduct.reduce((s, p) => s + (p._sum.volumeCuM ?? 0), 0), 2),
+    n(byProduct.reduce((s, p) => s + (p._sum.volumeBdFt ?? 0), 0), 2),
+    peso(byProduct.reduce((s, p) => s + (p._sum.estimatedValue ?? 0), 0)),
+  ];
+
+  const pairRows = (rows: typeof byConveyance) =>
+    rows.map((c) => [
+      c.type || "Unspecified",
+      n(c._count._all),
+      n(c._sum.quantity),
+      peso(c._sum.estimatedValue),
+    ]);
+  const pairFooter = (rows: typeof byConveyance) => [
+    "Total",
+    n(rows.reduce((s, c) => s + c._count._all, 0)),
+    n(rows.reduce((s, c) => s + (c._sum.quantity ?? 0), 0)),
+    peso(rows.reduce((s, c) => s + (c._sum.estimatedValue ?? 0), 0)),
+  ];
 
   return (
     <div className="space-y-10">
@@ -167,6 +265,60 @@ export default async function ReportsPage({
           </table>
         </div>
       </section>
+
+      {/* ---- One section per database table ---- */}
+      <div className="space-y-8">
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight text-[var(--foreground)]">
+            Report by database table — {selectedYear}
+          </h2>
+          <p className="mt-1 text-[13px] text-[var(--muted)]">
+            Each section follows a table in the database. Deleted records are not counted.
+          </p>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          <TableSection
+            title="Records by CENRO office"
+            table="ApprehensionRecord"
+            headers={["CENRO office", "Records"]}
+            rows={officeRows}
+            footer={["Total", n(totalIncidents)]}
+          />
+          <TableSection
+            title="Records by status"
+            table="ApprehensionRecord"
+            headers={["Status", "Records"]}
+            rows={statusRows}
+            footer={["Total", n(totalIncidents)]}
+          />
+        </div>
+
+        <TableSection
+          title="Forest products by species"
+          table="ForestProductItem"
+          headers={["Species", "Items", "Volume (cu.m.)", "Volume (bd.ft.)", "Estimated value"]}
+          rows={productRows}
+          footer={productFooter}
+        />
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          <TableSection
+            title="Conveyances by type"
+            table="Conveyance"
+            headers={["Type", "Records", "Quantity", "Estimated value"]}
+            rows={pairRows(byConveyance)}
+            footer={pairFooter(byConveyance)}
+          />
+          <TableSection
+            title="Equipment / tools by type"
+            table="Equipment"
+            headers={["Type", "Records", "Quantity", "Estimated value"]}
+            rows={pairRows(byEquipment)}
+            footer={pairFooter(byEquipment)}
+          />
+        </div>
+      </div>
 
       <section className="space-y-4">
         <h2 className="text-[15px] font-semibold text-[var(--foreground)]">Download reports</h2>
@@ -263,5 +415,77 @@ function StatCard({ label, value }: { label: string; value: string }) {
         {value}
       </p>
     </div>
+  );
+}
+
+// A report section that mirrors one database table
+function TableSection({
+  title,
+  table,
+  headers,
+  rows,
+  footer,
+}: {
+  title: string;
+  table: string;
+  headers: string[];
+  rows: (string | number)[][];
+  footer?: (string | number)[];
+}) {
+  return (
+    <section>
+      <div className="mb-3 flex flex-wrap items-baseline gap-x-3">
+        <h3 className="text-[15px] font-semibold text-[var(--foreground)]">{title}</h3>
+        <span className="text-[12px] text-[var(--muted)]">Table: {table}</span>
+      </div>
+      <div className="max-h-[420px] overflow-auto rounded-xl border border-[var(--border)] bg-[var(--card)]">
+        <table className="w-full min-w-[320px] text-left text-[14px]">
+          <thead className="sticky top-0 border-b border-[var(--border)] bg-[var(--background)] text-[13px] text-[var(--muted)]">
+            <tr>
+              {headers.map((h, i) => (
+                <th key={h} className={`whitespace-nowrap px-4 py-3 font-medium ${i > 0 ? "text-right" : ""}`}>
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 && (
+              <tr>
+                <td colSpan={headers.length} className="px-4 py-6 text-center text-[var(--muted)]">
+                  No data for this year.
+                </td>
+              </tr>
+            )}
+            {rows.map((r, ri) => (
+              <tr key={ri} className="border-b border-[var(--border)] last:border-0">
+                {r.map((c, ci) => (
+                  <td
+                    key={ci}
+                    className={`px-4 py-2.5 text-[var(--foreground)] ${ci > 0 ? "text-right tabular-nums" : ""}`}
+                  >
+                    {c}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+          {footer && rows.length > 0 && (
+            <tfoot className="border-t border-[var(--border)] bg-[var(--background)] font-semibold">
+              <tr>
+                {footer.map((c, ci) => (
+                  <td
+                    key={ci}
+                    className={`px-4 py-2.5 text-[var(--foreground)] ${ci > 0 ? "text-right tabular-nums" : ""}`}
+                  >
+                    {c}
+                  </td>
+                ))}
+              </tr>
+            </tfoot>
+          )}
+        </table>
+      </div>
+    </section>
   );
 }
