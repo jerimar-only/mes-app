@@ -3,7 +3,6 @@ import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Sidebar from "@/components/layout/Sidebar";
 import SidebarLayout from "@/components/layout/SidebarLayout";
-import InactivityLogout from "@/components/layout/InactivityLogout";
 import Header from "@/components/layout/Header";
 import "./globals.css";
 
@@ -31,8 +30,7 @@ export default async function RootLayout({
       <body className="min-h-screen bg-[var(--background)] text-[var(--foreground)] antialiased">
         {user ? (
           <>
-            <InactivityLogout />
-
+            
             <Sidebar
               isAdmin={user.role === "ADMINISTRATOR"}
               userName={user.fullName}
@@ -41,7 +39,7 @@ export default async function RootLayout({
             <SidebarLayout>
               <Header />
 
-              <main className="mx-auto max-w-6xl px-6 py-8">
+              <main className="mx-auto max-w-6xl px-6 py-8 xl:max-w-7xl 2xl:max-w-[1800px]">
                 {children}
               </main>
             </SidebarLayout>

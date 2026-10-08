@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { updateRecord, updateRecordInline } from "../../actions";
+import { DateOfApprehensionField } from "@/components/ui/DateOfApprehensionField";
 
 const inputCls = "w-full rounded-md border border-[#D8D3C4] px-3 py-2 text-[14px]";
 const labelCls = "mb-1 block text-[13px] font-medium text-[#5B6156]";
@@ -75,7 +76,13 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
       <input type="hidden" name="id" value={record.id} />
 
       <div className="grid gap-4 sm:grid-cols-2">
-        {field("dateOfApprehension", "Date of apprehension")}
+        <div>
+          <label className={labelCls}>Date of apprehension</label>
+          <DateOfApprehensionField
+            defaultValue={record.dateOfApprehension ?? ""}
+            className={inputCls}
+          />
+        </div>
         {field("placeOfApprehension", "Place of apprehension")}
         {field("sourcePlace", "Place of the source of forest products")}
         {field("gpsCoordinates", "GPS coordinates")}

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Section from "@/components/ui/Section";
 import Field from "@/components/ui/Field";
+import { DateOfApprehensionField } from "@/components/ui/DateOfApprehensionField";
 
 type Office = { id: number; name: string };
 
@@ -73,12 +74,7 @@ export default function NewRecordForm({
 
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Date of apprehension">
-            <input
-              type="text"
-              name="dateOfApprehension"
-              placeholder="e.g. September 21, 2026"
-              className={inputClass}
-            />
+            <DateOfApprehensionField className={inputClass} />
           </Field>
 
           <Field label="Place of apprehension">

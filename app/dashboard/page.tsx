@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import DashboardFilters from "./DashboardFilters";
+import { ProvincialSummary } from "@/components/dashboard/ProvincialSummary";
 
 const STATUS_LABEL: Record<string, string> = {
   FOR_RESOLUTION: "For resolution",
@@ -79,12 +80,17 @@ export default async function DashboardPage({
         </p>
       </div>
 
+      {/* Provincial summary (matches the PENRO Excel summary) */}
+      <ProvincialSummary year={selectedYear} />
+      
       <DashboardFilters
         years={years}
         offices={offices}
         selectedYear={selectedYear}
         selectedOffice={selectedOffice}
       />
+
+
 
       {/* Stat cards - glass style */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">

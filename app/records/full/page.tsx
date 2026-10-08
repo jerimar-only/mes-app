@@ -1,8 +1,6 @@
-// NEW FILE: app/records/full/page.tsx
-
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import type { Prisma } from "@prisma/client";
+import { buildRecordWhere } from "@/lib/recordFilters";
 
 const STATUS_LABEL: Record<string, string> = {
   FOR_RESOLUTION: "For resolution",
@@ -11,6 +9,13 @@ const STATUS_LABEL: Record<string, string> = {
   DONATED: "Donated",
   RELEASED: "Released",
   UNKNOWN: "Needs review",
+};
+
+// Labels for the filters that come from the dashboard links
+const ACP_LABEL: Record<string, string> = {
+  penro: "ACP endorsed to PENRO",
+  ro: "ACP endorsed to Region",
+  todo: "ACP to be conducted",
 };
 
 const PAGE_SIZE_OPTIONS = [25, 50, 100, 500] as const;
@@ -32,6 +37,9 @@ export default async function FullRecordsPage({
     office?: string;
     status?: string;
     deleted?: string;
+    acp?: string;
+    conv?: string;
+    resolved?: string;
     page?: string;
     pageSize?: string;
   }>;
@@ -50,38 +58,22 @@ export default async function FullRecordsPage({
     }
   }
 
-  const offices = await prisma.cenroOffice.findMany({ orderBy: { name: "asc" } });
+  const [offices, fieldDefs, yearRows] = await Promise.all([
+    prisma.cenroOffice.findMany({ orderBy: { name: "asc" } }),
+    prisma.fieldDefinition.findMany({ where: { disabled: false }, orderBy: { order: "asc" } }),
+    prisma.apprehensionRecord.findMany({
+      distinct: ["year"],
+      select: { year: true },
+      orderBy: { year: "desc" },
+    }),
+  ]);
 
-  const fieldDefs = await prisma.fieldDefinition.findMany({
-    where: { disabled: false },
-    orderBy: { order: "asc" },
-  });
+  // Years come from the database (plus the selected one, so it never disappears)
+  const years = [...new Set([...yearRows.map((r) => r.year), ...(params.year ? [parseInt(params.year, 10)] : [])])]
+    .filter((y) => !Number.isNaN(y))
+    .sort((a, b) => b - a);
 
-  const where: Prisma.ApprehensionRecordWhereInput = {
-    ...(params.deleted === "only"
-      ? { isDeleted: true }
-      : params.deleted === "all"
-      ? {}
-      : { isDeleted: false }),
-    ...(params.year ? { year: parseInt(params.year, 10) } : {}),
-    ...(params.office ? { cenroOfficeId: parseInt(params.office, 10) } : {}),
-    ...(params.status ? { status: params.status as any } : {}),
-    ...(params.q
-      ? {
-          OR: [
-            { placeOfApprehension: { contains: params.q, mode: "insensitive" } },
-            { sourcePlace: { contains: params.q, mode: "insensitive" } },
-            { claimantRespondent: { contains: params.q, mode: "insensitive" } },
-            { apprehendingAgency: { contains: params.q, mode: "insensitive" } },
-            { circumstances: { contains: params.q, mode: "insensitive" } },
-            { docketNumber: { contains: params.q, mode: "insensitive" } },
-            { remarks: { contains: params.q, mode: "insensitive" } },
-            { otherRemarks: { contains: params.q, mode: "insensitive" } },
-            { caseStatus: { contains: params.q, mode: "insensitive" } },
-          ],
-        }
-      : {}),
-  };
+  const where = buildRecordWhere(params);
 
   const [records, total] = await Promise.all([
     prisma.apprehensionRecord.findMany({
@@ -104,6 +96,18 @@ export default async function FullRecordsPage({
   const showingFrom = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const showingTo = Math.min(page * pageSize, total);
 
+  // Filters that came from the dashboard
+  const activeChips: string[] = [];
+  if (params.acp && ACP_LABEL[params.acp]) activeChips.push(ACP_LABEL[params.acp]);
+  if (params.conv === "1") activeChips.push("With conveyance / chainsaw");
+  if (params.resolved === "1") activeChips.push("Resolved cases");
+
+  // Export link keeps every filter except paging
+  const exportQs = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => {
+    if (v && k !== "page" && k !== "pageSize") exportQs.set(k, v);
+  });
+
   return (
     <div className="space-y-5">
       {/* Header */}
@@ -118,19 +122,47 @@ export default async function FullRecordsPage({
             )}
           </p>
         </div>
-        <Link
-          href="/records"
-          className="inline-flex shrink-0 items-center rounded-md border border-gray-200 bg-white px-4 py-2 text-[14px] font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 dark:border-white/10 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
-        >
-          ← Back to summary
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <a
+            href={`/records/full/export?${exportQs.toString()}`}
+            className="inline-flex shrink-0 items-center rounded-md border border-[#D8D3C4] bg-white px-4 py-2 text-[14px] font-medium text-[#4A6741] shadow-sm hover:bg-[#F0EDE3]"
+          >
+            Export to Excel
+          </a>
+          <Link
+            href="/records"
+            className="inline-flex shrink-0 items-center rounded-md border border-gray-200 bg-white px-4 py-2 text-[14px] font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 dark:border-white/10 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+          >
+            ← Back to summary
+          </Link>
+        </div>
       </div>
+
+      {/* Filters coming from the dashboard */}
+      {activeChips.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 text-[13px]">
+          <span className="text-[#5B6156]">Filtered by:</span>
+          {activeChips.map((c) => (
+            <span key={c} className="rounded-full bg-[#4A6741] px-3 py-1 font-medium text-white">
+              {c}
+            </span>
+          ))}
+          <Link href="/records/full" className="text-[#4A6741] underline">
+            Clear all filters
+          </Link>
+        </div>
+      )}
 
       {/* Filters */}
       <form
         method="get"
         className="flex flex-wrap items-end gap-2.5 rounded-lg border border-[#E9E5D8] bg-[#FAFAF6] p-3"
       >
+        {/* Keep the dashboard filters when pressing Apply */}
+        {params.acp && <input type="hidden" name="acp" value={params.acp} />}
+        {params.conv && <input type="hidden" name="conv" value={params.conv} />}
+        {params.resolved && <input type="hidden" name="resolved" value={params.resolved} />}
+
         <div className="min-w-[200px] flex-1">
           <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-[#5B6156]">
             Search
@@ -154,7 +186,7 @@ export default async function FullRecordsPage({
             className="rounded-md border border-[#D8D3C4] bg-white px-3 py-2 text-[13px]"
           >
             <option value="">All</option>
-            {Array.from({ length: 13 }, (_, i) => 2014 + i).map((y) => (
+            {years.map((y) => (
               <option key={y} value={y}>
                 {y}
               </option>
@@ -311,7 +343,6 @@ export default async function FullRecordsPage({
                   <td className="whitespace-nowrap px-3 py-2">{dash(r.month)}</td>
                   <td className="whitespace-nowrap px-3 py-2">{dash(r.dateOfApprehension)}</td>
 
-
                   {/* Wrapping cells */}
                   <td className="max-w-[180px] px-3 py-2 break-words leading-snug">{dash(r.placeOfApprehension)}</td>
                   <td className="max-w-[180px] px-3 py-2 break-words leading-snug">{dash(r.sourcePlace)}</td>
@@ -384,14 +415,9 @@ export default async function FullRecordsPage({
 
           {totalPages > 1 && (
             <div className="flex items-center gap-1.5">
-              {page > 1 && (
-                <PageLink params={params} page={1} label="First" />
-              )}
-              {page > 1 && (
-                <PageLink params={params} page={page - 1} label="← Prev" />
-              )}
+              {page > 1 && <PageLink params={params} page={1} label="First" />}
+              {page > 1 && <PageLink params={params} page={page - 1} label="← Prev" />}
 
-              {/* Simple page numbers around current */}
               {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                 let p: number;
                 if (totalPages <= 5) {
@@ -414,12 +440,8 @@ export default async function FullRecordsPage({
                 );
               })}
 
-              {page < totalPages && (
-                <PageLink params={params} page={page + 1} label="Next →" />
-              )}
-              {page < totalPages && (
-                <PageLink params={params} page={totalPages} label="Last" />
-              )}
+              {page < totalPages && <PageLink params={params} page={page + 1} label="Next →" />}
+              {page < totalPages && <PageLink params={params} page={totalPages} label="Last" />}
             </div>
           )}
         </div>
