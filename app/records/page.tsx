@@ -25,9 +25,7 @@ export default async function RecordsPage({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Records</h1>
-          <p className="mt-1 text-[14px] text-[var(--muted)]">
-            Loading with live progress
-          </p>
+
         </div>
         <Link
           href="/records/full"
