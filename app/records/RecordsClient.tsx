@@ -10,6 +10,7 @@ type RecordRow = {
   dateOfApprehension: string | null;
   docketNumber: string | null;
   status: string;
+  createdAt: string;   // ← add this
   cenroOffice: { name: string };
   _count: { items: number };
 };
@@ -120,14 +121,15 @@ export default function RecordsClient({
       <div className="overflow-auto rounded-lg border border-[var(--border)] bg-[var(--card)] shadow-sm">
         <table className="w-full text-left text-[13px]">
           <thead className="border-b border-[var(--border)] bg-[var(--background)] text-[11px] uppercase tracking-wide text-[var(--muted)]">
-            <tr>
-              <th className="px-4 py-2.5 font-semibold">Year</th>
-              <th className="px-4 py-2.5 font-semibold">Office</th>
-              <th className="px-4 py-2.5 font-semibold">Date / Place</th>
-              <th className="px-4 py-2.5 font-semibold">Items</th>
-              <th className="px-4 py-2.5 font-semibold">Status</th>
-              <th className="px-4 py-2.5 font-semibold">Docket No.</th>
-            </tr>
+              <tr>
+                <th className="px-4 py-2.5 font-semibold">Year</th>
+                <th className="px-4 py-2.5 font-semibold">Office</th>
+                <th className="px-4 py-2.5 font-semibold">Date / Place</th>
+                <th className="px-4 py-2.5 font-semibold">Items</th>
+                <th className="px-4 py-2.5 font-semibold">Status</th>
+                <th className="px-4 py-2.5 font-semibold">Docket No.</th>
+                <th className="px-4 py-2.5 font-semibold">Created</th>
+              </tr>
           </thead>
           <tbody>
             {records.map((r) => (
@@ -149,13 +151,22 @@ export default function RecordsClient({
                 <td className="px-4 py-2.5 text-[var(--muted)]">
                   {r.docketNumber || "—"}
                 </td>
+                <td className="px-4 py-2.5 text-[var(--muted)] whitespace-nowrap">
+                  {r.createdAt
+                    ? new Date(r.createdAt).toLocaleDateString("en-PH", {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      })
+                    : "—"}
+                </td>
               </tr>
             ))}
 
             {!loading && records.length === 0 && (
               <tr>
                 <td
-                  colSpan={6}
+                  colSpan={7}
                   className="px-4 py-12 text-center text-[var(--muted)]"
                 >
                   No records found.

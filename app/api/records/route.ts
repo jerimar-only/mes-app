@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
         cenroOffice: { select: { name: true } },
         _count: { select: { items: true } },
       },
-      orderBy: [{ year: "desc" }, { id: "desc" }],
+      orderBy: [{ createdAt: "desc" }, { year: "desc" }, { id: "desc" }],
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
