@@ -1,8 +1,8 @@
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { createUser } from "@/app/users/actions";
-import UserActions from "@/app/users/UserActions";
+import { createUser } from "@/app/(app)/users/actions";
+import UserActions from "@/app/(app)/users/UserActions";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";

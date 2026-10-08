@@ -29,7 +29,6 @@ export async function getClientInfo(): Promise<ClientInfo> {
   };
 }
 
-// Keep this so existing imports still work
 export async function getClientIp(): Promise<string> {
   return (await getClientInfo()).ip;
 }

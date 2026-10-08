@@ -6,7 +6,7 @@ import Image from "next/image";
 
 const initialState = { error: "" };
 
-export default function LoginPage() {
+export default function LoginForm() {
   const [state, formAction, isPending] = useActionState(login, initialState);
 
   useEffect(() => {

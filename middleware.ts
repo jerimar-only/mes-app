@@ -19,16 +19,10 @@ async function getSessionFromRequest(request: NextRequest) {
 
 export async function middleware(request: NextRequest) {
   const session = await getSessionFromRequest(request);
-  const isLoginPage = request.nextUrl.pathname.startsWith("/login");
 
   // Not logged in → block protected pages
-  if (!session && !isLoginPage) {
+  if (!session) {
     return NextResponse.redirect(new URL("/login", request.url));
-  }
-
-  // Already logged in → don't allow access to /login
-  if (session && isLoginPage) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
   return NextResponse.next();
@@ -43,6 +37,7 @@ export const config = {
     "/upload/:path*",
     "/reports/:path*",
     "/export/:path*",
-    "/login",
+    "/adminportal/:path*",
+    "/field-values/:path*",
   ],
 };

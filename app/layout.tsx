@@ -1,9 +1,4 @@
 import type { Metadata } from "next";
-import { getSession } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import Sidebar from "@/components/layout/Sidebar";
-import SidebarLayout from "@/components/layout/SidebarLayout";
-import Header from "@/components/layout/Header";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -17,37 +12,13 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const session = await getSession();
-  const user = session
-    ? await prisma.user.findUnique({ where: { id: session.userId } })
-    : null;
-
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen bg-[var(--background)] text-[var(--foreground)] antialiased">
-        {user ? (
-          <>
-            
-            <Sidebar
-              isAdmin={user.role === "ADMINISTRATOR" || user.role === "SUPERADMIN"}
-              isSuperAdmin={user.role === "SUPERADMIN"}
-              userName={user.fullName}
-            />
-
-            <SidebarLayout>
-              <Header />
-
-              <main className="mx-auto max-w-6xl px-6 py-8 xl:max-w-7xl 2xl:max-w-[1800px]">
-                {children}
-              </main>
-            </SidebarLayout>
-          </>
-        ) : (
-          children
-        )}
+        {children}
       </body>
     </html>
   );
