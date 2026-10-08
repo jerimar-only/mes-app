@@ -10,4 +10,12 @@ export const permissions = {
 
   createRecord: (role: Role) =>
     role === "SUPERADMIN" || role === "ADMINISTRATOR" || role === "ENCODER",
+
+  // used by export routes
+  printRecords: (role: Role) =>
+    role === "SUPERADMIN" || role === "ADMINISTRATOR" || role === "ENCODER",
+
+  // used by upload/actions.ts
+  uploadExcel: (role: Role) =>
+    role === "SUPERADMIN" || role === "ADMINISTRATOR",
 };

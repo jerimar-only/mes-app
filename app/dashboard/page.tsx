@@ -66,11 +66,16 @@ const fmt = (v: number, decimals = 0) =>
   });
 
 function recordsHref(
-  filter: Record<string, string>,
+  filter: Record<string, string | undefined>,
   year?: number,
   officeIds: number[] = []
 ) {
-  const qs = new URLSearchParams({ ...filter, pageSize: "100" });
+  const qs = new URLSearchParams();
+  // only set keys that actually have a value
+  Object.entries(filter).forEach(([k, v]) => {
+    if (v != null && v !== "") qs.set(k, v);
+  });
+  qs.set("pageSize", "100");
   if (year) qs.set("year", String(year));
   if (officeIds.length) qs.set("office", officeIds.join(","));
   return `/records/full?${qs.toString()}`;
