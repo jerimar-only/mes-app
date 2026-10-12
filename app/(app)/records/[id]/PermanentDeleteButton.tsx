@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { permanentlyDeleteRecord } from "../actions";
+import { useToast } from "@/components/ui/Toast";
 
 export function PermanentDeleteButton({ recordId }: { recordId: number }) {
   const router = useRouter();
@@ -13,6 +14,7 @@ export function PermanentDeleteButton({ recordId }: { recordId: number }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const { flash, error: toastError } = useToast();
 
   function close() {
     if (busy) return;
@@ -42,14 +44,19 @@ export function PermanentDeleteButton({ recordId }: { recordId: number }) {
     try {
       const res = await permanentlyDeleteRecord(fd);
       if (!res.ok) {
-        setError(res.error ?? "Something went wrong.");
+        const msg = res.error ?? "Something went wrong.";
+        setError(msg);
+        toastError(msg);
         setBusy(false);
         return;
       }
+      flash("success", "Record permanently deleted.", "Deleted");
       router.push("/records?deleted=only");
       router.refresh();
     } catch {
-      setError("Something went wrong. Please try again.");
+      const msg = "Something went wrong. Please try again.";
+      setError(msg);
+      toastError(msg);
       setBusy(false);
     }
   }
@@ -59,7 +66,7 @@ export function PermanentDeleteButton({ recordId }: { recordId: number }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="w-full rounded-md border border-red-300 bg-white px-4 py-2 text-[14px] text-red-700 hover:bg-red-50"
+        className="w-full rounded-md border border-red-500/40 bg-[var(--card)] px-4 py-2 text-[14px] text-red-700 hover:bg-red-500/10 dark:text-red-400"
       >
         Delete permanently
       </button>
@@ -72,7 +79,7 @@ export function PermanentDeleteButton({ recordId }: { recordId: number }) {
               if (e.target === e.currentTarget) close();
             }}
           >
-            <form onSubmit={submit} className="w-full max-w-md space-y-4 rounded-lg bg-white p-6 shadow-xl">
+            <form onSubmit={submit} className="w-full max-w-md space-y-4 rounded-lg bg-[var(--card)] p-6 text-[var(--foreground)] shadow-xl">
               <h2 className="text-lg font-semibold tracking-tight">Delete permanently?</h2>
               <p className="text-[14px] text-[var(--muted)]">
                 This removes the record and all its products, conveyances and equipment for good.

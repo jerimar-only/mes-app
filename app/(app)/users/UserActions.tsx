@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { toggleUserActive, deleteUser, resetPassword } from "./actions";
+import { useToast } from "@/components/ui/Toast";
 
 type User = {
   id: number;
@@ -17,13 +18,13 @@ export default function UserActions({
   isSelf: boolean;
 }) {
   const [pending, startTransition] = useTransition();
-  const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [confirm, setConfirm] = useState<"delete" | "deactivate" | "reset" | null>(null);
   const [newPassword, setNewPassword] = useState("");
+  const { success, error } = useToast();
 
   function showToast(type: "success" | "error", message: string) {
-    setToast({ type, message });
-    setTimeout(() => setToast(null), 3500);
+    if (type === "success") success(message);
+    else error(message);
   }
 
   function handleToggle() {
@@ -230,19 +231,6 @@ export default function UserActions({
               </>
             )}
           </div>
-        </div>
-      )}
-
-      {/* Toast notification */}
-      {toast && (
-        <div
-          className={`fixed bottom-6 right-6 z-50 max-w-sm rounded-xl border px-4 py-3 shadow-lg ${
-            toast.type === "success"
-              ? "border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200"
-              : "border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200"
-          }`}
-        >
-          <p className="text-[14px] font-medium">{toast.message}</p>
         </div>
       )}
     </>

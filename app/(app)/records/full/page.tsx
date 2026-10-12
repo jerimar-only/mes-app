@@ -125,13 +125,13 @@ export default async function FullRecordsPage({
         <div className="flex flex-wrap gap-2">
           <a
             href={`/records/full/export?${exportQs.toString()}`}
-            className="inline-flex shrink-0 items-center rounded-md border border-[var(--border-strong)] bg-white px-4 py-2 text-[14px] font-medium text-[var(--accent)] shadow-sm hover:bg-[var(--shell)]"
+            className="inline-flex shrink-0 items-center rounded-md border border-[var(--border-strong)] bg-[var(--card)] text-[var(--foreground)] px-4 py-2 text-[14px] font-medium text-[var(--accent)] shadow-sm hover:bg-[var(--shell)]"
           >
             Export to Excel
           </a>
           <Link
             href="/records"
-            className="inline-flex shrink-0 items-center rounded-md border border-gray-200 bg-white px-4 py-2 text-[14px] font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 dark:border-white/10 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+            className="inline-flex shrink-0 items-center rounded-md border border-[var(--border-strong)] bg-[var(--card)] px-4 py-2 text-[14px] font-medium text-[var(--foreground)] shadow-sm transition hover:bg-[var(--shell)]"
           >
             ← Back to summary
           </Link>
@@ -172,7 +172,7 @@ export default async function FullRecordsPage({
             name="q"
             defaultValue={params.q}
             placeholder="Place, claimant, docket, remarks…"
-            className="w-full rounded-md border border-[var(--border-strong)] bg-white px-3 py-2 text-[13px]"
+            className="w-full rounded-md border border-[var(--border-strong)] bg-[var(--card)] text-[var(--foreground)] px-3 py-2 text-[13px]"
           />
         </div>
 
@@ -183,7 +183,7 @@ export default async function FullRecordsPage({
           <select
             name="year"
             defaultValue={params.year ?? ""}
-            className="rounded-md border border-[var(--border-strong)] bg-white px-3 py-2 text-[13px]"
+            className="rounded-md border border-[var(--border-strong)] bg-[var(--card)] text-[var(--foreground)] px-3 py-2 text-[13px]"
           >
             <option value="">All</option>
             {years.map((y) => (
@@ -201,7 +201,7 @@ export default async function FullRecordsPage({
           <select
             name="office"
             defaultValue={params.office ?? ""}
-            className="max-w-[160px] rounded-md border border-[var(--border-strong)] bg-white px-3 py-2 text-[13px]"
+            className="max-w-[160px] rounded-md border border-[var(--border-strong)] bg-[var(--card)] text-[var(--foreground)] px-3 py-2 text-[13px]"
           >
             <option value="">All</option>
             {offices.map((o) => (
@@ -219,7 +219,7 @@ export default async function FullRecordsPage({
           <select
             name="status"
             defaultValue={params.status ?? ""}
-            className="rounded-md border border-[var(--border-strong)] bg-white px-3 py-2 text-[13px]"
+            className="rounded-md border border-[var(--border-strong)] bg-[var(--card)] text-[var(--foreground)] px-3 py-2 text-[13px]"
           >
             <option value="">All</option>
             {Object.entries(STATUS_LABEL).map(([value, label]) => (
@@ -237,7 +237,7 @@ export default async function FullRecordsPage({
           <select
             name="deleted"
             defaultValue={params.deleted ?? ""}
-            className="rounded-md border border-[var(--border-strong)] bg-white px-3 py-2 text-[13px]"
+            className="rounded-md border border-[var(--border-strong)] bg-[var(--card)] text-[var(--foreground)] px-3 py-2 text-[13px]"
           >
             <option value="">Active</option>
             <option value="only">Deleted</option>
@@ -252,7 +252,7 @@ export default async function FullRecordsPage({
           <select
             name="pageSize"
             defaultValue={params.pageSize ?? "25"}
-            className="rounded-md border border-[var(--border-strong)] bg-white px-3 py-2 text-[13px]"
+            className="rounded-md border border-[var(--border-strong)] bg-[var(--card)] text-[var(--foreground)] px-3 py-2 text-[13px]"
           >
             <option value="25">25</option>
             <option value="50">50</option>
@@ -270,7 +270,7 @@ export default async function FullRecordsPage({
       </form>
 
       {/* Table */}
-      <div className="relative overflow-auto rounded-lg border border-[var(--border)] bg-white shadow-sm" style={{ maxHeight: "70vh" }}>
+      <div className="relative overflow-auto rounded-lg border border-[var(--border)] bg-[var(--card)] shadow-sm" style={{ maxHeight: "70vh" }}>
         <table className="w-full border-collapse text-left text-[12.5px]" style={{ minWidth: "2600px" }}>
           <thead className="sticky top-0 z-20">
             <tr className="border-b border-[var(--border)] bg-[#F5F3EB] text-[11px] uppercase tracking-wide text-[var(--muted)]">
@@ -324,7 +324,7 @@ export default async function FullRecordsPage({
                 .map((e) => `${e.type} ×${e.quantity}`)
                 .join(", ");
 
-              const rowBg = idx % 2 === 0 ? "bg-white" : "bg-[var(--shell)]";
+              const rowBg = idx % 2 === 0 ? "bg-[var(--card)] text-[var(--foreground)]" : "bg-[var(--shell)] text-[var(--foreground)]";
 
               return (
                 <tr
@@ -473,7 +473,7 @@ function PageLink({
       className={
         active
           ? "rounded-md bg-[var(--accent)] px-3 py-1.5 text-[13px] font-medium text-white"
-          : "rounded-md border border-[var(--border-strong)] bg-white px-3 py-1.5 text-[13px] hover:bg-[var(--shell)]"
+          : "rounded-md border border-[var(--border-strong)] bg-[var(--card)] text-[var(--foreground)] px-3 py-1.5 text-[13px] hover:bg-[var(--shell)]"
       }
     >
       {label}

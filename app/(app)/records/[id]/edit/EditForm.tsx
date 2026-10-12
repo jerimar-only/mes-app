@@ -4,9 +4,12 @@ import { useState } from "react";
 import Link from "next/link";
 import { updateRecord, updateRecordInline } from "../../actions";
 import { DateOfApprehensionField } from "@/components/ui/DateOfApprehensionField";
+import { useToast } from "@/components/ui/Toast";
 
-const inputCls = "w-full rounded-md border border-[var(--border-strong)] px-3 py-2 text-[14px]";
-const labelCls = "mb-1 block text-[13px] font-medium text-[var(--muted)]";
+const inputCls =
+  "w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-[14px] text-zinc-900 placeholder:text-zinc-400 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500";
+const labelCls =
+  "mb-1 block text-[13px] font-medium text-zinc-700 dark:text-zinc-300";
 
 let counter = 0;
 const nextKey = () => ++counter;
@@ -34,6 +37,7 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const { success, error: toastError, flash } = useToast();
 
   async function handleInlineSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -41,9 +45,27 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
     setError("");
     try {
       await updateRecordInline(new FormData(e.currentTarget));
+      success("Record changes were saved.", "Saved");
       onSaved?.();
     } catch {
-      setError("Could not save changes. Please try again.");
+      const msg = "Could not save changes. Please try again.";
+      setError(msg);
+      toastError(msg);
+      setBusy(false);
+    }
+  }
+
+  async function handlePageSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setBusy(true);
+    setError("");
+    try {
+      flash("success", "Record changes were saved.", "Saved");
+      await updateRecord(new FormData(e.currentTarget));
+    } catch {
+      const msg = "Could not save changes. Please try again.";
+      setError(msg);
+      toastError(msg);
       setBusy(false);
     }
   }
@@ -66,10 +88,10 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
     </div>
   );
 
-  // Modal mode: handle submit in the browser. Page mode: use the server action directly.
+  // Modal and page mode both go through client handlers so toasts fire.
   const formProps = onSaved
     ? { onSubmit: handleInlineSubmit }
-    : { action: updateRecord };
+    : { onSubmit: handlePageSubmit };
 
   return (
     <form {...formProps} className="space-y-6">
@@ -96,7 +118,7 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
       {field("circumstances", "Circumstances", true)}
 
       <div>
-        <h2 className="mb-2 text-[13px] font-medium text-[var(--muted)]">Forest products</h2>
+        <h2 className="mb-2 text-[13px] font-medium text-zinc-700 dark:text-zinc-300">Forest products</h2>
         <div className="space-y-2">
           {items.map((it) => (
             <div key={it.k} className="grid grid-cols-7 gap-2">
@@ -117,14 +139,14 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
               </div>
             </div>
           ))}
-          {items.length === 0 && <p className="text-[13px] text-[var(--muted)]">No product items.</p>}
+          {items.length === 0 && <p className="text-[13px] text-zinc-500 dark:text-zinc-400">No product items.</p>}
         </div>
         <button
           type="button"
           onClick={() =>
             setItems([...items, { qty: "", species: "", forms: "", bdft: "", cum: "", value: "", k: nextKey() }])
           }
-          className="mt-2 rounded-md border border-[var(--border-strong)] px-3 py-1.5 text-[14px] text-[var(--accent)] hover:bg-[var(--shell)]"
+          className="mt-2 rounded-md border border-zinc-300 px-3 py-1.5 text-[14px] font-medium text-emerald-700 hover:bg-zinc-50 dark:border-zinc-600 dark:text-emerald-400 dark:hover:bg-zinc-800"
         >
           + Add product
         </button>
@@ -164,7 +186,7 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
         <button
           type="submit"
           disabled={busy}
-          className="rounded-md bg-[var(--accent)] px-4 py-2 text-[14px] text-white hover:bg-[var(--accent-hover)] disabled:opacity-60"
+          className="rounded-md bg-emerald-600 px-4 py-2 text-[14px] font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
         >
           {busy ? "Saving..." : "Save changes"}
         </button>
@@ -173,14 +195,14 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
             type="button"
             onClick={onCancel}
             disabled={busy}
-            className="rounded-md border border-[var(--border-strong)] px-4 py-2 text-[14px] hover:bg-[var(--shell)]"
+            className="rounded-md border border-zinc-300 px-4 py-2 text-[14px] text-zinc-800 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-100 dark:hover:bg-zinc-800"
           >
             Cancel
           </button>
         ) : (
           <Link
             href={`/records/${record.id}`}
-            className="rounded-md border border-[var(--border-strong)] px-4 py-2 text-[14px]"
+            className="rounded-md border border-zinc-300 px-4 py-2 text-[14px] text-zinc-800 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-100 dark:hover:bg-zinc-800"
           >
             Cancel
           </Link>
@@ -207,7 +229,7 @@ function PairRows({
 }) {
   return (
     <div>
-      <h2 className="mb-2 text-[13px] font-medium text-[var(--muted)]">{title}</h2>
+      <h2 className="mb-2 text-[13px] font-medium text-zinc-700 dark:text-zinc-300">{title}</h2>
       <div className="space-y-2">
         {rows.map((r) => (
           <div key={r.k} className="flex gap-2">
@@ -218,13 +240,13 @@ function PairRows({
               min={1}
               defaultValue={r.qty}
               placeholder="Qty"
-              className="w-20 shrink-0 rounded-md border border-[var(--border-strong)] px-3 py-2 text-[14px]"
+              className={`${inputCls} w-20 shrink-0`}
             />
             <input
               name={valueName}
               defaultValue={r.value}
               placeholder="Value (₱)"
-              className="w-28 shrink-0 rounded-md border border-[var(--border-strong)] px-3 py-2 text-[14px]"
+              className={`${inputCls} w-28 shrink-0`}
             />
             <button
               type="button"
@@ -235,12 +257,12 @@ function PairRows({
             </button>
           </div>
         ))}
-        {rows.length === 0 && <p className="text-[13px] text-[var(--muted)]">None</p>}
+        {rows.length === 0 && <p className="text-[13px] text-zinc-500 dark:text-zinc-400">None</p>}
       </div>
       <button
         type="button"
         onClick={() => setRows([...rows, { type: "", qty: "1", value: "", k: nextKey() }])}
-        className="mt-2 rounded-md border border-[var(--border-strong)] px-3 py-1.5 text-[14px] text-[var(--accent)] hover:bg-[var(--shell)]"
+        className="mt-2 rounded-md border border-zinc-300 px-3 py-1.5 text-[14px] font-medium text-emerald-700 hover:bg-zinc-50 dark:border-zinc-600 dark:text-emerald-400 dark:hover:bg-zinc-800"
       >
         + Add
       </button>

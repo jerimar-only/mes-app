@@ -19,12 +19,12 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const STATUS_STYLE: Record<string, string> = {
-  FOR_RESOLUTION: "border-amber-200 bg-amber-50 text-amber-800",
-  UNDER_ADJUDICATION: "border-blue-200 bg-blue-50 text-blue-800",
-  CONFISCATED: "border-green-200 bg-green-50 text-green-800",
-  DONATED: "border-purple-200 bg-purple-50 text-purple-800",
-  RELEASED: "border-slate-200 bg-slate-50 text-slate-700",
-  UNKNOWN: "border-gray-300 bg-gray-100 text-gray-700",
+  FOR_RESOLUTION: "border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-300",
+  UNDER_ADJUDICATION: "border-blue-500/30 bg-blue-500/10 text-blue-800 dark:text-blue-300",
+  CONFISCATED: "border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300",
+  DONATED: "border-purple-500/30 bg-purple-500/10 text-purple-800 dark:text-purple-300",
+  RELEASED: "border-[var(--border)] bg-[var(--shell)] text-[var(--foreground)]",
+  UNKNOWN: "border-[var(--border)] bg-[var(--shell)] text-[var(--muted)]",
 };
 
 // Date column → "March 11, 2026" (UTC so the day never shifts)
@@ -74,7 +74,7 @@ export default async function RecordDetailPage({
       <BackButton />
 
       {record.isDeleted && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-[14px] text-red-800">
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-[14px] text-red-800 dark:text-red-300">
           This record was deleted. It is not counted in the dashboard or reports.
         </div>
       )}
@@ -82,14 +82,14 @@ export default async function RecordDetailPage({
       {/* Header */}
       <header className="space-y-2">
         <div className="flex flex-wrap items-center gap-2 text-[13px] text-[var(--muted)]">
-          <span className="rounded-full border border-[var(--border)] bg-white px-2.5 py-0.5 font-medium">
+          <span className="rounded-full border border-[var(--border)] bg-[var(--card)] px-2.5 py-0.5 font-medium text-[var(--foreground)]">
             {record.cenroOffice.name}
           </span>
           <span>
             {record.year}
             {record.month ? `-${String(record.month).padStart(2, "0")}` : ""}
           </span>
-          <span className="text-[#C9C4B3]">•</span>
+          <span className="text-[var(--muted)]">•</span>
           <span>Record #{record.id}</span>
           <span
             className={`ml-auto rounded-full border px-3 py-0.5 text-[12px] font-semibold ${
@@ -99,7 +99,7 @@ export default async function RecordDetailPage({
             {STATUS_LABEL[record.status] ?? record.status}
           </span>
         </div>
-        <h1 className="break-words text-xl font-semibold tracking-tight sm:text-2xl">
+        <h1 className="break-words text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-2xl">
           {record.placeOfApprehension || record.dateOfApprehension || `Record #${record.id}`}
         </h1>
         {record.docketNumber && (
@@ -146,9 +146,9 @@ export default async function RecordDetailPage({
             ) : (
               <>
                 {/* Table: tablets and desktops */}
-                <div className="hidden overflow-x-auto rounded-lg border border-[var(--border)] md:block">
+                <div className="hidden overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-700 md:block">
                   <table className="w-full text-left text-[14px]">
-                    <thead className="border-b border-[var(--border)] bg-[var(--shell)] text-[13px] text-[var(--muted)]">
+                    <thead className="border-b border-zinc-200 bg-zinc-100 text-[13px] text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
                       <tr>
                         <th className="px-4 py-2 font-medium">Qty</th>
                         <th className="px-4 py-2 font-medium">Species</th>
@@ -160,7 +160,7 @@ export default async function RecordDetailPage({
                     </thead>
                     <tbody>
                       {record.items.map((item) => (
-                        <tr key={item.id} className="border-b border-[var(--shell)] last:border-0">
+                        <tr key={item.id} className="border-b border-zinc-100 text-zinc-900 last:border-0 dark:border-zinc-800 dark:text-zinc-100">
                           <td className="px-4 py-2">{item.quantity || "—"}</td>
                           <td className="px-4 py-2">{item.species || "—"}</td>
                           <td className="px-4 py-2">{item.forms || item.description || "—"}</td>
@@ -171,7 +171,7 @@ export default async function RecordDetailPage({
                       ))}
                     </tbody>
                     {record.items.length > 1 && (
-                      <tfoot className="border-t border-[var(--border)] bg-[var(--shell)] font-semibold">
+                      <tfoot className="border-t border-zinc-200 bg-zinc-50 font-semibold text-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100">
                         <tr>
                           <td className="px-4 py-2" colSpan={3}>
                             Total
@@ -284,13 +284,13 @@ export default async function RecordDetailPage({
               <EditModal
                 recordId={record.id}
                 label="Edit record details"
-                className="block w-full rounded-md border border-[var(--border-strong)] bg-white px-4 py-2 text-center text-[14px] hover:bg-[var(--shell)]"
+                className="block w-full rounded-md border border-zinc-300 bg-white px-4 py-2 text-center text-[14px] font-medium text-zinc-900 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
               />
 
               <DeleteButton recordId={record.id} />
             </div>
           ) : (
-            <div className="rounded-lg border border-[var(--border)] bg-white p-4 text-[14px] text-[var(--muted)]">
+            <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-4 text-[14px] text-[var(--muted)]">
               Only administrators can edit saved records.
             </div>
           )}
@@ -304,8 +304,8 @@ export default async function RecordDetailPage({
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-xl border border-[var(--border)] bg-white p-4 shadow-sm sm:p-5">
-      <h2 className="mb-4 text-[15px] font-semibold text-[#2F3A2B]">{title}</h2>
+    <section className="rounded-xl border border-zinc-200 bg-white p-4 text-zinc-900 shadow-sm sm:p-5 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100">
+      <h2 className="mb-4 text-[15px] font-semibold text-zinc-900 dark:text-zinc-50">{title}</h2>
       {children}
     </section>
   );
@@ -322,11 +322,17 @@ function Field({
 }) {
   return (
     <div className="min-w-0">
-      <p className="text-[12px] font-medium uppercase tracking-wide text-[var(--muted)]">{label}</p>
+      <p className="text-[12px] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+        {label}
+      </p>
       <p
         className={`mt-1 break-words text-[14px] leading-relaxed ${
           multiline ? "whitespace-pre-wrap" : ""
-        } ${value ? "" : "text-[#9A9A8A]"}`}
+        } ${
+          value
+            ? "text-zinc-900 dark:text-zinc-100"
+            : "text-zinc-400 dark:text-zinc-500"
+        }`}
       >
         {value || "—"}
       </p>
@@ -336,9 +342,9 @@ function Field({
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-white p-3 shadow-sm sm:p-4">
-      <p className="text-[12px] font-medium text-[var(--muted)]">{label}</p>
-      <p className="mt-1 break-words text-lg font-semibold tracking-tight tabular-nums sm:text-xl">
+    <div className="rounded-xl border border-zinc-200 bg-white p-3 text-zinc-900 shadow-sm sm:p-4 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100">
+      <p className="text-[12px] font-medium text-zinc-500 dark:text-zinc-400">{label}</p>
+      <p className="mt-1 break-words text-lg font-semibold tracking-tight tabular-nums text-zinc-900 dark:text-zinc-50 sm:text-xl">
         {value}
       </p>
     </div>
@@ -364,7 +370,7 @@ function PairList({
     <ul className="divide-y divide-[var(--shell)] rounded-lg border border-[var(--border)]">
       {rows.map((r) => (
         <li key={r.id} className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1 px-4 py-2.5 text-[14px]">
-          <span className="min-w-0 break-words font-medium">{r.type || "—"}</span>
+          <span className="min-w-0 break-words font-medium text-[var(--foreground)]">{r.type || "—"}</span>
           <span className="shrink-0 text-[13px] text-[var(--muted)]">
             ×{r.quantity} · {peso(r.estimatedValue)}
           </span>

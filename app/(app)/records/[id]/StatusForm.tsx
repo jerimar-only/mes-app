@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { updateRecordStatus } from "../actions";
+import { useToast } from "@/components/ui/Toast";
 
 const STATUS_OPTIONS = [
   ["FOR_RESOLUTION", "For resolution"],
@@ -35,8 +36,8 @@ export function StatusForm({
 
   const [values, setValues] = useState<Values>(initial);
   const [saved, setSaved] = useState<Values>(initial); // last saved values
-  const [toast, setToast] = useState<{ ok: boolean; lines: string[] } | null>(null);
   const [pending, startTransition] = useTransition();
+  const { success, error } = useToast();
 
   // Keep in sync if the page data changes from elsewhere
   useEffect(() => {
@@ -44,13 +45,6 @@ export function StatusForm({
     setValues(next);
     setSaved(next);
   }, [status, docketNumber, orderOfFinalityDate]);
-
-  // Auto-hide the toast
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 4500);
-    return () => clearTimeout(t);
-  }, [toast]);
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -65,7 +59,7 @@ export function StatusForm({
       lines.push(`Order of finality date: ${values.orderOfFinalityDate || "(cleared)"}`);
 
     if (lines.length === 0) {
-      setToast({ ok: true, lines: ["No changes to save."] });
+      success("No changes to save.", "Nothing to update");
       return;
     }
 
@@ -74,22 +68,32 @@ export function StatusForm({
       try {
         await updateRecordStatus(formData);
         setSaved(values);
-        setToast({ ok: true, lines });
-      } catch {
-        setToast({ ok: false, lines: ["Could not save. Please try again."] });
+        // Immediate toast (same page)
+        success(lines.join(" · "), "Saved");
+      } catch (err) {
+        // Ignore Next.js redirect errors if any
+        if (
+          typeof err === "object" &&
+          err !== null &&
+          "digest" in err &&
+          String((err as { digest?: string }).digest || "").startsWith("NEXT_REDIRECT")
+        ) {
+          return;
+        }
+        error("Could not save. Please try again.");
       }
     });
   }
 
   const field =
-    "w-full rounded-md border border-[var(--border-strong)] px-3 py-2 text-[14px]";
-  const label = "mb-1 block text-[13px] font-medium text-[var(--muted)]";
+    "w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-[14px] text-zinc-900 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100";
+  const label = "mb-1 block text-[13px] font-medium text-zinc-600 dark:text-zinc-300";
 
   return (
     <>
       <form
         onSubmit={handleSubmit}
-        className="space-y-4 rounded-lg border border-[var(--border)] bg-white p-4"
+        className="space-y-4 rounded-lg border border-zinc-200 bg-white p-4 text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
       >
         <input type="hidden" name="id" value={recordId} />
         <div>
@@ -137,36 +141,6 @@ export function StatusForm({
           {pending ? "Saving…" : "Save changes"}
         </button>
       </form>
-
-      {toast && (
-        <div
-          role="status"
-          className={`fixed bottom-4 right-4 z-50 max-w-[calc(100vw-2rem)] rounded-lg border px-4 py-3 text-[14px] shadow-lg sm:max-w-sm ${
-            toast.ok
-              ? "border-[var(--accent)] bg-white text-[#2F4A29]"
-              : "border-red-300 bg-red-50 text-red-800"
-          }`}
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="font-medium">{toast.ok ? "✓ Saved" : "Error"}</p>
-              <ul className="mt-1 space-y-0.5">
-                {toast.lines.map((l, i) => (
-                  <li key={i}>{l}</li>
-                ))}
-              </ul>
-            </div>
-            <button
-              type="button"
-              onClick={() => setToast(null)}
-              aria-label="Close"
-              className="text-[var(--muted)] hover:text-black"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-      )}
     </>
   );
 }

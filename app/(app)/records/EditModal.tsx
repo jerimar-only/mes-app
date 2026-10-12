@@ -7,7 +7,7 @@ import { getRecordForEdit } from "./actions";
 import { EditForm } from "./[id]/edit/EditForm";
 
 const DEFAULT_BUTTON =
-  "rounded-md border border-[var(--border-strong)] bg-white px-3 py-1 text-[13px] text-[var(--accent)] hover:bg-[var(--shell)]";
+  "rounded-md border border-zinc-300 bg-white px-3 py-1 text-[13px] font-medium text-zinc-900 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800";
 
 export function EditModal({
   recordId,
@@ -74,14 +74,14 @@ export function EditModal({
               if (e.target === e.currentTarget) close();
             }}
           >
-            <div className="w-full max-w-4xl rounded-lg bg-white p-6 shadow-xl">
+            <div className="w-full max-w-4xl rounded-xl border border-zinc-200 bg-white p-6 text-zinc-900 shadow-xl dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100">
               <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-xl font-semibold tracking-tight">Edit record #{recordId}</h2>
+                <h2 className="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">Edit record #{recordId}</h2>
                 <button
                   type="button"
                   onClick={close}
                   aria-label="Close"
-                  className="text-2xl leading-none text-[var(--muted)] hover:text-black"
+                  className="text-2xl leading-none text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
                 >
                   ×
                 </button>

@@ -11,6 +11,7 @@ import {
   AttachmentUpload,
   type AttachmentUploadItem,
 } from "@/components/ui/AttachmentUpload";
+import { useToast } from "@/components/ui/Toast";
 
 type Row = { row: number; message: string };
 
@@ -27,6 +28,7 @@ export default function UploadForm() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<UploadResult | null>(null);
   const [rejectMsg, setRejectMsg] = useState<string | null>(null);
+  const { success, error } = useToast();
 
   async function handleUpload() {
     const file = items[0]?.file;
@@ -55,6 +57,14 @@ export default function UploadForm() {
           error: failed ? res.errors[0]?.message : undefined,
         }))
       );
+      if (failed) {
+        error(res.errors[0]?.message || "Upload finished with errors.", "Upload failed");
+      } else {
+        success(
+          `${res.imported} record${res.imported === 1 ? "" : "s"} imported.`,
+          "Upload complete"
+        );
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Upload failed.";
       setResult({
@@ -68,6 +78,7 @@ export default function UploadForm() {
           error: message,
         }))
       );
+      error(message, "Upload failed");
     } finally {
       setLoading(false);
     }

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Section from "@/components/ui/Section";
 import Field from "@/components/ui/Field";
 import { DateOfApprehensionField } from "@/components/ui/DateOfApprehensionField";
+import { useToast } from "@/components/ui/Toast";
 
 type Office = { id: number; name: string };
 
@@ -20,14 +21,41 @@ export default function NewRecordForm({
   action,
 }: {
   offices: Office[];
-  action: (formData: FormData) => void;
+  action: (formData: FormData) => void | Promise<void>;
 }) {
   const [itemRows, setItemRows] = useState([0]);
   const [convRows, setConvRows] = useState<number[]>([]);
   const [equipRows, setEquipRows] = useState<number[]>([]);
+  const [pending, startTransition] = useTransition();
+  const { error, flash } = useToast();
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    startTransition(async () => {
+      try {
+        flash("success", "New apprehension record was created.", "Saved");
+        await action(formData);
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Could not save the record.";
+        // Next.js redirect throws a special error — ignore it
+        if (
+          typeof err === "object" &&
+          err !== null &&
+          "digest" in err &&
+          String((err as { digest?: string }).digest || "").startsWith("NEXT_REDIRECT")
+        ) {
+          return;
+        }
+        error(message);
+      }
+    });
+  }
 
   return (
-    <form action={action} className="mx-auto max-w-4xl space-y-8">
+    <form onSubmit={handleSubmit} className="mx-auto max-w-4xl space-y-8">
      
 
       {/* Basic information */}
@@ -214,7 +242,7 @@ export default function NewRecordForm({
         ) : (
           <div className="space-y-3">
             {convRows.map((row) => (
-              <div key={row} className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <div key={row} className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                 <input
                   type="text"
                   name="convType"
@@ -226,6 +254,15 @@ export default function NewRecordForm({
                   name="convQty"
                   defaultValue={1}
                   min={1}
+                  placeholder="Qty"
+                  className={inputClass}
+                />
+                <input
+                  type="number"
+                  name="convValue"
+                  step="0.01"
+                  min={0}
+                  placeholder="Estimated value (₱)"
                   className={inputClass}
                 />
               </div>
@@ -252,7 +289,7 @@ export default function NewRecordForm({
         ) : (
           <div className="space-y-3">
             {equipRows.map((row) => (
-              <div key={row} className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <div key={row} className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                 <input
                   type="text"
                   name="equipType"
@@ -264,6 +301,15 @@ export default function NewRecordForm({
                   name="equipQty"
                   defaultValue={1}
                   min={1}
+                  placeholder="Qty"
+                  className={inputClass}
+                />
+                <input
+                  type="number"
+                  name="equipValue"
+                  step="0.01"
+                  min={0}
+                  placeholder="Estimated value (₱)"
                   className={inputClass}
                 />
               </div>
@@ -308,9 +354,10 @@ export default function NewRecordForm({
       <div className="flex justify-end pt-2">
         <button
           type="submit"
-          className="rounded-lg bg-[var(--accent)] px-6 py-2.5 text-[15px] font-medium text-white transition hover:opacity-90"
+          disabled={pending}
+          className="rounded-lg bg-[var(--accent)] px-6 py-2.5 text-[15px] font-medium text-white transition hover:opacity-90 disabled:opacity-60"
         >
-          Save record
+          {pending ? "Saving…" : "Save record"}
         </button>
       </div>
     </form>

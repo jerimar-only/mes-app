@@ -29,7 +29,7 @@ export default async function RecordsPage({
         </div>
         <Link
           href="/records/full"
-          className="inline-flex shrink-0 items-center rounded-md border border-gray-200 bg-white px-4 py-2 text-[14px] font-medium text-gray-700 shadow-sm transition hover:bg-gray-50"
+          className="inline-flex shrink-0 items-center rounded-md border border-[var(--border-strong)] bg-[var(--card)] px-4 py-2 text-[14px] font-medium text-[var(--foreground)] shadow-sm transition hover:bg-gray-50"
         >
           Full view →
         </Link>
@@ -49,7 +49,7 @@ export default async function RecordsPage({
               name="q"
               defaultValue={params.q}
               placeholder="Place, claimant, docket, remarks…"
-              className="w-full rounded-md border border-[var(--border-strong)] bg-white px-3 py-2 text-[13px]"
+              className="w-full rounded-md border border-[var(--border-strong)] bg-[var(--card)] text-[var(--foreground)] px-3 py-2 text-[13px]"
             />
           </div>
 
@@ -60,7 +60,7 @@ export default async function RecordsPage({
             <select
               name="year"
               defaultValue={params.year ?? ""}
-              className="w-full rounded-md border border-[var(--border-strong)] bg-white px-3 py-2 text-[13px]"
+              className="w-full rounded-md border border-[var(--border-strong)] bg-[var(--card)] text-[var(--foreground)] px-3 py-2 text-[13px]"
             >
               <option value="">All</option>
               {Array.from({ length: 13 }, (_, i) => 2014 + i).map((y) => (
@@ -76,7 +76,7 @@ export default async function RecordsPage({
             <select
               name="office"
               defaultValue={params.office ?? ""}
-              className="w-full rounded-md border border-[var(--border-strong)] bg-white px-3 py-2 text-[13px]"
+              className="w-full rounded-md border border-[var(--border-strong)] bg-[var(--card)] text-[var(--foreground)] px-3 py-2 text-[13px]"
             >
               <option value="">All</option>
               {offices.map((o) => (
@@ -92,7 +92,7 @@ export default async function RecordsPage({
             <select
               name="status"
               defaultValue={params.status ?? ""}
-              className="w-full rounded-md border border-[var(--border-strong)] bg-white px-3 py-2 text-[13px]"
+              className="w-full rounded-md border border-[var(--border-strong)] bg-[var(--card)] text-[var(--foreground)] px-3 py-2 text-[13px]"
             >
               <option value="">All</option>
               {Object.entries(STATUS_LABEL).map(([value, label]) => (
@@ -108,7 +108,7 @@ export default async function RecordsPage({
             <select
               name="deleted"
               defaultValue={params.deleted ?? ""}
-              className="w-full rounded-md border border-[var(--border-strong)] bg-white px-3 py-2 text-[13px]"
+              className="w-full rounded-md border border-[var(--border-strong)] bg-[var(--card)] text-[var(--foreground)] px-3 py-2 text-[13px]"
             >
               <option value="">Active</option>
               <option value="only">Deleted</option>
@@ -123,7 +123,7 @@ export default async function RecordsPage({
             <select
               name="pageSize"
               defaultValue={params.pageSize ?? "25"}
-              className="w-full rounded-md border border-[var(--border-strong)] bg-white px-3 py-2 text-[13px]"
+              className="w-full rounded-md border border-[var(--border-strong)] bg-[var(--card)] text-[var(--foreground)] px-3 py-2 text-[13px]"
             >
               <option value="25">25</option>
               <option value="50">50</option>

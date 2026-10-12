@@ -5,6 +5,7 @@ import Sidebar from "@/components/layout/Sidebar";
 import SidebarLayout from "@/components/layout/SidebarLayout";
 import Header from "@/components/layout/Header";
 import SessionGuard from "@/components/layout/SessionGuard";
+import AppProviders from "@/components/layout/AppProviders";
 
 export default async function AppLayout({
   children,
@@ -17,7 +18,7 @@ export default async function AppLayout({
   if (!user || !user.isActive) redirect("/login");
 
   return (
-    <>
+    <AppProviders>
       <SessionGuard />
       <Sidebar
         isAdmin={user.role === "ADMINISTRATOR" || user.role === "SUPERADMIN"}
@@ -30,6 +31,6 @@ export default async function AppLayout({
           {children}
         </main>
       </SidebarLayout>
-    </>
+    </AppProviders>
   );
 }

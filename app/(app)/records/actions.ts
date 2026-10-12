@@ -71,14 +71,24 @@ export async function createRecord(formData: FormData) {
 
   const convType = formData.getAll("convType") as string[];
   const convQty = formData.getAll("convQty") as string[];
+  const convValue = formData.getAll("convValue") as string[];
   const conveyances = convType
-    .map((type, i) => ({ type: type || null, quantity: parseInt(convQty[i] || "1", 10) || 1 }))
+    .map((type, i) => ({
+      type: type || null,
+      quantity: parseInt(convQty[i] || "1", 10) || 1,
+      estimatedValue: convValue[i] ? parseFloat(convValue[i]) : null,
+    }))
     .filter((c) => c.type);
 
   const equipType = formData.getAll("equipType") as string[];
   const equipQty = formData.getAll("equipQty") as string[];
+  const equipValue = formData.getAll("equipValue") as string[];
   const equipment = equipType
-    .map((type, i) => ({ type: type || null, quantity: parseInt(equipQty[i] || "1", 10) || 1 }))
+    .map((type, i) => ({
+      type: type || null,
+      quantity: parseInt(equipQty[i] || "1", 10) || 1,
+      estimatedValue: equipValue[i] ? parseFloat(equipValue[i]) : null,
+    }))
     .filter((e) => e.type);
 
   const record = await prisma.apprehensionRecord.create({

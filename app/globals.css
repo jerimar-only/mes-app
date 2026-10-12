@@ -6,6 +6,8 @@
 :root {
   --background: #e8ebe7;
   --foreground: #121514;
+  --input-text: #121514;
+  --ui-text: #121514;
   --muted: #6b746f;
   --border: rgba(18, 21, 20, 0.08);
   --border-strong: rgba(18, 21, 20, 0.14);
@@ -41,6 +43,8 @@
 .dark {
   --background: #0a0c0b;
   --foreground: #eef1ee;
+  --input-text: #eef1ee;
+  --ui-text: #eef1ee;
   --muted: #7d8680;
   --border: rgba(255, 255, 255, 0.07);
   --border-strong: rgba(255, 255, 255, 0.12);
@@ -234,7 +238,7 @@ body {
   font-weight: 550;
   letter-spacing: 0;
   text-transform: none;
-  color: var(--muted);
+  color: var(--ui-text, var(--muted));
 }
 
 .input {
@@ -244,7 +248,7 @@ body {
   border-radius: 12px;
   border: 1px solid var(--border-strong);
   background: var(--shell);
-  color: var(--foreground);
+  color: var(--ui-text, var(--input-text, var(--foreground)));
   font: inherit;
   outline: 0;
   transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
@@ -262,6 +266,42 @@ textarea.input {
   border-color: var(--accent);
   background: var(--card);
   box-shadow: var(--focus-ring);
+}
+
+
+/* ── Native form controls: always readable in light + dark ── */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]),
+select,
+textarea {
+  background-color: var(--input-bg, var(--card));
+  color: var(--ui-text, var(--input-text, var(--foreground)));
+  border-color: var(--border-strong);
+  color-scheme: light dark;
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+/* Force option list readability where supported */
+select option {
+  background-color: var(--card);
+  color: var(--foreground);
+}
+
+/* Labels & form captions follow the UI text color picker */
+label,
+.field-label,
+legend {
+  color: var(--ui-text, var(--muted)) !important;
+}
+
+/* White utility overrides that break dark mode */
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]).bg-white,
+.dark select.bg-white,
+.dark textarea.bg-white {
+  background-color: var(--card) !important;
+  color: var(--input-text, var(--foreground)) !important;
 }
 
 /* ── Status chips ── */
