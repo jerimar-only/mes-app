@@ -5,8 +5,8 @@ import Link from "next/link";
 import { updateRecord, updateRecordInline } from "../../actions";
 import { DateOfApprehensionField } from "@/components/ui/DateOfApprehensionField";
 
-const inputCls = "w-full rounded-md border border-[#D8D3C4] px-3 py-2 text-[14px]";
-const labelCls = "mb-1 block text-[13px] font-medium text-[#5B6156]";
+const inputCls = "w-full rounded-md border border-[var(--border-strong)] px-3 py-2 text-[14px]";
+const labelCls = "mb-1 block text-[13px] font-medium text-[var(--muted)]";
 
 let counter = 0;
 const nextKey = () => ++counter;
@@ -96,7 +96,7 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
       {field("circumstances", "Circumstances", true)}
 
       <div>
-        <h2 className="mb-2 text-[13px] font-medium text-[#5B6156]">Forest products</h2>
+        <h2 className="mb-2 text-[13px] font-medium text-[var(--muted)]">Forest products</h2>
         <div className="space-y-2">
           {items.map((it) => (
             <div key={it.k} className="grid grid-cols-7 gap-2">
@@ -117,14 +117,14 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
               </div>
             </div>
           ))}
-          {items.length === 0 && <p className="text-[13px] text-[#5B6156]">No product items.</p>}
+          {items.length === 0 && <p className="text-[13px] text-[var(--muted)]">No product items.</p>}
         </div>
         <button
           type="button"
           onClick={() =>
             setItems([...items, { qty: "", species: "", forms: "", bdft: "", cum: "", value: "", k: nextKey() }])
           }
-          className="mt-2 rounded-md border border-[#D8D3C4] px-3 py-1.5 text-[14px] text-[#4A6741] hover:bg-[#F0EDE3]"
+          className="mt-2 rounded-md border border-[var(--border-strong)] px-3 py-1.5 text-[14px] text-[var(--accent)] hover:bg-[var(--shell)]"
         >
           + Add product
         </button>
@@ -164,7 +164,7 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
         <button
           type="submit"
           disabled={busy}
-          className="rounded-md bg-[#4A6741] px-4 py-2 text-[14px] text-white hover:bg-[#3D5636] disabled:opacity-60"
+          className="rounded-md bg-[var(--accent)] px-4 py-2 text-[14px] text-white hover:bg-[var(--accent-hover)] disabled:opacity-60"
         >
           {busy ? "Saving..." : "Save changes"}
         </button>
@@ -173,14 +173,14 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
             type="button"
             onClick={onCancel}
             disabled={busy}
-            className="rounded-md border border-[#D8D3C4] px-4 py-2 text-[14px] hover:bg-[#F0EDE3]"
+            className="rounded-md border border-[var(--border-strong)] px-4 py-2 text-[14px] hover:bg-[var(--shell)]"
           >
             Cancel
           </button>
         ) : (
           <Link
             href={`/records/${record.id}`}
-            className="rounded-md border border-[#D8D3C4] px-4 py-2 text-[14px]"
+            className="rounded-md border border-[var(--border-strong)] px-4 py-2 text-[14px]"
           >
             Cancel
           </Link>
@@ -207,7 +207,7 @@ function PairRows({
 }) {
   return (
     <div>
-      <h2 className="mb-2 text-[13px] font-medium text-[#5B6156]">{title}</h2>
+      <h2 className="mb-2 text-[13px] font-medium text-[var(--muted)]">{title}</h2>
       <div className="space-y-2">
         {rows.map((r) => (
           <div key={r.k} className="flex gap-2">
@@ -218,13 +218,13 @@ function PairRows({
               min={1}
               defaultValue={r.qty}
               placeholder="Qty"
-              className="w-20 shrink-0 rounded-md border border-[#D8D3C4] px-3 py-2 text-[14px]"
+              className="w-20 shrink-0 rounded-md border border-[var(--border-strong)] px-3 py-2 text-[14px]"
             />
             <input
               name={valueName}
               defaultValue={r.value}
               placeholder="Value (₱)"
-              className="w-28 shrink-0 rounded-md border border-[#D8D3C4] px-3 py-2 text-[14px]"
+              className="w-28 shrink-0 rounded-md border border-[var(--border-strong)] px-3 py-2 text-[14px]"
             />
             <button
               type="button"
@@ -235,12 +235,12 @@ function PairRows({
             </button>
           </div>
         ))}
-        {rows.length === 0 && <p className="text-[13px] text-[#5B6156]">None</p>}
+        {rows.length === 0 && <p className="text-[13px] text-[var(--muted)]">None</p>}
       </div>
       <button
         type="button"
         onClick={() => setRows([...rows, { type: "", qty: "1", value: "", k: nextKey() }])}
-        className="mt-2 rounded-md border border-[#D8D3C4] px-3 py-1.5 text-[14px] text-[#4A6741] hover:bg-[#F0EDE3]"
+        className="mt-2 rounded-md border border-[var(--border-strong)] px-3 py-1.5 text-[14px] text-[var(--accent)] hover:bg-[var(--shell)]"
       >
         + Add
       </button>

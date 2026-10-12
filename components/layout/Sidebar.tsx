@@ -27,7 +27,6 @@ export default function Sidebar({
   const [isDragging, setIsDragging] = useState(false);
   const sidebarRef = useRef<HTMLElement>(null);
 
-  // Load saved width + collapsed state
   useEffect(() => {
     const savedWidth = localStorage.getItem("sidebar-width");
     const savedCollapsed = localStorage.getItem("sidebar-collapsed");
@@ -35,14 +34,12 @@ export default function Sidebar({
     if (savedCollapsed === "true") setCollapsed(true);
   }, []);
 
-  // Persist + notify layout
   useEffect(() => {
     localStorage.setItem("sidebar-width", String(width));
     localStorage.setItem("sidebar-collapsed", String(desktopCollapsed));
     window.dispatchEvent(new Event("sidebar-change"));
   }, [width, desktopCollapsed]);
 
-  // Close the mobile drawer when the page changes
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
@@ -58,7 +55,6 @@ export default function Sidebar({
     const onMove = (e: MouseEvent) => {
       const newWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, e.clientX));
       setWidth(newWidth);
-      // Auto-collapse when dragged very small
       if (newWidth <= 90) setCollapsed(true);
       else setCollapsed(false);
     };
@@ -77,7 +73,6 @@ export default function Sidebar({
     setCollapsed((c) => !c);
   };
 
-  // The mobile drawer always opens fully expanded
   const collapsed = desktopCollapsed && !mobileOpen;
   const currentWidth = mobileOpen
     ? DEFAULT_WIDTH
@@ -90,20 +85,16 @@ export default function Sidebar({
 
   return (
     <>
-      {/* Mobile hamburger (hidden while the drawer is open) */}
+      {/* Mobile hamburger */}
       {!mobileOpen && (
         <button
           onClick={() => setMobileOpen(true)}
           type="button"
-          className="fixed left-3 top-3 z-50 inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-black/60 text-white shadow-lg backdrop-blur-xl transition hover:bg-black/80 focus:outline-none focus:ring-2 focus:ring-white/30 sm:hidden"
+          className="fixed left-3 top-3 z-50 inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--border-strong)] bg-[var(--card)] text-[var(--foreground)] shadow-[var(--shadow)] transition hover:bg-[var(--shell)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] sm:hidden"
         >
           <span className="sr-only">Open sidebar</span>
-          <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 20 20">
-            <path
-              clipRule="evenodd"
-              fillRule="evenodd"
-              d="M2 4.75A.75.75 0 012.75 4h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 4.75zm0 10.5a.75.75 0 01.75-.75h7.5a.75.75 0 010 1.5h-7.5a.75.75 0 01-.75-.75zM2 10a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 10z"
-            />
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 7h16M4 12h16M4 17h10" />
           </svg>
         </button>
       )}
@@ -111,7 +102,7 @@ export default function Sidebar({
       {/* Mobile overlay */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black/50 sm:hidden"
+          className="fixed inset-0 z-30 bg-black/40 sm:hidden"
           onClick={() => setMobileOpen(false)}
         />
       )}
@@ -128,14 +119,13 @@ export default function Sidebar({
         `}
         aria-label="Sidebar"
       >
-        <div className="relative flex h-full flex-col overflow-y-auto border-r border-white/10 bg-black/70 px-3 py-4 backdrop-blur-xl">
+        <div className="sidebar-panel relative flex h-full flex-col overflow-y-auto px-3 py-4">
           {/* Brand + controls */}
           <div
             className={`mb-5 flex items-center px-1 ${
               collapsed ? "flex-col gap-3" : "relative justify-center"
             }`}
           >
-            {/* Seal: centered in both expanded and collapsed states */}
             <Link
               href="/dashboard"
               aria-label="EMS Tracker home"
@@ -153,7 +143,6 @@ export default function Sidebar({
               />
             </Link>
 
-            {/* Controls: pinned to the right when expanded, below the seal when collapsed */}
             <div
               className={
                 collapsed
@@ -161,10 +150,9 @@ export default function Sidebar({
                   : "absolute right-0 top-1/2 flex -translate-y-1/2 items-center gap-1"
               }
             >
-              {/* Collapse / Expand (desktop only) */}
               <button
                 onClick={toggleCollapse}
-                className="hidden rounded-lg p-1.5 text-white/60 hover:bg-white/10 hover:text-white sm:inline-flex"
+                className="hidden rounded-lg p-1.5 text-[var(--muted)] transition hover:bg-[var(--border)] hover:text-[var(--foreground)] sm:inline-flex"
                 title={collapsed ? "Expand" : "Collapse"}
               >
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -176,10 +164,9 @@ export default function Sidebar({
                 </svg>
               </button>
 
-              {/* Mobile close */}
               <button
                 onClick={() => setMobileOpen(false)}
-                className="rounded-lg p-1.5 text-white/60 hover:bg-white/10 sm:hidden"
+                className="rounded-lg p-1.5 text-[var(--muted)] transition hover:bg-[var(--border)] hover:text-[var(--foreground)] sm:hidden"
               >
                 ✕
               </button>
@@ -188,20 +175,12 @@ export default function Sidebar({
 
           {/* Navigation */}
           <ul className="space-y-1 font-medium">
-            {!collapsed && (
-              <li className="px-2 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-wider text-white/40">
-                Overview
-              </li>
-            )}
+            {!collapsed && <li className="nav-group">Overview</li>}
             <NavItem href="/dashboard" active={isActive("/dashboard")} collapsed={collapsed} icon={<DashboardIcon />}>
               Dashboard
             </NavItem>
 
-            {!collapsed && (
-              <li className="px-2 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wider text-white/40">
-                Records
-              </li>
-            )}
+            {!collapsed && <li className="nav-group">Records</li>}
             <NavItem href="/records" active={isActive("/records")} collapsed={collapsed} icon={<RecordsIcon />}>
               All Records
             </NavItem>
@@ -212,11 +191,7 @@ export default function Sidebar({
               Upload Excel file
             </NavItem>
 
-            {!collapsed && (
-              <li className="px-2 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wider text-white/40">
-                Reports
-              </li>
-            )}
+            {!collapsed && <li className="nav-group">Reports</li>}
             <NavItem href="/reports" active={isActive("/reports")} collapsed={collapsed} icon={<ChartIcon />}>
               Reports
             </NavItem>
@@ -232,11 +207,7 @@ export default function Sidebar({
 
             {isSuperAdmin && (
               <>
-                {!collapsed && (
-                  <li className="px-2 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wider text-white/40">
-                    Administration
-                  </li>
-                )}
+                {!collapsed && <li className="nav-group">Administration</li>}
                 <NavItem
                   href="/adminportal"
                   active={isActive("/adminportal")}
@@ -248,13 +219,12 @@ export default function Sidebar({
               </>
             )}
 
-            {/* Log out: last item in the menu */}
-            <li className="mt-2 border-t border-white/10 pt-2">
+            <li className="mt-3 border-t border-[var(--border)] pt-3">
               <form action={logout}>
                 <button
                   type="submit"
                   title="Log out"
-                  className={`flex w-full items-center rounded-lg p-2 text-sm text-red-400 transition hover:bg-red-500/10 ${
+                  className={`flex w-full items-center rounded-xl p-2.5 text-sm font-medium text-[var(--danger)] transition hover:bg-[var(--danger-soft)] ${
                     collapsed ? "justify-center" : ""
                   }`}
                 >
@@ -265,19 +235,27 @@ export default function Sidebar({
             </li>
           </ul>
 
-          {/* Signed-in user (pinned to the bottom) */}
+          {/* Signed-in user */}
           <div className="mt-auto pt-4">
             {!collapsed && (
-              <p className="truncate px-2 text-xs text-white/50">
-                Signed in as <span className="text-white/90">{userName}</span>
-              </p>
+              <div className="flex items-center gap-3 rounded-xl px-2 py-2">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-[13px] font-semibold text-white">
+                  {userName?.charAt(0)?.toUpperCase() || "U"}
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-[13.5px] font-semibold text-[var(--foreground)]">
+                    {userName}
+                  </p>
+                  <p className="text-[12px] text-[var(--muted)]">Signed in</p>
+                </div>
+              </div>
             )}
           </div>
 
-          {/* Drag handle (desktop only) */}
+          {/* Drag handle */}
           <div
             onMouseDown={startDrag}
-            className="absolute right-0 top-0 hidden h-full w-1.5 cursor-col-resize bg-transparent transition hover:bg-white/20 sm:block"
+            className="absolute right-0 top-0 hidden h-full w-1.5 cursor-col-resize bg-transparent transition hover:bg-[var(--accent)]/20 sm:block"
             title="Drag to resize"
           />
         </div>
@@ -303,17 +281,15 @@ function NavItem({
   disabledReason?: string;
   children: React.ReactNode;
 }) {
-  const base = "flex items-center rounded-lg p-2 text-sm transition";
-
   if (disabled) {
     return (
       <li>
         <span
           title={disabledReason}
-          className={`${base} cursor-not-allowed text-white/30 ${collapsed ? "justify-center" : ""}`}
+          className={`nav-link cursor-not-allowed opacity-40 ${collapsed ? "justify-center" : ""}`}
         >
           <span className="h-5 w-5 shrink-0">{icon}</span>
-          {!collapsed && <span className="ms-3 truncate">{children}</span>}
+          {!collapsed && <span className="truncate">{children}</span>}
         </span>
       </li>
     );
@@ -324,86 +300,81 @@ function NavItem({
       <Link
         href={href}
         title={collapsed ? String(children) : undefined}
-        className={`${base} ${collapsed ? "justify-center" : ""} ${
-          active
-            ? "bg-white/15 font-medium text-white"
-            : "text-white/70 hover:bg-white/10 hover:text-white"
+        className={`nav-link ${collapsed ? "justify-center" : ""} ${
+          active ? "nav-link-active" : ""
         }`}
       >
         <span className="h-5 w-5 shrink-0">{icon}</span>
-        {!collapsed && <span className="ms-3 truncate">{children}</span>}
+        {!collapsed && <span className="truncate">{children}</span>}
       </Link>
     </li>
   );
 }
 
-/* Simple icons */
 function DashboardIcon() {
   return (
-    <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-      <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" />
-      <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z" />
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <rect x="3" y="3" width="7" height="9" rx="1" />
+      <rect x="14" y="3" width="7" height="5" rx="1" />
+      <rect x="14" y="12" width="7" height="9" rx="1" />
+      <rect x="3" y="16" width="7" height="5" rx="1" />
     </svg>
   );
 }
 function RecordsIcon() {
   return (
-    <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-      <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
-      <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" />
+      <rect x="9" y="3" width="6" height="4" rx="1" />
+      <path d="M9 12h6M9 16h6" />
     </svg>
   );
 }
 function PlusIcon() {
   return (
-    <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-      <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <path strokeLinecap="round" d="M12 5v14M5 12h14" />
     </svg>
   );
 }
 function UploadIcon() {
   return (
-    <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-      <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+      <path d="M17 8l-5-5-5 5M12 3v12" />
     </svg>
   );
 }
 function ChartIcon() {
   return (
-    <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-      <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <path d="M3 3v18h18" />
+      <path d="M18 17V9M13 17V5M8 17v-3" />
     </svg>
   );
 }
 function DownloadIcon() {
   return (
-    <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-      <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+      <path d="M7 10l5 5 5-5M12 15V3" />
     </svg>
   );
 }
 function UsersIcon() {
   return (
-    <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-      <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
     </svg>
   );
 }
 function LogoutIcon() {
   return (
-    <svg className="h-5 w-5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-      <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V4a1 1 0 00-1-1H3zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clipRule="evenodd" />
-    </svg>
-  );
-}
-function FieldIcon() {
-  return (
-    <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-      <path
-        fillRule="evenodd"
-        d="M5 3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2H5zm0 2h10v7H5V5zm0 9h3v2H5v-2zm5 0h5v2h-5v-2z"
-        clipRule="evenodd"
-      />
+    <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+      <path d="M16 17l5-5-5-5M21 12H9" />
     </svg>
   );
 }

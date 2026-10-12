@@ -4,14 +4,12 @@ import ThemeToggle from "@/components/layout/ThemeToggle";
 
 export default function Header() {
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-white/10 bg-black/70 pl-14 pr-6 backdrop-blur-xl sm:pl-6">
-      {/* Left side: app name (pl-14 on mobile leaves room for the burger) */}
-      <span className="truncate text-[15px] font-semibold tracking-wide text-white">
+    <header className="app-header sticky top-0 z-30 flex h-14 items-center justify-between pl-14 pr-5 sm:pl-6 sm:pr-6">
+      <span className="truncate text-[15px] font-semibold tracking-tight text-[var(--foreground)]">
         EMS Tracker
       </span>
 
-      {/* Right side: night mode toggle only */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         <ThemeToggle />
       </div>
     </header>

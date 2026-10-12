@@ -9,7 +9,7 @@ export default async function NewRecordPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Log new apprehension</h1>
-        <p className="mt-1 text-[15px] text-[#5B6156]">
+        <p className="mt-1 text-[15px] text-[var(--muted)]">
           Record a new apprehension, seizure, or confiscation.
         </p>
       </div>

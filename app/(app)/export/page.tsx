@@ -13,18 +13,18 @@ export default async function ExportPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Export to Excel</h1>
-        <p className="mt-1 text-[15px] text-[#5B6156]">
+        <p className="mt-1 text-[15px] text-[var(--muted)]">
           Download the apprehension records for a specific year and CENRO office.
         </p>
       </div>
 
       <form action="/api/export" method="get" className="flex max-w-md flex-wrap items-end gap-4">
         <div>
-          <label className="mb-1 block text-[13px] font-medium text-[#5B6156]">Year</label>
+          <label className="mb-1 block text-[13px] font-medium text-[var(--muted)]">Year</label>
           <select
             name="year"
             required
-            className="rounded-md border border-[#D8D3C4] bg-white px-3 py-2 text-[14px]"
+            className="rounded-md border border-[var(--border-strong)] bg-white px-3 py-2 text-[14px]"
           >
             {years.map((y) => (
               <option key={y} value={y}>{y}</option>
@@ -32,11 +32,11 @@ export default async function ExportPage() {
           </select>
         </div>
         <div>
-          <label className="mb-1 block text-[13px] font-medium text-[#5B6156]">CENRO office</label>
+          <label className="mb-1 block text-[13px] font-medium text-[var(--muted)]">CENRO office</label>
           <select
             name="office"
             required
-            className="rounded-md border border-[#D8D3C4] bg-white px-3 py-2 text-[14px]"
+            className="rounded-md border border-[var(--border-strong)] bg-white px-3 py-2 text-[14px]"
           >
             {offices.map((o) => (
               <option key={o.id} value={o.id}>{o.name}</option>
@@ -45,7 +45,7 @@ export default async function ExportPage() {
         </div>
         <button
           type="submit"
-          className="rounded-md bg-[#4A6741] px-5 py-2.5 text-[14px] text-white hover:bg-[#3D5636]"
+          className="rounded-md bg-[var(--accent)] px-5 py-2.5 text-[14px] text-white hover:bg-[var(--accent-hover)]"
         >
           Download
         </button>

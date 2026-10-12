@@ -68,13 +68,13 @@ export default async function FieldValuesPage({
           <h1 className="text-2xl font-semibold tracking-tight">
             Custom Field Values
           </h1>
-          <p className="mt-1 text-[15px] text-[#5B6156]">
+          <p className="mt-1 text-[15px] text-[var(--muted)]">
             View dynamic fields and their order/index in the column layout
           </p>
         </div>
         <Link
           href="/reports"
-          className="text-sm text-[#4A6741] hover:underline"
+          className="text-sm text-[var(--accent)] hover:underline"
         >
           ← Back to Reports
         </Link>
@@ -85,9 +85,9 @@ export default async function FieldValuesPage({
         <h2 className="text-[15px] font-semibold">
           Field Definitions (Column Index)
         </h2>
-        <div className="overflow-hidden rounded-lg border border-[#E9E5D8] bg-white">
+        <div className="overflow-hidden rounded-lg border border-[var(--border)] bg-white">
           <table className="w-full text-left text-[14px]">
-            <thead className="border-b border-[#E9E5D8] bg-[#FAFAF6] text-[13px] text-[#5B6156]">
+            <thead className="border-b border-[var(--border)] bg-[var(--shell)] text-[13px] text-[var(--muted)]">
               <tr>
                 <th className="px-4 py-2 font-medium w-20">Index (order)</th>
                 <th className="px-4 py-2 font-medium">Field Name</th>
@@ -97,8 +97,8 @@ export default async function FieldValuesPage({
             </thead>
             <tbody>
               {definitions.map((d) => (
-                <tr key={d.id} className="border-b border-[#F0EDE3] last:border-0">
-                  <td className="px-4 py-2 font-mono font-medium text-[#4A6741]">
+                <tr key={d.id} className="border-b border-[var(--shell)] last:border-0">
+                  <td className="px-4 py-2 font-mono font-medium text-[var(--accent)]">
                     {d.order}
                   </td>
                   <td className="px-4 py-2">{d.name}</td>
@@ -114,7 +114,7 @@ export default async function FieldValuesPage({
               ))}
               {definitions.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-6 text-center text-[#5B6156]">
+                  <td colSpan={4} className="px-4 py-6 text-center text-[var(--muted)]">
                     No field definitions yet.
                   </td>
                 </tr>
@@ -126,11 +126,11 @@ export default async function FieldValuesPage({
 
       {/* ── Filter ── */}
       <form method="get" className="flex items-center gap-3">
-        <label className="text-[13px] text-[#5B6156]">Filter by year:</label>
+        <label className="text-[13px] text-[var(--muted)]">Filter by year:</label>
         <select
           name="year"
           defaultValue={yearFilter ?? ""}
-          className="rounded-md border border-[#D8D3C4] bg-white px-3 py-2 text-[14px]"
+          className="rounded-md border border-[var(--border-strong)] bg-white px-3 py-2 text-[14px]"
         >
           <option value="">All years</option>
           {years.map((y) => (
@@ -141,7 +141,7 @@ export default async function FieldValuesPage({
         </select>
         <button
           type="submit"
-          className="rounded-md bg-[#4A6741] px-4 py-2 text-[14px] text-white hover:bg-[#3D5636]"
+          className="rounded-md bg-[var(--accent)] px-4 py-2 text-[14px] text-white hover:bg-[var(--accent-hover)]"
         >
           Apply
         </button>
@@ -156,9 +156,9 @@ export default async function FieldValuesPage({
         {Array.from(byRecord.entries()).map(([recordId, { record, values }]) => (
           <div
             key={recordId}
-            className="rounded-lg border border-[#E9E5D8] bg-white overflow-hidden"
+            className="rounded-lg border border-[var(--border)] bg-white overflow-hidden"
           >
-            <div className="bg-[#FAFAF6] px-4 py-3 border-b border-[#E9E5D8] flex flex-wrap gap-x-6 gap-y-1 text-[13px]">
+            <div className="bg-[var(--shell)] px-4 py-3 border-b border-[var(--border)] flex flex-wrap gap-x-6 gap-y-1 text-[13px]">
               <span>
                 <strong>ID:</strong> {record.id}
               </span>
@@ -178,7 +178,7 @@ export default async function FieldValuesPage({
             </div>
 
             <table className="w-full text-left text-[14px]">
-              <thead className="border-b border-[#E9E5D8] text-[13px] text-[#5B6156]">
+              <thead className="border-b border-[var(--border)] text-[13px] text-[var(--muted)]">
                 <tr>
                   <th className="px-4 py-2 font-medium w-20">Index</th>
                   <th className="px-4 py-2 font-medium">Field Name</th>
@@ -187,8 +187,8 @@ export default async function FieldValuesPage({
               </thead>
               <tbody>
                 {values.map((fv) => (
-                  <tr key={fv.id} className="border-b border-[#F0EDE3] last:border-0">
-                    <td className="px-4 py-2 font-mono text-[#4A6741]">
+                  <tr key={fv.id} className="border-b border-[var(--shell)] last:border-0">
+                    <td className="px-4 py-2 font-mono text-[var(--accent)]">
                       {fv.fieldDefinition.order}
                     </td>
                     <td className="px-4 py-2">{fv.fieldDefinition.name}</td>
@@ -205,7 +205,7 @@ export default async function FieldValuesPage({
         ))}
 
         {byRecord.size === 0 && (
-          <p className="text-[#5B6156] text-center py-10">
+          <p className="text-[var(--muted)] text-center py-10">
             No field values found{yearFilter ? ` for ${yearFilter}` : ""}.
           </p>
         )}

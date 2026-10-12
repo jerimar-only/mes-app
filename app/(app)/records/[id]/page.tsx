@@ -81,8 +81,8 @@ export default async function RecordDetailPage({
 
       {/* Header */}
       <header className="space-y-2">
-        <div className="flex flex-wrap items-center gap-2 text-[13px] text-[#5B6156]">
-          <span className="rounded-full border border-[#E9E5D8] bg-white px-2.5 py-0.5 font-medium">
+        <div className="flex flex-wrap items-center gap-2 text-[13px] text-[var(--muted)]">
+          <span className="rounded-full border border-[var(--border)] bg-white px-2.5 py-0.5 font-medium">
             {record.cenroOffice.name}
           </span>
           <span>
@@ -103,7 +103,7 @@ export default async function RecordDetailPage({
           {record.placeOfApprehension || record.dateOfApprehension || `Record #${record.id}`}
         </h1>
         {record.docketNumber && (
-          <p className="text-[13px] text-[#5B6156]">Docket no. {record.docketNumber}</p>
+          <p className="text-[13px] text-[var(--muted)]">Docket no. {record.docketNumber}</p>
         )}
       </header>
 
@@ -142,13 +142,13 @@ export default async function RecordDetailPage({
 
           <Card title="Forest products">
             {record.items.length === 0 ? (
-              <p className="text-[14px] text-[#5B6156]">No product items recorded.</p>
+              <p className="text-[14px] text-[var(--muted)]">No product items recorded.</p>
             ) : (
               <>
                 {/* Table: tablets and desktops */}
-                <div className="hidden overflow-x-auto rounded-lg border border-[#E9E5D8] md:block">
+                <div className="hidden overflow-x-auto rounded-lg border border-[var(--border)] md:block">
                   <table className="w-full text-left text-[14px]">
-                    <thead className="border-b border-[#E9E5D8] bg-[#FAFAF6] text-[13px] text-[#5B6156]">
+                    <thead className="border-b border-[var(--border)] bg-[var(--shell)] text-[13px] text-[var(--muted)]">
                       <tr>
                         <th className="px-4 py-2 font-medium">Qty</th>
                         <th className="px-4 py-2 font-medium">Species</th>
@@ -160,7 +160,7 @@ export default async function RecordDetailPage({
                     </thead>
                     <tbody>
                       {record.items.map((item) => (
-                        <tr key={item.id} className="border-b border-[#F0EDE3] last:border-0">
+                        <tr key={item.id} className="border-b border-[var(--shell)] last:border-0">
                           <td className="px-4 py-2">{item.quantity || "—"}</td>
                           <td className="px-4 py-2">{item.species || "—"}</td>
                           <td className="px-4 py-2">{item.forms || item.description || "—"}</td>
@@ -171,7 +171,7 @@ export default async function RecordDetailPage({
                       ))}
                     </tbody>
                     {record.items.length > 1 && (
-                      <tfoot className="border-t border-[#E9E5D8] bg-[#FAFAF6] font-semibold">
+                      <tfoot className="border-t border-[var(--border)] bg-[var(--shell)] font-semibold">
                         <tr>
                           <td className="px-4 py-2" colSpan={3}>
                             Total
@@ -188,19 +188,19 @@ export default async function RecordDetailPage({
                 {/* Cards: phones */}
                 <div className="space-y-3 md:hidden">
                   {record.items.map((item) => (
-                    <div key={item.id} className="rounded-lg border border-[#E9E5D8] p-3">
+                    <div key={item.id} className="rounded-lg border border-[var(--border)] p-3">
                       <div className="flex items-start justify-between gap-3">
                         <p className="break-words font-medium">
                           {item.species || item.forms || item.description || "Item"}
                         </p>
                         {item.quantity && (
-                          <span className="shrink-0 rounded-full bg-[#F0EDE3] px-2 py-0.5 text-[12px] text-[#5B6156]">
+                          <span className="shrink-0 rounded-full bg-[var(--shell)] px-2 py-0.5 text-[12px] text-[var(--muted)]">
                             Qty {item.quantity}
                           </span>
                         )}
                       </div>
                       {item.species && (item.forms || item.description) && (
-                        <p className="mt-0.5 text-[13px] text-[#5B6156]">
+                        <p className="mt-0.5 text-[13px] text-[var(--muted)]">
                           {item.forms || item.description}
                         </p>
                       )}
@@ -212,7 +212,7 @@ export default async function RecordDetailPage({
                     </div>
                   ))}
                   {record.items.length > 1 && (
-                    <div className="rounded-lg bg-[#FAFAF6] p-3 text-[13px] font-semibold">
+                    <div className="rounded-lg bg-[var(--shell)] p-3 text-[13px] font-semibold">
                       <div className="flex justify-between">
                         <span>Total</span>
                         <span className="tabular-nums">
@@ -265,7 +265,7 @@ export default async function RecordDetailPage({
                 <input type="hidden" name="id" value={record.id} />
                 <button
                   type="submit"
-                  className="w-full rounded-md bg-[#4A6741] px-4 py-2 text-[14px] text-white hover:bg-[#3D5636]"
+                  className="w-full rounded-md bg-[var(--accent)] px-4 py-2 text-[14px] text-white hover:bg-[var(--accent-hover)]"
                 >
                   Restore record
                 </button>
@@ -284,13 +284,13 @@ export default async function RecordDetailPage({
               <EditModal
                 recordId={record.id}
                 label="Edit record details"
-                className="block w-full rounded-md border border-[#D8D3C4] bg-white px-4 py-2 text-center text-[14px] hover:bg-[#F0EDE3]"
+                className="block w-full rounded-md border border-[var(--border-strong)] bg-white px-4 py-2 text-center text-[14px] hover:bg-[var(--shell)]"
               />
 
               <DeleteButton recordId={record.id} />
             </div>
           ) : (
-            <div className="rounded-lg border border-[#E9E5D8] bg-white p-4 text-[14px] text-[#5B6156]">
+            <div className="rounded-lg border border-[var(--border)] bg-white p-4 text-[14px] text-[var(--muted)]">
               Only administrators can edit saved records.
             </div>
           )}
@@ -304,7 +304,7 @@ export default async function RecordDetailPage({
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-xl border border-[#E9E5D8] bg-white p-4 shadow-sm sm:p-5">
+    <section className="rounded-xl border border-[var(--border)] bg-white p-4 shadow-sm sm:p-5">
       <h2 className="mb-4 text-[15px] font-semibold text-[#2F3A2B]">{title}</h2>
       {children}
     </section>
@@ -322,7 +322,7 @@ function Field({
 }) {
   return (
     <div className="min-w-0">
-      <p className="text-[12px] font-medium uppercase tracking-wide text-[#5B6156]">{label}</p>
+      <p className="text-[12px] font-medium uppercase tracking-wide text-[var(--muted)]">{label}</p>
       <p
         className={`mt-1 break-words text-[14px] leading-relaxed ${
           multiline ? "whitespace-pre-wrap" : ""
@@ -336,8 +336,8 @@ function Field({
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-[#E9E5D8] bg-white p-3 shadow-sm sm:p-4">
-      <p className="text-[12px] font-medium text-[#5B6156]">{label}</p>
+    <div className="rounded-xl border border-[var(--border)] bg-white p-3 shadow-sm sm:p-4">
+      <p className="text-[12px] font-medium text-[var(--muted)]">{label}</p>
       <p className="mt-1 break-words text-lg font-semibold tracking-tight tabular-nums sm:text-xl">
         {value}
       </p>
@@ -348,7 +348,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 function MiniStat({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-[11px] uppercase tracking-wide text-[#5B6156]">{label}</dt>
+      <dt className="text-[11px] uppercase tracking-wide text-[var(--muted)]">{label}</dt>
       <dd className="mt-0.5 break-words tabular-nums">{value}</dd>
     </div>
   );
@@ -359,13 +359,13 @@ function PairList({
 }: {
   rows: { id: number; type: string | null; quantity: number; estimatedValue: number | null }[];
 }) {
-  if (rows.length === 0) return <p className="text-[14px] text-[#5B6156]">None</p>;
+  if (rows.length === 0) return <p className="text-[14px] text-[var(--muted)]">None</p>;
   return (
-    <ul className="divide-y divide-[#F0EDE3] rounded-lg border border-[#E9E5D8]">
+    <ul className="divide-y divide-[var(--shell)] rounded-lg border border-[var(--border)]">
       {rows.map((r) => (
         <li key={r.id} className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1 px-4 py-2.5 text-[14px]">
           <span className="min-w-0 break-words font-medium">{r.type || "—"}</span>
-          <span className="shrink-0 text-[13px] text-[#5B6156]">
+          <span className="shrink-0 text-[13px] text-[var(--muted)]">
             ×{r.quantity} · {peso(r.estimatedValue)}
           </span>
         </li>

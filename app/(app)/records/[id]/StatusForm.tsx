@@ -82,14 +82,14 @@ export function StatusForm({
   }
 
   const field =
-    "w-full rounded-md border border-[#D8D3C4] px-3 py-2 text-[14px]";
-  const label = "mb-1 block text-[13px] font-medium text-[#5B6156]";
+    "w-full rounded-md border border-[var(--border-strong)] px-3 py-2 text-[14px]";
+  const label = "mb-1 block text-[13px] font-medium text-[var(--muted)]";
 
   return (
     <>
       <form
         onSubmit={handleSubmit}
-        className="space-y-4 rounded-lg border border-[#E9E5D8] bg-white p-4"
+        className="space-y-4 rounded-lg border border-[var(--border)] bg-white p-4"
       >
         <input type="hidden" name="id" value={recordId} />
         <div>
@@ -132,7 +132,7 @@ export function StatusForm({
         <button
           type="submit"
           disabled={pending}
-          className="w-full rounded-md bg-[#4A6741] px-4 py-2 text-[14px] text-white hover:bg-[#3D5636] disabled:opacity-60"
+          className="w-full rounded-md bg-[var(--accent)] px-4 py-2 text-[14px] text-white hover:bg-[var(--accent-hover)] disabled:opacity-60"
         >
           {pending ? "Saving…" : "Save changes"}
         </button>
@@ -143,7 +143,7 @@ export function StatusForm({
           role="status"
           className={`fixed bottom-4 right-4 z-50 max-w-[calc(100vw-2rem)] rounded-lg border px-4 py-3 text-[14px] shadow-lg sm:max-w-sm ${
             toast.ok
-              ? "border-[#4A6741] bg-white text-[#2F4A29]"
+              ? "border-[var(--accent)] bg-white text-[#2F4A29]"
               : "border-red-300 bg-red-50 text-red-800"
           }`}
         >
@@ -160,7 +160,7 @@ export function StatusForm({
               type="button"
               onClick={() => setToast(null)}
               aria-label="Close"
-              className="text-[#5B6156] hover:text-black"
+              className="text-[var(--muted)] hover:text-black"
             >
               ✕
             </button>

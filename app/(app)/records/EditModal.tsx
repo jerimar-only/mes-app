@@ -7,7 +7,7 @@ import { getRecordForEdit } from "./actions";
 import { EditForm } from "./[id]/edit/EditForm";
 
 const DEFAULT_BUTTON =
-  "rounded-md border border-[#D8D3C4] bg-white px-3 py-1 text-[13px] text-[#4A6741] hover:bg-[#F0EDE3]";
+  "rounded-md border border-[var(--border-strong)] bg-white px-3 py-1 text-[13px] text-[var(--accent)] hover:bg-[var(--shell)]";
 
 export function EditModal({
   recordId,
@@ -81,14 +81,14 @@ export function EditModal({
                   type="button"
                   onClick={close}
                   aria-label="Close"
-                  className="text-2xl leading-none text-[#5B6156] hover:text-black"
+                  className="text-2xl leading-none text-[var(--muted)] hover:text-black"
                 >
                   ×
                 </button>
               </div>
 
               {error && <p className="text-[14px] text-red-600">{error}</p>}
-              {!record && !error && <p className="text-[14px] text-[#5B6156]">Loading...</p>}
+              {!record && !error && <p className="text-[14px] text-[var(--muted)]">Loading...</p>}
               {record && <EditForm record={record} onSaved={saved} onCancel={close} />}
             </div>
           </div>,

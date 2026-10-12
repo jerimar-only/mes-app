@@ -74,21 +74,21 @@ export function PermanentDeleteButton({ recordId }: { recordId: number }) {
           >
             <form onSubmit={submit} className="w-full max-w-md space-y-4 rounded-lg bg-white p-6 shadow-xl">
               <h2 className="text-lg font-semibold tracking-tight">Delete permanently?</h2>
-              <p className="text-[14px] text-[#5B6156]">
+              <p className="text-[14px] text-[var(--muted)]">
                 This removes the record and all its products, conveyances and equipment for good.
                 <span className="font-medium text-red-700"> This cannot be undone.</span> Enter your
                 password to confirm.
               </p>
 
               <div>
-                <label className="mb-1 block text-[13px] font-medium text-[#5B6156]">Your password</label>
+                <label className="mb-1 block text-[13px] font-medium text-[var(--muted)]">Your password</label>
                 <input
                   type="password"
                   autoFocus
                   autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-md border border-[#D8D3C4] px-3 py-2 text-[14px]"
+                  className="w-full rounded-md border border-[var(--border-strong)] px-3 py-2 text-[14px]"
                 />
                 {error && <p className="mt-2 text-[13px] text-red-600">{error}</p>}
               </div>
@@ -98,7 +98,7 @@ export function PermanentDeleteButton({ recordId }: { recordId: number }) {
                   type="button"
                   onClick={close}
                   disabled={busy}
-                  className="rounded-md border border-[#D8D3C4] px-4 py-2 text-[14px] hover:bg-[#F0EDE3]"
+                  className="rounded-md border border-[var(--border-strong)] px-4 py-2 text-[14px] hover:bg-[var(--shell)]"
                 >
                   Cancel
                 </button>

@@ -25,34 +25,32 @@ export default function ConfirmModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         onClick={onCancel}
       />
 
-      {/* Panel */}
-      <div className="relative w-full max-w-sm rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-xl">
-        <h3 className="text-[16px] font-semibold text-[var(--foreground)]">
+      <div className="relative w-full max-w-sm rounded-[20px] border border-[var(--border)] bg-[var(--card)] p-6 shadow-[var(--shadow-lg)]">
+        <h3 className="text-[16px] font-semibold tracking-tight text-[var(--foreground)]">
           {title}
         </h3>
-        <p className="mt-2 text-[14px] text-[var(--muted)]">{message}</p>
+        <p className="mt-2 text-[14px] leading-relaxed text-[var(--muted)]">{message}</p>
 
         <div className="mt-6 flex justify-end gap-3">
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-lg border border-[var(--border)] px-4 py-2 text-[13px] font-medium text-[var(--foreground)] hover:bg-[var(--background)]"
+            className="rounded-full border border-[var(--border-strong)] bg-[var(--card)] px-4 py-2 text-[13px] font-medium text-[var(--foreground)] transition hover:bg-[var(--shell)]"
           >
             {cancelLabel}
           </button>
           <button
             type="button"
             onClick={onConfirm}
-            className={`rounded-lg px-4 py-2 text-[13px] font-medium text-white ${
+            className={`rounded-full px-4 py-2 text-[13px] font-semibold text-white transition ${
               danger
-                ? "bg-red-600 hover:bg-red-700"
-                : "bg-[var(--accent)] hover:opacity-90"
+                ? "bg-[var(--danger)] hover:opacity-90"
+                : "bg-[var(--accent)] hover:bg-[var(--accent-hover)]"
             }`}
           >
             {confirmLabel}

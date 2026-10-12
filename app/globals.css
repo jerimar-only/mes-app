@@ -1,38 +1,102 @@
 @import "tailwindcss";
 
+/* Theme toggles the .dark class — Tailwind dark: follows it */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #F7F5F0;
-  --foreground: #1F2A1E;
-  --muted: #5B6156;
-  --border: #E9E5D8;
-  --border-strong: #D8D3C4;
-  --card: #FFFFFF;
-  --accent: #4A6741;
-  --accent-hover: #3D5636;
-  --accent-soft: #E4EBE0;
-  --header: #1F2A1E;
-  --header-text: #F7F5F0;
+  --background: #e8ebe7;
+  --foreground: #121514;
+  --muted: #6b746f;
+  --border: rgba(18, 21, 20, 0.08);
+  --border-strong: rgba(18, 21, 20, 0.14);
+  --card: #ffffff;
+  --accent: #1a7a42;
+  --accent-hover: #156536;
+  --accent-soft: #e0f0e6;
+  --accent-mid: #2d9a58;
+  --header: #161a18;
+  --header-text: #eef1ee;
+  --shell: #f4f6f3;
+  --track: #dce0db;
+  --amber: #d9a000;
+  --danger: #c93a34;
+  --danger-soft: #fce8e6;
+  --warn-bg: #fbf0d6;
+  --warn: #7a4f00;
+  --info-bg: #e4ecf8;
+  --info: #1e3f7a;
+  --ok-bg: #e0f0e6;
+  --ok: #145c32;
+  --nav: #f4f6f3;
+  --nav-text: #4a524e;
+  --nav-active: #ffffff;
+  --nav-border: rgba(18, 21, 20, 0.08);
+  --shadow: 0 1px 3px rgba(18, 21, 20, 0.06), 0 8px 24px rgba(18, 21, 20, 0.04);
+  --shadow-lg: 0 4px 12px rgba(18, 21, 20, 0.08), 0 16px 40px rgba(18, 21, 20, 0.06);
+  --radius: 20px;
+  --radius-sm: 12px;
+  --focus-ring: 0 0 0 3px var(--accent-soft);
 }
 
 .dark {
-  --background: #121410;
-  --foreground: #E8E6DF;
-  --muted: #A8AC9F;
-  --border: #2A2E26;
-  --border-strong: #3A3F36;
-  --card: #1A1E18;
-  --accent: #6B8F5E;
-  --accent-hover: #5A7A4F;
-  --accent-soft: #2A3528;
-  --header: #0F120E;
-  --header-text: #E8E6DF;
+  --background: #0a0c0b;
+  --foreground: #eef1ee;
+  --muted: #7d8680;
+  --border: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.12);
+  --card: #1a1e1c;
+  --accent: #3dce7a;
+  --accent-hover: #52d98c;
+  --accent-soft: #163528;
+  --accent-mid: #2db86a;
+  --header: #121514;
+  --header-text: #eef1ee;
+  --shell: #121514;
+  --track: #2a2e2b;
+  --amber: #f0b90b;
+  --danger: #f2a29b;
+  --danger-soft: #3a1c1a;
+  --warn-bg: #3a3014;
+  --warn: #f0c76a;
+  --info-bg: #1a2740;
+  --info: #9db9ec;
+  --ok-bg: #163528;
+  --ok: #6fd99a;
+  --nav: #121514;
+  --nav-text: #a0a9a4;
+  --nav-active: #1a1e1c;
+  --nav-border: rgba(255, 255, 255, 0.07);
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.35), 0 8px 24px rgba(0, 0, 0, 0.25);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.4), 0 20px 48px rgba(0, 0, 0, 0.3);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-card: var(--card);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-header: var(--header);
+  --color-header-text: var(--header-text);
+  --color-shell: var(--shell);
+  --color-track: var(--track);
+  --color-amber: var(--amber);
+  --color-danger: var(--danger);
+  --color-nav: var(--nav);
+  --color-nav-text: var(--nav-text);
+  --color-nav-active: var(--nav-active);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", sans-serif;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
@@ -41,7 +105,349 @@ body {
   outline-offset: 2px;
 }
 
-/* Remove green/yellow autofill background and outline on login inputs */
+/* ── Cards & page chrome ── */
+
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 22px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+}
+
+.card-title {
+  margin: 0 0 14px;
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.page-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+
+.page-sub {
+  margin: 4px 0 18px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* ── Stat tiles ── */
+
+.stat {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 16px 18px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+}
+.stat > span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+.stat > b {
+  display: block;
+  margin-top: 4px;
+  font-size: clamp(19px, 5.4vw, 26px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  overflow-wrap: anywhere;
+}
+.stat > b.warn {
+  color: var(--warn);
+}
+
+/* ── Buttons ── */
+
+.btn-primary,
+.btn-outline,
+.btn-dark,
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 999px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s, opacity 0.15s, transform 0.1s, border-color 0.15s;
+}
+.btn-primary:active,
+.btn-outline:active,
+.btn-dark:active,
+.btn-danger:active {
+  transform: scale(0.98);
+}
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  border: 0;
+}
+.btn-primary:hover {
+  background: var(--accent-hover);
+}
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn-outline {
+  background: var(--card);
+  color: var(--foreground);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow);
+}
+.btn-outline:hover {
+  background: var(--shell);
+  border-color: var(--accent);
+}
+.btn-dark {
+  background: var(--header);
+  color: var(--header-text);
+  border: 0;
+  justify-content: flex-start;
+}
+.btn-dark:hover {
+  opacity: 0.9;
+}
+.btn-danger {
+  background: transparent;
+  color: var(--danger);
+  border: 1px solid color-mix(in srgb, var(--danger) 45%, transparent);
+}
+.btn-danger:hover {
+  background: var(--danger-soft);
+}
+
+/* ── Form fields ── */
+
+.field-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 550;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--muted);
+}
+
+.input {
+  width: 100%;
+  height: 44px;
+  padding: 0 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border-strong);
+  background: var(--shell);
+  color: var(--foreground);
+  font: inherit;
+  outline: 0;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+textarea.input {
+  height: 92px;
+  padding: 12px 16px;
+  resize: vertical;
+  line-height: 1.45;
+}
+.input::placeholder {
+  color: var(--muted);
+}
+.input:focus {
+  border-color: var(--accent);
+  background: var(--card);
+  box-shadow: var(--focus-ring);
+}
+
+/* ── Status chips ── */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.chip-review {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+.chip-ok {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+.chip-info {
+  background: var(--info-bg);
+  color: var(--info);
+}
+.chip-bad {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+/* ── Horizontal bars ── */
+
+.bar-row {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr) 40px;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 0;
+  font-size: 14px;
+}
+.bar-track {
+  height: 10px;
+  border-radius: 6px;
+  background: var(--track);
+  overflow: hidden;
+}
+.bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 6px;
+  background: var(--accent);
+}
+.bar-row > b {
+  text-align: right;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── List rows ── */
+
+.list-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 11px 4px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.list-row:last-child {
+  border-bottom: 0;
+}
+
+/* ── Detail pages ── */
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 20px;
+}
+.detail-grid dt {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+.detail-grid dd {
+  margin: 2px 0 10px;
+  font-size: 14.5px;
+  font-weight: 600;
+  word-break: break-word;
+}
+@media (max-width: 640px) {
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Data tables ── */
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.data-table th {
+  padding: 13px 16px;
+  text-align: left;
+  white-space: nowrap;
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+}
+.data-table td {
+  padding: 12px 16px;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.data-table tbody tr:hover td {
+  background: var(--shell);
+}
+.data-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+/* ── App shell helpers ── */
+
+.app-main {
+  background: var(--background);
+  min-height: calc(100vh - 3.5rem);
+}
+
+.app-header {
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  color: var(--foreground);
+  box-shadow: var(--shadow);
+}
+
+.sidebar-panel {
+  background: var(--nav);
+  border-right: 1px solid var(--nav-border);
+  color: var(--nav-text);
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-radius: 14px;
+  padding: 10px 12px;
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--nav-text);
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+.nav-link:hover {
+  background: var(--border);
+  color: var(--foreground);
+}
+.nav-link-active {
+  background: var(--nav-active);
+  color: var(--foreground);
+  font-weight: 600;
+  box-shadow: var(--shadow);
+}
+.nav-link-active svg {
+  color: var(--accent);
+}
+.nav-group {
+  margin: 14px 10px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+/* Login autofill */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
@@ -55,5 +461,10 @@ input:-webkit-autofill:active {
 
 input:focus {
   outline: none !important;
-  box-shadow: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
 }

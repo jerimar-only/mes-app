@@ -65,14 +65,12 @@ export default function InactivityLogout() {
   if (!showWarning || remaining === null) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      {/* Glass card */}
-      <div className="mx-4 w-full max-w-md rounded-2xl border border-white/20 bg-white/10 p-8 shadow-2xl backdrop-blur-xl">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/45 backdrop-blur-sm">
+      <div className="mx-4 w-full max-w-md rounded-[20px] border border-[var(--border)] bg-[var(--card)] p-8 shadow-[var(--shadow-lg)]">
         <div className="text-center">
-          {/* Icon */}
-          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-amber-500/20">
+          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--warn-bg)]">
             <svg
-              className="h-7 w-7 text-amber-400"
+              className="h-7 w-7 text-[var(--warn)]"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -86,23 +84,21 @@ export default function InactivityLogout() {
             </svg>
           </div>
 
-          <h2 className="text-xl font-semibold tracking-tight text-white">
+          <h2 className="text-xl font-semibold tracking-tight text-[var(--foreground)]">
             Session about to expire
           </h2>
-          <p className="mt-2 text-[15px] text-white/70">
+          <p className="mt-2 text-[15px] text-[var(--muted)]">
             You will be logged out due to inactivity in
           </p>
 
-          {/* Countdown */}
-          <div className="my-6 text-5xl font-bold tabular-nums text-amber-400">
+          <div className="my-6 text-5xl font-bold tabular-nums text-[var(--warn)]">
             {remaining}
           </div>
-          <p className="mb-8 text-[14px] text-white/60">seconds</p>
+          <p className="mb-8 text-[14px] text-[var(--muted)]">seconds</p>
 
-          {/* Stay logged in button */}
           <button
             onClick={resetTimer}
-            className="w-full rounded-lg bg-white px-4 py-3 text-[15px] font-medium text-gray-900 transition hover:bg-white/90"
+            className="w-full rounded-full bg-[var(--accent)] px-4 py-3 text-[15px] font-semibold text-white transition hover:bg-[var(--accent-hover)]"
           >
             Stay logged in
           </button>

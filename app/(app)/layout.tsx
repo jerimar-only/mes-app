@@ -26,7 +26,7 @@ export default async function AppLayout({
       />
       <SidebarLayout>
         <Header />
-        <main className="mx-auto max-w-6xl px-6 py-8 xl:max-w-7xl 2xl:max-w-[1800px]">
+        <main className="app-main mx-auto max-w-6xl px-5 py-7 sm:px-6 sm:py-8 xl:max-w-7xl 2xl:max-w-[1800px]">
           {children}
         </main>
       </SidebarLayout>

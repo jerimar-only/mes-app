@@ -48,7 +48,7 @@ export default function BurgerMenu({
             top: "36px",
             left: 0,
             background: "white",
-            border: "1px solid #D8D3C4",
+            border: "1px solid var(--border-strong)",
             borderRadius: "8px",
             minWidth: "200px",
             boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
@@ -59,8 +59,8 @@ export default function BurgerMenu({
             style={{
               padding: "10px 14px",
               fontSize: "13px",
-              color: "#5B6156",
-              borderBottom: "1px solid #E9E5D8",
+              color: "var(--muted)",
+              borderBottom: "1px solid var(--border)",
             }}
           >
             Signed in as {userName}
@@ -93,7 +93,7 @@ export default function BurgerMenu({
             <>
               <div
                 style={{
-                  borderTop: "1px solid #E9E5D8",
+                  borderTop: "1px solid var(--border)",
                   margin: "4px 0",
                 }}
               />
@@ -108,7 +108,7 @@ export default function BurgerMenu({
 
           <div
             style={{
-              borderTop: "1px solid #E9E5D8",
+              borderTop: "1px solid var(--border)",
               margin: "4px 0",
             }}
           />
@@ -176,7 +176,7 @@ function MenuLink({
     <Link
       href={href}
       onClick={onClick}
-      style={{ ...baseStyle, color: "#1F2A1E" }}
+      style={{ ...baseStyle, color: "var(--foreground)" }}
     >
       {children}
     </Link>

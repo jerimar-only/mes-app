@@ -11,29 +11,33 @@ export default function LoginForm() {
 
   useEffect(() => {
     if (state.error === "" && state !== initialState) {
-      // Fast login – redirect immediately
       window.location.href = "/dashboard";
     }
   }, [state]);
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden">
-      {/* Background image – dramatic mountains */}
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-4">
+      {/* Forest gradient background */}
       <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        className="absolute inset-0"
+        style={{
+          background:
+            "linear-gradient(165deg, #1e4a32 0%, #2d6b4a 28%, #4a8f6a 50%, #6b9a78 68%, #3d5c42 100%)",
+        }}
+      />
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-35"
         style={{
           backgroundImage:
             "url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=2070&auto=format&fit=crop')",
         }}
       />
-      {/* Dark overlay for better contrast */}
-      <div className="absolute inset-0 bg-black/40" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20" />
 
-      {/* Glassmorphism card */}
-      <div className="relative z-10 w-full max-w-[400px] px-4">
-        <div className="rounded-2xl border border-white/20 bg-white/10 p-8 shadow-2xl backdrop-blur-xl sm:p-10">
-          {/* Title */}
-          <div className="mb-10 flex flex-col items-center gap-4">
+      {/* Glass card */}
+      <div className="relative z-10 w-full max-w-[400px]">
+        <div className="rounded-[24px] border border-white/30 bg-white/15 p-8 shadow-2xl backdrop-blur-xl sm:p-10">
+          <div className="mb-8 flex flex-col items-center gap-3">
             <Image
               src="/seal.png"
               alt="Monitoring and Enforcement Seal"
@@ -44,8 +48,7 @@ export default function LoginForm() {
             />
           </div>
 
-          <form action={formAction} className="space-y-8">
-            {/* Username */}
+          <form action={formAction} className="space-y-7">
             <div>
               <input
                 id="email"
@@ -54,11 +57,10 @@ export default function LoginForm() {
                 placeholder="Enter your username"
                 required
                 autoComplete="username"
-                className="w-full border-0 border-b-2 border-white/40 bg-transparent py-2.5 text-[15px] text-white outline-none transition placeholder:text-white/60 focus:border-white focus:outline-none focus:ring-0 focus:ring-offset-0 autofill:bg-transparent"
+                className="w-full border-0 border-b-2 border-white/50 bg-transparent py-3 text-[15px] text-white outline-none transition placeholder:text-white/65 focus:border-white focus:outline-none focus:ring-0 autofill:bg-transparent"
               />
             </div>
 
-            {/* Password */}
             <div>
               <input
                 id="password"
@@ -67,32 +69,29 @@ export default function LoginForm() {
                 placeholder="Enter your password"
                 required
                 autoComplete="current-password"
-                className="w-full border-0 border-b-2 border-white/40 bg-transparent py-2.5 text-[15px] text-white outline-none transition placeholder:text-white/60 focus:border-white focus:outline-none focus:ring-0 focus:ring-offset-0 autofill:bg-transparent"
+                className="w-full border-0 border-b-2 border-white/50 bg-transparent py-3 text-[15px] text-white outline-none transition placeholder:text-white/65 focus:border-white focus:outline-none focus:ring-0 autofill:bg-transparent"
               />
             </div>
 
-            {/* Error message */}
             {state.error && (
-              <div className="rounded-lg bg-red-500/20 px-4 py-3 text-sm text-red-100 backdrop-blur-sm">
+              <div className="rounded-xl bg-red-500/25 px-4 py-3 text-sm text-red-50 backdrop-blur-sm">
                 {state.error}
               </div>
             )}
 
-            {/* Submit button */}
             <button
               type="submit"
               disabled={isPending}
-              className="mt-4 w-full rounded-md bg-white py-3 text-[15px] font-medium text-gray-900 transition hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-70"
+              className="mt-2 w-full rounded-[10px] bg-white/95 py-3.5 text-[15px] font-semibold text-gray-900 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isPending ? "Logging in..." : "Log In"}
             </button>
           </form>
 
-          {/* Footer text */}
-          <p className="mt-8 text-center text-sm text-white/70">
+          <p className="mt-8 text-center text-sm text-white/80">
             EMS Apprehension Tracker · Province of Cagayan
           </p>
-          <p className="mt-1 text-center text-xs text-white/50">
+          <p className="mt-1 text-center text-xs text-white/55">
             Authorized personnel only
           </p>
         </div>

@@ -65,7 +65,7 @@ export default function UploadForm() {
             <button
               type="button"
               onClick={() => inputRef.current?.click()}
-              className="w-full rounded-md border border-[#D8D3C4] bg-white px-4 py-2 text-[14px] text-[#4A6741] hover:bg-[#F0EDE3] sm:w-auto"
+              className="w-full rounded-md border border-[var(--border-strong)] bg-white px-4 py-2 text-[14px] text-[var(--accent)] hover:bg-[var(--shell)] sm:w-auto"
             >
               Choose file
             </button>
@@ -89,7 +89,7 @@ export default function UploadForm() {
           <p
             className={`rounded-md border p-3 ${
               result.imported > 0
-                ? "border-[#4A6741]/40 bg-[#4A6741]/10 text-[var(--foreground)]"
+                ? "border-[var(--accent)]/40 bg-[var(--accent)]/10 text-[var(--foreground)]"
                 : "border-[var(--border)] text-[var(--foreground)]"
             }`}
           >

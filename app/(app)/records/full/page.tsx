@@ -114,7 +114,7 @@ export default async function FullRecordsPage({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">All records — full view</h1>
-          <p className="mt-1 text-[14px] text-[#5B6156]">
+          <p className="mt-1 text-[14px] text-[var(--muted)]">
             Showing {showingFrom.toLocaleString()}–{showingTo.toLocaleString()} of{" "}
             {total.toLocaleString()} records
             {params.pageSize === "all" && total > 500 && (
@@ -125,7 +125,7 @@ export default async function FullRecordsPage({
         <div className="flex flex-wrap gap-2">
           <a
             href={`/records/full/export?${exportQs.toString()}`}
-            className="inline-flex shrink-0 items-center rounded-md border border-[#D8D3C4] bg-white px-4 py-2 text-[14px] font-medium text-[#4A6741] shadow-sm hover:bg-[#F0EDE3]"
+            className="inline-flex shrink-0 items-center rounded-md border border-[var(--border-strong)] bg-white px-4 py-2 text-[14px] font-medium text-[var(--accent)] shadow-sm hover:bg-[var(--shell)]"
           >
             Export to Excel
           </a>
@@ -141,13 +141,13 @@ export default async function FullRecordsPage({
       {/* Filters coming from the dashboard */}
       {activeChips.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 text-[13px]">
-          <span className="text-[#5B6156]">Filtered by:</span>
+          <span className="text-[var(--muted)]">Filtered by:</span>
           {activeChips.map((c) => (
-            <span key={c} className="rounded-full bg-[#4A6741] px-3 py-1 font-medium text-white">
+            <span key={c} className="rounded-full bg-[var(--accent)] px-3 py-1 font-medium text-white">
               {c}
             </span>
           ))}
-          <Link href="/records/full" className="text-[#4A6741] underline">
+          <Link href="/records/full" className="text-[var(--accent)] underline">
             Clear all filters
           </Link>
         </div>
@@ -156,7 +156,7 @@ export default async function FullRecordsPage({
       {/* Filters */}
       <form
         method="get"
-        className="flex flex-wrap items-end gap-2.5 rounded-lg border border-[#E9E5D8] bg-[#FAFAF6] p-3"
+        className="flex flex-wrap items-end gap-2.5 rounded-lg border border-[var(--border)] bg-[var(--shell)] p-3"
       >
         {/* Keep the dashboard filters when pressing Apply */}
         {params.acp && <input type="hidden" name="acp" value={params.acp} />}
@@ -164,7 +164,7 @@ export default async function FullRecordsPage({
         {params.resolved && <input type="hidden" name="resolved" value={params.resolved} />}
 
         <div className="min-w-[200px] flex-1">
-          <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-[#5B6156]">
+          <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-[var(--muted)]">
             Search
           </label>
           <input
@@ -172,18 +172,18 @@ export default async function FullRecordsPage({
             name="q"
             defaultValue={params.q}
             placeholder="Place, claimant, docket, remarks…"
-            className="w-full rounded-md border border-[#D8D3C4] bg-white px-3 py-2 text-[13px]"
+            className="w-full rounded-md border border-[var(--border-strong)] bg-white px-3 py-2 text-[13px]"
           />
         </div>
 
         <div>
-          <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-[#5B6156]">
+          <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-[var(--muted)]">
             Year
           </label>
           <select
             name="year"
             defaultValue={params.year ?? ""}
-            className="rounded-md border border-[#D8D3C4] bg-white px-3 py-2 text-[13px]"
+            className="rounded-md border border-[var(--border-strong)] bg-white px-3 py-2 text-[13px]"
           >
             <option value="">All</option>
             {years.map((y) => (
@@ -195,13 +195,13 @@ export default async function FullRecordsPage({
         </div>
 
         <div>
-          <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-[#5B6156]">
+          <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-[var(--muted)]">
             Office
           </label>
           <select
             name="office"
             defaultValue={params.office ?? ""}
-            className="max-w-[160px] rounded-md border border-[#D8D3C4] bg-white px-3 py-2 text-[13px]"
+            className="max-w-[160px] rounded-md border border-[var(--border-strong)] bg-white px-3 py-2 text-[13px]"
           >
             <option value="">All</option>
             {offices.map((o) => (
@@ -213,13 +213,13 @@ export default async function FullRecordsPage({
         </div>
 
         <div>
-          <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-[#5B6156]">
+          <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-[var(--muted)]">
             Status
           </label>
           <select
             name="status"
             defaultValue={params.status ?? ""}
-            className="rounded-md border border-[#D8D3C4] bg-white px-3 py-2 text-[13px]"
+            className="rounded-md border border-[var(--border-strong)] bg-white px-3 py-2 text-[13px]"
           >
             <option value="">All</option>
             {Object.entries(STATUS_LABEL).map(([value, label]) => (
@@ -231,13 +231,13 @@ export default async function FullRecordsPage({
         </div>
 
         <div>
-          <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-[#5B6156]">
+          <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-[var(--muted)]">
             Records
           </label>
           <select
             name="deleted"
             defaultValue={params.deleted ?? ""}
-            className="rounded-md border border-[#D8D3C4] bg-white px-3 py-2 text-[13px]"
+            className="rounded-md border border-[var(--border-strong)] bg-white px-3 py-2 text-[13px]"
           >
             <option value="">Active</option>
             <option value="only">Deleted</option>
@@ -246,13 +246,13 @@ export default async function FullRecordsPage({
         </div>
 
         <div>
-          <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-[#5B6156]">
+          <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-[var(--muted)]">
             Per page
           </label>
           <select
             name="pageSize"
             defaultValue={params.pageSize ?? "25"}
-            className="rounded-md border border-[#D8D3C4] bg-white px-3 py-2 text-[13px]"
+            className="rounded-md border border-[var(--border-strong)] bg-white px-3 py-2 text-[13px]"
           >
             <option value="25">25</option>
             <option value="50">50</option>
@@ -263,17 +263,17 @@ export default async function FullRecordsPage({
 
         <button
           type="submit"
-          className="rounded-md bg-[#4A6741] px-4 py-2 text-[13px] font-medium text-white hover:bg-[#3D5636]"
+          className="rounded-md bg-[var(--accent)] px-4 py-2 text-[13px] font-medium text-white hover:bg-[var(--accent-hover)]"
         >
           Apply
         </button>
       </form>
 
       {/* Table */}
-      <div className="relative overflow-auto rounded-lg border border-[#E9E5D8] bg-white shadow-sm" style={{ maxHeight: "70vh" }}>
+      <div className="relative overflow-auto rounded-lg border border-[var(--border)] bg-white shadow-sm" style={{ maxHeight: "70vh" }}>
         <table className="w-full border-collapse text-left text-[12.5px]" style={{ minWidth: "2600px" }}>
           <thead className="sticky top-0 z-20">
-            <tr className="border-b border-[#E9E5D8] bg-[#F5F3EB] text-[11px] uppercase tracking-wide text-[#5B6156]">
+            <tr className="border-b border-[var(--border)] bg-[#F5F3EB] text-[11px] uppercase tracking-wide text-[var(--muted)]">
               <th className="sticky left-0 z-30 whitespace-nowrap bg-[#F5F3EB] px-3 py-2.5 font-semibold shadow-[2px_0_4px_-2px_rgba(0,0,0,0.08)]">
                 ID
               </th>
@@ -324,16 +324,16 @@ export default async function FullRecordsPage({
                 .map((e) => `${e.type} ×${e.quantity}`)
                 .join(", ");
 
-              const rowBg = idx % 2 === 0 ? "bg-white" : "bg-[#FAFAF6]";
+              const rowBg = idx % 2 === 0 ? "bg-white" : "bg-[var(--shell)]";
 
               return (
                 <tr
                   key={r.id}
-                  className={`border-b border-[#F0EDE3] last:border-0 hover:bg-[#F0EDE3] ${rowBg}`}
+                  className={`border-b border-[var(--shell)] last:border-0 hover:bg-[var(--shell)] ${rowBg}`}
                 >
                   {/* Sticky ID column */}
                   <td className={`sticky left-0 z-10 whitespace-nowrap px-3 py-2 font-medium shadow-[2px_0_4px_-2px_rgba(0,0,0,0.06)] ${rowBg}`}>
-                    <Link href={`/records/${r.id}`} className="text-[#4A6741] hover:underline">
+                    <Link href={`/records/${r.id}`} className="text-[var(--accent)] hover:underline">
                       {r.id}
                     </Link>
                   </td>
@@ -392,7 +392,7 @@ export default async function FullRecordsPage({
 
             {records.length === 0 && (
               <tr>
-                <td colSpan={26 + fieldDefs.length} className="px-4 py-12 text-center text-[14px] text-[#5B6156]">
+                <td colSpan={26 + fieldDefs.length} className="px-4 py-12 text-center text-[14px] text-[var(--muted)]">
                   No records match these filters.
                 </td>
               </tr>
@@ -403,7 +403,7 @@ export default async function FullRecordsPage({
 
       {/* Pagination */}
       {total > 0 && (
-        <div className="flex flex-col items-center justify-between gap-3 text-[13px] text-[#5B6156] sm:flex-row">
+        <div className="flex flex-col items-center justify-between gap-3 text-[13px] text-[var(--muted)] sm:flex-row">
           <span>
             Page {page} of {totalPages}
             {totalPages > 1 && (
@@ -472,8 +472,8 @@ function PageLink({
       href={`/records/full?${qs.toString()}`}
       className={
         active
-          ? "rounded-md bg-[#4A6741] px-3 py-1.5 text-[13px] font-medium text-white"
-          : "rounded-md border border-[#D8D3C4] bg-white px-3 py-1.5 text-[13px] hover:bg-[#F0EDE3]"
+          ? "rounded-md bg-[var(--accent)] px-3 py-1.5 text-[13px] font-medium text-white"
+          : "rounded-md border border-[var(--border-strong)] bg-white px-3 py-1.5 text-[13px] hover:bg-[var(--shell)]"
       }
     >
       {label}

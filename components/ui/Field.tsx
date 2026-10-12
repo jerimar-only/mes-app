@@ -7,9 +7,7 @@ export default function Field({
 }) {
   return (
     <div>
-      <label className="mb-1.5 block text-[13px] font-medium text-[var(--muted)]">
-        {label}
-      </label>
+      <label className="field-label">{label}</label>
       {children}
     </div>
   );
