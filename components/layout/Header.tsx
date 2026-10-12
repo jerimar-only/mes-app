@@ -1,6 +1,5 @@
 "use client";
 
-import ThemeToggle from "@/components/layout/ThemeToggle";
 import InputTextColorPicker from "@/components/layout/InputTextColorPicker";
 
 export default function Header() {
@@ -25,7 +24,6 @@ export default function Header() {
 
       <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
         <InputTextColorPicker />
-        <ThemeToggle />
       </div>
     </header>
   );
