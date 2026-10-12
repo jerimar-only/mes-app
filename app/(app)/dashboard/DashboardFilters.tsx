@@ -36,66 +36,68 @@ export default function DashboardFilters({
   const hasFilters = Boolean(year || office);
 
   return (
-    <div className="flex flex-wrap items-end gap-4 rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm">
-      {/* Left side: Year + Office + Clear */}
-      <div>
-        <label className="mb-1.5 block text-[13px] font-medium text-[var(--muted)]">
-          Year
-        </label>
-        <select
-          value={year}
-          onChange={(e) => {
-            setYear(e.target.value);
-            go(e.target.value, office);
-          }}
-          className="min-w-[120px] rounded-lg border border-[var(--border-strong)] bg-[var(--card)] px-3 py-2 text-[14px] text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none"
-        >
-          <option value="">All years</option>
-          {years.map((y) => (
-            <option key={y} value={y}>
-              {y}
-            </option>
-          ))}
-        </select>
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm">
+      {/* Row 1: Year + CENRO aligned on the same baseline */}
+      <div className="flex flex-wrap items-end gap-4">
+        <div>
+          <label className="mb-1.5 block text-[13px] font-medium text-[var(--muted)]">
+            Year
+          </label>
+          <select
+            value={year}
+            onChange={(e) => {
+              setYear(e.target.value);
+              go(e.target.value, office);
+            }}
+            className="min-w-[120px] rounded-lg border border-[var(--border-strong)] bg-[var(--card)] px-3 py-2 text-[14px] text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none"
+          >
+            <option value="">All years</option>
+            {years.map((y) => (
+              <option key={y} value={y}>
+                {y}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-[13px] font-medium text-[var(--muted)]">
+            CENRO Office
+          </label>
+          <select
+            value={office}
+            onChange={(e) => {
+              setOffice(e.target.value);
+              go(year, e.target.value);
+            }}
+            className="min-w-[160px] rounded-lg border border-[var(--border-strong)] bg-[var(--card)] px-3 py-2 text-[14px] text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none"
+          >
+            <option value="">All CENRO</option>
+            {offices.map((o) => (
+              <option key={o.id} value={o.id}>
+                {o.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {hasFilters && (
+          <button
+            type="button"
+            onClick={() => {
+              setYear("");
+              setOffice("");
+              go("", "");
+            }}
+            className="mb-0.5 rounded-lg px-3 py-2 text-[13px] font-medium text-[var(--accent)] transition-colors hover:bg-[var(--accent-soft)]"
+          >
+            Clear filters
+          </button>
+        )}
       </div>
 
-      <div>
-        <label className="mb-1.5 block text-[13px] font-medium text-[var(--muted)]">
-          CENRO Office
-        </label>
-        <select
-          value={office}
-          onChange={(e) => {
-            setOffice(e.target.value);
-            go(year, e.target.value);
-          }}
-          className="min-w-[160px] rounded-lg border border-[var(--border-strong)] bg-[var(--card)] px-3 py-2 text-[14px] text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none"
-        >
-          <option value="">All CENRO</option>
-          {offices.map((o) => (
-            <option key={o.id} value={o.id}>
-              {o.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {hasFilters && (
-        <button
-          type="button"
-          onClick={() => {
-            setYear("");
-            setOffice("");
-            go("", "");
-          }}
-          className="mb-0.5 rounded-lg px-3 py-2 text-[13px] font-medium text-[var(--accent)] hover:bg-[var(--accent-soft)] transition-colors"
-        >
-          Clear filters
-        </button>
-      )}
-
-      {/* Right side: Provincial summary toggle */}
-      <div className="ml-auto flex items-center gap-2 self-end pb-0.5">
+      {/* Row 2: Provincial summary toggle — always under Year */}
+      <div className="mt-3 flex items-center gap-2">
         <button
           type="button"
           role="switch"

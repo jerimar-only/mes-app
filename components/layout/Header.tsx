@@ -4,12 +4,25 @@ import ThemeToggle from "@/components/layout/ThemeToggle";
 
 export default function Header() {
   return (
-    <header className="app-header sticky top-0 z-30 flex h-14 items-center justify-between pl-14 pr-5 sm:pl-6 sm:pr-6">
-      <span className="truncate text-[15px] font-semibold tracking-tight text-[var(--foreground)]">
-        EMS Tracker
+    <header className="app-header sticky top-0 z-30 flex h-14 items-center justify-between gap-3 px-4 sm:px-6">
+      {/* Open drawer — mobile only */}
+      <button
+        type="button"
+        className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-[var(--border)] bg-[var(--card)] text-[var(--muted)] shadow-[var(--shadow)] transition hover:text-[var(--foreground)] sm:hidden"
+        aria-label="Open menu"
+        onClick={() => window.dispatchEvent(new Event("sidebar-open"))}
+      >
+        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+          <rect x="3" y="3" width="18" height="18" rx="3" />
+          <path d="M9 3v18" />
+        </svg>
+      </button>
+
+      <span className="min-w-0 flex-1 truncate text-[15px] font-semibold tracking-tight text-[var(--foreground)]">
+        PENRO CAGAYAN - MONITORING AND ENFORCEMENT
       </span>
 
-      <div className="flex items-center gap-2">
+      <div className="flex shrink-0 items-center gap-2">
         <ThemeToggle />
       </div>
     </header>

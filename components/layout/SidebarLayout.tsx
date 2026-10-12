@@ -2,34 +2,36 @@
 
 import { useEffect, useState } from "react";
 
-const COLLAPSED_WIDTH = 72;
+const EXPANDED_WIDTH = 260;
+const COLLAPSED_WIDTH = 68;
 
 export default function SidebarLayout({ children }: { children: React.ReactNode }) {
-  const [margin, setMargin] = useState(256);
+  const [margin, setMargin] = useState(EXPANDED_WIDTH);
 
   useEffect(() => {
     const update = () => {
       const isMobile = window.matchMedia("(max-width: 639px)").matches;
+      if (isMobile) {
+        setMargin(0);
+        return;
+      }
       const collapsed = localStorage.getItem("sidebar-collapsed") === "true";
-      const width = Number(localStorage.getItem("sidebar-width") || 256);
-
-      // Mobile: the drawer overlays the page, so no margin
-      setMargin(isMobile ? 0 : collapsed ? COLLAPSED_WIDTH : width);
+      setMargin(collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH);
     };
 
     update();
-    window.addEventListener("sidebar-change", update);
     window.addEventListener("resize", update);
+    window.addEventListener("sidebar-change", update);
     return () => {
-      window.removeEventListener("sidebar-change", update);
       window.removeEventListener("resize", update);
+      window.removeEventListener("sidebar-change", update);
     };
   }, []);
 
   return (
     <div
       style={{ marginLeft: margin }}
-      className="min-h-screen min-w-0 transition-[margin] duration-200"
+      className="min-h-screen min-w-0 transition-[margin] duration-200 ease-out"
     >
       {children}
     </div>

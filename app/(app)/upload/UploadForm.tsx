@@ -1,7 +1,16 @@
 "use client";
 
-import { useRef, useState } from "react";
+/**
+ * File: app/(app)/upload/UploadForm.tsx
+ * Excel upload form using AttachmentUpload dropzone.
+ */
+
+import { useState } from "react";
 import { uploadExcel } from "./actions";
+import {
+  AttachmentUpload,
+  type AttachmentUploadItem,
+} from "@/components/ui/AttachmentUpload";
 
 type Row = { row: number; message: string };
 
@@ -14,24 +23,51 @@ type UploadResult = {
 };
 
 export default function UploadForm() {
+  const [items, setItems] = useState<AttachmentUploadItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [fileName, setFileName] = useState("");
   const [result, setResult] = useState<UploadResult | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [rejectMsg, setRejectMsg] = useState<string | null>(null);
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
+  async function handleUpload() {
+    const file = items[0]?.file;
+    if (!file) return;
+
     setLoading(true);
     setResult(null);
+    setRejectMsg(null);
+
+    // Mark row as uploading
+    setItems((prev) =>
+      prev.map((it) => ({ ...it, status: "uploading" as const, error: undefined }))
+    );
+
     try {
-      const formData = new FormData(e.currentTarget);
+      const formData = new FormData();
+      formData.append("file", file);
       const res = await uploadExcel(formData);
       setResult(res);
+
+      const failed = res.imported === 0 && res.errors.length > 0;
+      setItems((prev) =>
+        prev.map((it) => ({
+          ...it,
+          status: failed ? ("failed" as const) : ("complete" as const),
+          error: failed ? res.errors[0]?.message : undefined,
+        }))
+      );
     } catch (err) {
+      const message = err instanceof Error ? err.message : "Upload failed.";
       setResult({
         imported: 0,
-        errors: [{ row: 0, message: err instanceof Error ? err.message : "Upload failed." }],
+        errors: [{ row: 0, message }],
       });
+      setItems((prev) =>
+        prev.map((it) => ({
+          ...it,
+          status: "failed" as const,
+          error: message,
+        }))
+      );
     } finally {
       setLoading(false);
     }
@@ -39,55 +75,57 @@ export default function UploadForm() {
 
   const skipped = result?.skipped ?? result?.skippedRows?.length ?? 0;
   const errorCount = result?.errors.length ?? 0;
+  const hasFile = items.length > 0 && !!items[0]?.file;
 
   return (
     <div className="space-y-5">
-      <form
-        onSubmit={handleSubmit}
-        className="space-y-4 rounded-lg border border-[var(--border)] bg-[var(--card,transparent)] p-4 sm:p-5"
+      <AttachmentUpload
+        value={items}
+        onValueChange={(next) => {
+          setItems(next);
+          setResult(null);
+          setRejectMsg(null);
+        }}
+        onFilesRejected={(files, reason) => {
+          if (reason === "too-large") {
+            setRejectMsg(
+              `${files[0]?.name ?? "File"} is too large. Maximum size is 50 MB.`
+            );
+          } else if (reason === "max-files") {
+            setRejectMsg("Only one Excel file can be uploaded at a time.");
+          } else {
+            setRejectMsg("That file type is not supported. Use .xlsx or .xls.");
+          }
+        }}
+        accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+        multiple={false}
+        maxFiles={1}
+        maxFileSize={50 * 1024 * 1024}
+        disabled={loading}
+        title="Drag and drop or browse your Excel file"
+        description="Accepts .xlsx and .xls · Maximum 50 MB"
+        attachmentsLabel="Selected file"
+      />
+
+      {rejectMsg && (
+        <p className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-[14px] text-[var(--foreground)]">
+          {rejectMsg}
+        </p>
+      )}
+
+      <button
+        type="button"
+        onClick={handleUpload}
+        disabled={loading || !hasFile}
+        className="w-full rounded-[10px] bg-[var(--accent)] px-4 py-2.5 text-[14px] font-semibold text-white transition hover:bg-[var(--accent-hover)] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
       >
-        <div>
-          <span className="mb-1.5 block text-[14px] font-medium text-[var(--foreground)]">
-            Excel file (.xlsx)
-          </span>
-
-          {/* Real input is hidden; the button below matches the other buttons */}
-          <input
-            ref={inputRef}
-            type="file"
-            name="file"
-            accept=".xlsx,.xls"
-            required
-            className="sr-only"
-            onChange={(e) => setFileName(e.target.files?.[0]?.name ?? "")}
-          />
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <button
-              type="button"
-              onClick={() => inputRef.current?.click()}
-              className="w-full rounded-md border border-[var(--border-strong)] bg-white px-4 py-2 text-[14px] text-[var(--accent)] hover:bg-[var(--shell)] sm:w-auto"
-            >
-              Choose file
-            </button>
-            <span className="min-w-0 truncate text-[14px] text-[var(--muted)]">
-              {fileName || "No file selected"}
-            </span>
-          </div>
-        </div>
-
-        <button
-          type="submit"
-          disabled={loading || !fileName}
-          className="w-full rounded-md bg-[var(--accent)] px-4 py-2 text-[14px] text-white hover:bg-[var(--accent-hover)] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
-        >
-          {loading ? "Uploading… please wait" : "Upload"}
-        </button>
-      </form>
+        {loading ? "Uploading… please wait" : "Upload"}
+      </button>
 
       {result && (
         <div className="space-y-3 text-[14px]">
           <p
-            className={`rounded-md border p-3 ${
+            className={`rounded-xl border p-3 ${
               result.imported > 0
                 ? "border-[var(--accent)]/40 bg-[var(--accent)]/10 text-[var(--foreground)]"
                 : "border-[var(--border)] text-[var(--foreground)]"
@@ -95,7 +133,8 @@ export default function UploadForm() {
           >
             {result.totalRead !== undefined && (
               <>
-                {result.totalRead} record{result.totalRead === 1 ? "" : "s"} found in the file:{" "}
+                {result.totalRead} record{result.totalRead === 1 ? "" : "s"}{" "}
+                found in the file:{" "}
               </>
             )}
             <strong>{result.imported} imported</strong>
@@ -106,9 +145,10 @@ export default function UploadForm() {
           </p>
 
           {skipped > 0 && result.skippedRows && result.skippedRows.length > 0 && (
-            <details className="rounded-md border border-yellow-500/40 bg-yellow-500/10 p-3 text-[var(--foreground)]">
+            <details className="rounded-xl border border-yellow-500/40 bg-yellow-500/10 p-3 text-[var(--foreground)]">
               <summary className="cursor-pointer font-medium">
-                {skipped} row{skipped === 1 ? "" : "s"} skipped because they already exist
+                {skipped} row{skipped === 1 ? "" : "s"} skipped because they
+                already exist
               </summary>
               <ul className="mt-2 max-h-60 list-disc space-y-1 overflow-y-auto pl-5">
                 {result.skippedRows.map((s, i) => (
@@ -121,7 +161,7 @@ export default function UploadForm() {
           )}
 
           {errorCount > 0 && (
-            <div className="rounded-md border border-red-500/40 bg-red-500/10 p-3 text-[var(--foreground)]">
+            <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-[var(--foreground)]">
               <p className="font-medium">
                 {errorCount} row{errorCount === 1 ? "" : "s"} had problems:
               </p>
