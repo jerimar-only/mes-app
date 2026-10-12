@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import { login } from "./actions";
 import Image from "next/image";
 import { Input } from "@/components/ui/Input";
@@ -71,11 +71,8 @@ export default function LoginForm() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  useEffect(() => {
-    if (state.error === "" && state !== initialState) {
-      window.location.href = "/dashboard";
-    }
-  }, [state]);
+  // Server action already redirects on success; do not client-redirect on empty error
+  // (that pattern could bounce deactivated/stale sessions in a loop)
 
   const formError = Boolean(state.error);
 

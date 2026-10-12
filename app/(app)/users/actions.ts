@@ -106,6 +106,67 @@ export async function resetPassword(formData: FormData) {
   revalidatePath("/adminportal");
 }
 
+const ROLE_ORDER = ["ENCODER", "ADMINISTRATOR", "SUPERADMIN"] as const;
+type AppRole = (typeof ROLE_ORDER)[number];
+
+const ROLE_LABEL: Record<AppRole, string> = {
+  ENCODER: "Encoder",
+  ADMINISTRATOR: "Administrator",
+  SUPERADMIN: "Super Admin",
+};
+
+/**
+ * Promote or demote a user one step on the role ladder:
+ * Encoder → Administrator → Super Admin
+ */
+export async function changeUserRole(formData: FormData) {
+  const session = await getSession();
+  if (!session || session.role !== "SUPERADMIN") {
+    throw new Error("Unauthorized");
+  }
+
+  const userId = parseInt(formData.get("userId") as string, 10);
+  const direction = formData.get("direction") as string; // "promote" | "demote"
+
+  if (!userId) throw new Error("Missing user.");
+  if (userId === session.userId) {
+    throw new Error("Cannot change your own role.");
+  }
+  if (direction !== "promote" && direction !== "demote") {
+    throw new Error("Invalid direction.");
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new Error("User not found.");
+
+  const current = user.role as AppRole;
+  const idx = ROLE_ORDER.indexOf(current);
+  if (idx < 0) throw new Error("Unknown role.");
+
+  const nextIdx = direction === "promote" ? idx + 1 : idx - 1;
+  if (nextIdx < 0 || nextIdx >= ROLE_ORDER.length) {
+    throw new Error(
+      direction === "promote"
+        ? "Already at the highest role (Super Admin)."
+        : "Already at the lowest role (Encoder).",
+    );
+  }
+
+  const nextRole = ROLE_ORDER[nextIdx];
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { role: nextRole },
+  });
+
+  revalidatePath("/adminportal");
+
+  return {
+    from: ROLE_LABEL[current],
+    to: ROLE_LABEL[nextRole],
+  };
+}
+
 /**
  * Clears failed login attempts for a user so they can sign in again
  * without waiting out the 15-minute rate-limit window.

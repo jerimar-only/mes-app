@@ -6,13 +6,33 @@ import {
   deleteUser,
   resetPassword,
   resetLoginAttempts,
+  changeUserRole,
 } from "./actions";
 import { useToast } from "@/components/ui/Toast";
+
+type UserRole = "ENCODER" | "ADMINISTRATOR" | "SUPERADMIN";
 
 type User = {
   id: number;
   fullName: string;
   isActive: boolean;
+  role: UserRole | string;
+};
+
+const ROLE_LABEL: Record<string, string> = {
+  ENCODER: "Encoder",
+  ADMINISTRATOR: "Administrator",
+  SUPERADMIN: "Super Admin",
+};
+
+const NEXT_ROLE: Record<string, string> = {
+  ENCODER: "Administrator",
+  ADMINISTRATOR: "Super Admin",
+};
+
+const PREV_ROLE: Record<string, string> = {
+  ADMINISTRATOR: "Encoder",
+  SUPERADMIN: "Administrator",
 };
 
 export default function UserActions({
@@ -24,10 +44,13 @@ export default function UserActions({
 }) {
   const [pending, startTransition] = useTransition();
   const [confirm, setConfirm] = useState<
-    "delete" | "deactivate" | "reset" | "unlock" | null
+    "delete" | "deactivate" | "reset" | "unlock" | "promote" | "demote" | null
   >(null);
   const [newPassword, setNewPassword] = useState("");
   const { success, error } = useToast();
+
+  const canPromote = !isSelf && user.role !== "SUPERADMIN";
+  const canDemote = !isSelf && user.role !== "ENCODER";
 
   function showToast(type: "success" | "error", message: string) {
     if (type === "success") success(message);
@@ -131,10 +154,60 @@ export default function UserActions({
     });
   }
 
+  function handlePromoteOpen() {
+    setConfirm("promote");
+  }
+
+  function handleDemoteOpen() {
+    setConfirm("demote");
+  }
+
+  function handleConfirmRoleChange(direction: "promote" | "demote") {
+    setConfirm(null);
+    startTransition(async () => {
+      try {
+        const fd = new FormData();
+        fd.set("userId", String(user.id));
+        fd.set("direction", direction);
+        const res = await changeUserRole(fd);
+        showToast(
+          "success",
+          `${user.fullName}: ${res.from} → ${res.to}`,
+        );
+      } catch (e: any) {
+        showToast("error", e.message || "Failed to change role");
+      }
+    });
+  }
+
   return (
     <>
       {/* Action buttons */}
       <div className="flex flex-wrap items-center justify-end gap-2">
+        {canPromote && (
+          <button
+            type="button"
+            onClick={handlePromoteOpen}
+            disabled={pending}
+            className="rounded-md border border-[var(--accent)]/40 bg-[var(--accent)]/10 px-2.5 py-1.5 text-[12px] font-medium text-[var(--accent)] transition hover:bg-[var(--accent)]/20 disabled:opacity-50"
+            title={`Promote to ${NEXT_ROLE[user.role] ?? "next role"}`}
+          >
+            Promote
+          </button>
+        )}
+
+        {canDemote && (
+          <button
+            type="button"
+            onClick={handleDemoteOpen}
+            disabled={pending}
+            className="rounded-md border border-[var(--border-strong)] px-2.5 py-1.5 text-[12px] font-medium text-[var(--foreground)] transition hover:bg-[var(--background)] disabled:opacity-50"
+            title={`Demote to ${PREV_ROLE[user.role] ?? "previous role"}`}
+          >
+            Demote
+          </button>
+        )}
+
         <button
           type="button"
           onClick={handleUnlockOpen}
@@ -230,6 +303,64 @@ export default function UserActions({
                     className="rounded-lg bg-amber-600 px-4 py-2 text-[14px] font-medium text-white hover:bg-amber-700"
                   >
                     Deactivate
+                  </button>
+                </div>
+              </>
+            )}
+
+            {confirm === "promote" && (
+              <>
+                <h3 className="text-lg font-semibold text-[var(--foreground)]">
+                  Promote account?
+                </h3>
+                <p className="mt-2 text-[14px] text-[var(--muted)]">
+                  Promote <strong>{user.fullName}</strong> from{" "}
+                  <strong>{ROLE_LABEL[user.role] ?? user.role}</strong> to{" "}
+                  <strong>{NEXT_ROLE[user.role]}</strong>?
+                </p>
+                <div className="mt-6 flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setConfirm(null)}
+                    className="rounded-lg border border-[var(--border-strong)] px-4 py-2 text-[14px] font-medium text-[var(--foreground)] hover:bg-[var(--background)]"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleConfirmRoleChange("promote")}
+                    className="rounded-lg bg-[var(--accent)] px-4 py-2 text-[14px] font-medium text-white hover:bg-[var(--accent-hover)]"
+                  >
+                    Promote
+                  </button>
+                </div>
+              </>
+            )}
+
+            {confirm === "demote" && (
+              <>
+                <h3 className="text-lg font-semibold text-[var(--foreground)]">
+                  Demote account?
+                </h3>
+                <p className="mt-2 text-[14px] text-[var(--muted)]">
+                  Demote <strong>{user.fullName}</strong> from{" "}
+                  <strong>{ROLE_LABEL[user.role] ?? user.role}</strong> to{" "}
+                  <strong>{PREV_ROLE[user.role]}</strong>?
+                </p>
+                <div className="mt-6 flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setConfirm(null)}
+                    className="rounded-lg border border-[var(--border-strong)] px-4 py-2 text-[14px] font-medium text-[var(--foreground)] hover:bg-[var(--background)]"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleConfirmRoleChange("demote")}
+                    className="rounded-lg bg-amber-600 px-4 py-2 text-[14px] font-medium text-white hover:bg-amber-700"
+                  >
+                    Demote
                   </button>
                 </div>
               </>

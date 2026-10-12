@@ -41,10 +41,29 @@ export async function login(
   }
 
   const user = await prisma.user.findUnique({ where: { email } });
+
+  // Deactivated: never create a session; clear any leftover cookie
+  if (user && !user.isActive) {
+    const { clearSession } = await import("@/lib/auth");
+    await clearSession();
+    await prisma.loginAttempt.create({
+      data: {
+        ip,
+        email,
+        success: false,
+        country,
+        region,
+        city,
+        userId: user.id,
+      },
+    });
+    return {
+      error: "This account has been deactivated. Contact an administrator.",
+    };
+  }
+
   const passwordMatches =
-    !!user &&
-    user.isActive &&
-    (await bcrypt.compare(password, user.passwordHash));
+    !!user && (await bcrypt.compare(password, user.passwordHash));
 
   // Always record the attempt, with approximate location
   await prisma.loginAttempt.create({
@@ -60,7 +79,6 @@ export async function login(
   });
 
   if (!passwordMatches) {
-    // Same message whether user is missing, inactive, or wrong password
     return { error: "Invalid username or password." };
   }
 

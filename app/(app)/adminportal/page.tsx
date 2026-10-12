@@ -219,6 +219,7 @@ export default async function AdminPortalPage() {
                           id: user.id,
                           fullName: user.fullName,
                           isActive: user.isActive,
+                          role: user.role,
                         }}
                         isSelf={isSelf}
                       />
