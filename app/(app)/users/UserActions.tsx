@@ -1,7 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { toggleUserActive, deleteUser, resetPassword } from "./actions";
+import {
+  toggleUserActive,
+  deleteUser,
+  resetPassword,
+  resetLoginAttempts,
+} from "./actions";
 import { useToast } from "@/components/ui/Toast";
 
 type User = {
@@ -18,7 +23,9 @@ export default function UserActions({
   isSelf: boolean;
 }) {
   const [pending, startTransition] = useTransition();
-  const [confirm, setConfirm] = useState<"delete" | "deactivate" | "reset" | null>(null);
+  const [confirm, setConfirm] = useState<
+    "delete" | "deactivate" | "reset" | "unlock" | null
+  >(null);
   const [newPassword, setNewPassword] = useState("");
   const { success, error } = useToast();
 
@@ -101,10 +108,43 @@ export default function UserActions({
     });
   }
 
+  function handleUnlockOpen() {
+    setConfirm("unlock");
+  }
+
+  function handleConfirmUnlock() {
+    setConfirm(null);
+    startTransition(async () => {
+      try {
+        const fd = new FormData();
+        fd.set("userId", String(user.id));
+        const res = await resetLoginAttempts(fd);
+        showToast(
+          "success",
+          `Login lockout cleared for ${user.fullName}${
+            res?.deleted != null ? ` (${res.deleted} failed attempt${res.deleted === 1 ? "" : "s"} removed)` : ""
+          }`,
+        );
+      } catch (e: any) {
+        showToast("error", e.message || "Failed to clear login attempts");
+      }
+    });
+  }
+
   return (
     <>
       {/* Action buttons */}
       <div className="flex flex-wrap items-center justify-end gap-2">
+        <button
+          type="button"
+          onClick={handleUnlockOpen}
+          disabled={pending}
+          className="rounded-md border border-[var(--border-strong)] px-2.5 py-1.5 text-[12px] font-medium text-[var(--foreground)] transition hover:bg-[var(--background)] disabled:opacity-50"
+          title="Clear failed login attempts so this user can sign in again"
+        >
+          Clear lockout
+        </button>
+
         <button
           type="button"
           onClick={handleResetOpen}
@@ -190,6 +230,35 @@ export default function UserActions({
                     className="rounded-lg bg-amber-600 px-4 py-2 text-[14px] font-medium text-white hover:bg-amber-700"
                   >
                     Deactivate
+                  </button>
+                </div>
+              </>
+            )}
+
+            {confirm === "unlock" && (
+              <>
+                <h3 className="text-lg font-semibold text-[var(--foreground)]">
+                  Clear login lockout?
+                </h3>
+                <p className="mt-2 text-[14px] text-[var(--muted)]">
+                  This removes failed login attempts for{" "}
+                  <strong>{user.fullName}</strong> so they can sign in again
+                  without waiting 15 minutes.
+                </p>
+                <div className="mt-6 flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setConfirm(null)}
+                    className="rounded-lg border border-[var(--border-strong)] px-4 py-2 text-[14px] font-medium text-[var(--foreground)] hover:bg-[var(--background)]"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleConfirmUnlock}
+                    className="rounded-lg bg-[var(--accent)] px-4 py-2 text-[14px] font-medium text-white hover:bg-[var(--accent-hover)]"
+                  >
+                    Clear lockout
                   </button>
                 </div>
               </>
