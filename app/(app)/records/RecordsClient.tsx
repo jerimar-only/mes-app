@@ -10,10 +10,23 @@ type RecordRow = {
   dateOfApprehension: string | null;
   docketNumber: string | null;
   status: string;
-  createdAt: string;   // ← add this
+  createdAt: string;
   cenroOffice: { name: string };
   _count: { items: number };
+  /** Sum of forest products + conveyances + equipment estimated values */
+  estimatedValue: number;
+  productsValue: number;
+  conveyancesValue: number;
+  equipmentValue: number;
 };
+
+function peso(n: number | null | undefined) {
+  if (n == null || n === 0) return "—";
+  return `₱${n.toLocaleString("en-PH", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  })}`;
+}
 
 const STATUS_LABEL: Record<string, string> = {
   FOR_RESOLUTION: "For resolution",
@@ -126,6 +139,7 @@ export default function RecordsClient({
                 <th className="px-4 py-2.5 font-semibold">Office</th>
                 <th className="px-4 py-2.5 font-semibold">Date / Place</th>
                 <th className="px-4 py-2.5 font-semibold">Items</th>
+                <th className="px-4 py-2.5 font-semibold text-right">Est. value</th>
                 <th className="px-4 py-2.5 font-semibold">Status</th>
                 <th className="px-4 py-2.5 font-semibold">Docket No.</th>
                 <th className="px-4 py-2.5 font-semibold">Created</th>
@@ -145,6 +159,24 @@ export default function RecordsClient({
                   </Link>
                 </td>
                 <td className="px-4 py-2.5 text-[var(--muted)]">{r._count.items}</td>
+                <td
+                  className="px-4 py-2.5 text-right tabular-nums text-[var(--foreground)]"
+                  title={[
+                    r.productsValue
+                      ? `Forest products: ${peso(r.productsValue)}`
+                      : null,
+                    r.conveyancesValue
+                      ? `Conveyances: ${peso(r.conveyancesValue)}`
+                      : null,
+                    r.equipmentValue
+                      ? `Equipment: ${peso(r.equipmentValue)}`
+                      : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ") || undefined}
+                >
+                  {peso(r.estimatedValue)}
+                </td>
                 <td className="px-4 py-2.5">
                   {STATUS_LABEL[r.status] ?? r.status}
                 </td>
@@ -166,7 +198,7 @@ export default function RecordsClient({
             {!loading && records.length === 0 && (
               <tr>
                 <td
-                  colSpan={7}
+                  colSpan={8}
                   className="px-4 py-12 text-center text-[var(--muted)]"
                 >
                   No records found.

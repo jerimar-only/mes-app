@@ -166,6 +166,16 @@ export default function Sidebar({
             <NavItem href="/upload" active={isActive("/upload")} collapsed={railCollapsed} icon={<UploadIcon />}>
               Upload Excel file
             </NavItem>
+            {isAdmin && (
+              <NavItem
+                href="/bulk-update"
+                active={isActive("/bulk-update")}
+                collapsed={railCollapsed}
+                icon={<BulkIcon />}
+              >
+                Bulk update
+              </NavItem>
+            )}
 
             <GroupLabel collapsed={railCollapsed}>Reports</GroupLabel>
             <NavItem href="/reports" active={isActive("/reports")} collapsed={railCollapsed} icon={<ChartIcon />}>
@@ -358,6 +368,14 @@ function UploadIcon() {
     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
       <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
       <path d="M17 8l-5-5-5 5M12 3v12" />
+    </svg>
+  );
+}
+function BulkIcon() {
+  return (
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 11l3 3L22 4" />
+      <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
     </svg>
   );
 }

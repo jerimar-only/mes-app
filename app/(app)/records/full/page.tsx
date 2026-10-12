@@ -28,6 +28,14 @@ const fmtDate = (d: Date | null) =>
     ? d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", timeZone: "UTC" })
     : null;
 
+const peso = (n: number | null | undefined) => {
+  if (n == null || n === 0) return "—";
+  return `₱${n.toLocaleString("en-PH", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  })}`;
+};
+
 export default async function FullRecordsPage({
   searchParams,
 }: {
@@ -272,41 +280,46 @@ export default async function FullRecordsPage({
       {/* Table */}
       <div className="relative overflow-auto rounded-lg border border-[var(--border)] bg-[var(--card)] shadow-sm" style={{ maxHeight: "70vh" }}>
         <table className="w-full border-collapse text-left text-[12.5px]" style={{ minWidth: "2600px" }}>
-          <thead className="sticky top-0 z-20">
-            <tr className="border-b border-[var(--border)] bg-[#F5F3EB] text-[11px] uppercase tracking-wide text-[var(--muted)]">
-              <th className="sticky left-0 z-30 whitespace-nowrap bg-[#F5F3EB] px-3 py-2.5 font-semibold shadow-[2px_0_4px_-2px_rgba(0,0,0,0.08)]">
+          <thead className="sticky top-0 z-20 bg-[var(--background)]">
+            <tr className="border-b border-[var(--border)] bg-[var(--background)] text-[11px] uppercase tracking-wide text-[var(--muted)]">
+              {/* bg on every th so sticky header stays opaque in light + dark */}
+              <th className="sticky left-0 z-30 whitespace-nowrap bg-[var(--background)] px-3 py-2.5 font-semibold shadow-[2px_0_4px_-2px_rgba(0,0,0,0.08)]">
                 ID
               </th>
-              <th className="whitespace-nowrap px-3 py-2.5 font-semibold">CENRO office</th>
-              <th className="whitespace-nowrap px-3 py-2.5 font-semibold">Year</th>
-              <th className="whitespace-nowrap px-3 py-2.5 font-semibold">Month</th>
-              <th className="whitespace-nowrap px-3 py-2.5 font-semibold">Date</th>
-              <th className="min-w-[140px] px-3 py-2.5 font-semibold">Place</th>
-              <th className="min-w-[140px] px-3 py-2.5 font-semibold">Source of products</th>
-              <th className="min-w-[120px] px-3 py-2.5 font-semibold">GPS</th>
-              <th className="min-w-[110px] px-3 py-2.5 font-semibold">Land class.</th>
-              <th className="min-w-[120px] px-3 py-2.5 font-semibold">Apprehending officers</th>
-              <th className="min-w-[120px] px-3 py-2.5 font-semibold">Claimant/owner</th>
-              <th className="min-w-[180px] px-3 py-2.5 font-semibold">Circumstances</th>
-              <th className="min-w-[110px] px-3 py-2.5 font-semibold">Place impounded</th>
-              <th className="min-w-[110px] px-3 py-2.5 font-semibold">Other agencies</th>
-              <th className="min-w-[160px] px-3 py-2.5 font-semibold">Other remarks</th>
-              <th className="min-w-[160px] px-3 py-2.5 font-semibold">Remarks</th>
-              <th className="whitespace-nowrap px-3 py-2.5 font-semibold">ACP to PENRO</th>
-              <th className="whitespace-nowrap px-3 py-2.5 font-semibold">ACP to RO</th>
-              <th className="min-w-[220px] px-3 py-2.5 font-semibold">Case status</th>
-              <th className="whitespace-nowrap px-3 py-2.5 font-semibold">Status</th>
-              <th className="whitespace-nowrap px-3 py-2.5 font-semibold">Docket #</th>
-              <th className="whitespace-nowrap px-3 py-2.5 font-semibold">Finality date</th>
-              <th className="min-w-[150px] px-3 py-2.5 font-semibold">Forest products</th>
-              <th className="min-w-[130px] px-3 py-2.5 font-semibold">Conveyances</th>
-              <th className="min-w-[130px] px-3 py-2.5 font-semibold">Equipment</th>
+              <th className="whitespace-nowrap bg-[var(--background)] px-3 py-2.5 font-semibold">CENRO office</th>
+              <th className="whitespace-nowrap bg-[var(--background)] px-3 py-2.5 font-semibold">Year</th>
+              <th className="whitespace-nowrap bg-[var(--background)] px-3 py-2.5 font-semibold">Month</th>
+              <th className="whitespace-nowrap bg-[var(--background)] px-3 py-2.5 font-semibold">Date</th>
+              <th className="min-w-[140px] bg-[var(--background)] px-3 py-2.5 font-semibold">Place</th>
+              <th className="min-w-[140px] bg-[var(--background)] px-3 py-2.5 font-semibold">Source of products</th>
+              <th className="min-w-[120px] bg-[var(--background)] px-3 py-2.5 font-semibold">GPS</th>
+              <th className="min-w-[110px] bg-[var(--background)] px-3 py-2.5 font-semibold">Land class.</th>
+              <th className="min-w-[120px] bg-[var(--background)] px-3 py-2.5 font-semibold">Apprehending officers</th>
+              <th className="min-w-[120px] bg-[var(--background)] px-3 py-2.5 font-semibold">Claimant/owner</th>
+              <th className="min-w-[180px] bg-[var(--background)] px-3 py-2.5 font-semibold">Circumstances</th>
+              <th className="min-w-[110px] bg-[var(--background)] px-3 py-2.5 font-semibold">Place impounded</th>
+              <th className="min-w-[110px] bg-[var(--background)] px-3 py-2.5 font-semibold">Other agencies</th>
+              <th className="min-w-[160px] bg-[var(--background)] px-3 py-2.5 font-semibold">Other remarks</th>
+              <th className="min-w-[160px] bg-[var(--background)] px-3 py-2.5 font-semibold">Remarks</th>
+              <th className="whitespace-nowrap bg-[var(--background)] px-3 py-2.5 font-semibold">ACP to PENRO</th>
+              <th className="whitespace-nowrap bg-[var(--background)] px-3 py-2.5 font-semibold">ACP to RO</th>
+              <th className="min-w-[220px] bg-[var(--background)] px-3 py-2.5 font-semibold">Case status</th>
+              <th className="whitespace-nowrap bg-[var(--background)] px-3 py-2.5 font-semibold">Status</th>
+              <th className="whitespace-nowrap bg-[var(--background)] px-3 py-2.5 font-semibold">Docket #</th>
+              <th className="whitespace-nowrap bg-[var(--background)] px-3 py-2.5 font-semibold">Finality date</th>
+              <th className="min-w-[150px] bg-[var(--background)] px-3 py-2.5 font-semibold">Forest products</th>
+              <th className="whitespace-nowrap bg-[var(--background)] px-3 py-2.5 font-semibold text-right">Products value</th>
+              <th className="min-w-[130px] bg-[var(--background)] px-3 py-2.5 font-semibold">Conveyances</th>
+              <th className="whitespace-nowrap bg-[var(--background)] px-3 py-2.5 font-semibold text-right">Conveyances value</th>
+              <th className="min-w-[130px] bg-[var(--background)] px-3 py-2.5 font-semibold">Equipment</th>
+              <th className="whitespace-nowrap bg-[var(--background)] px-3 py-2.5 font-semibold text-right">Equipment value</th>
+              <th className="whitespace-nowrap bg-[var(--background)] px-3 py-2.5 font-semibold text-right">Total est. value</th>
               {fieldDefs.map((fd) => (
-                <th key={fd.id} className="min-w-[120px] whitespace-nowrap px-3 py-2.5 font-semibold">
+                <th key={fd.id} className="min-w-[120px] whitespace-nowrap bg-[var(--background)] px-3 py-2.5 font-semibold">
                   {fd.name}
                 </th>
               ))}
-              <th className="whitespace-nowrap px-3 py-2.5 font-semibold">Deleted</th>
+              <th className="whitespace-nowrap bg-[var(--background)] px-3 py-2.5 font-semibold">Deleted</th>
             </tr>
           </thead>
 
@@ -323,6 +336,21 @@ export default async function FullRecordsPage({
               const equipmentText = r.equipment
                 .map((e) => `${e.type} ×${e.quantity}`)
                 .join(", ");
+
+              const productsValue = r.items.reduce(
+                (s, i) => s + (i.estimatedValue ?? 0),
+                0,
+              );
+              const conveyancesValue = r.conveyances.reduce(
+                (s, c) => s + (c.estimatedValue ?? 0),
+                0,
+              );
+              const equipmentValue = r.equipment.reduce(
+                (s, e) => s + (e.estimatedValue ?? 0),
+                0,
+              );
+              const totalEstimatedValue =
+                productsValue + conveyancesValue + equipmentValue;
 
               const rowBg = idx % 2 === 0 ? "bg-[var(--card)] text-[var(--foreground)]" : "bg-[var(--shell)] text-[var(--foreground)]";
 
@@ -364,8 +392,20 @@ export default async function FullRecordsPage({
                   <td className="whitespace-nowrap px-3 py-2">{dash(r.orderOfFinalityDate)}</td>
 
                   <td className="max-w-[180px] px-3 py-2 break-words leading-snug">{dash(productsText)}</td>
+                  <td className="whitespace-nowrap px-3 py-2 text-right tabular-nums">
+                    {peso(productsValue)}
+                  </td>
                   <td className="max-w-[150px] px-3 py-2 break-words leading-snug">{dash(conveyancesText)}</td>
+                  <td className="whitespace-nowrap px-3 py-2 text-right tabular-nums">
+                    {peso(conveyancesValue)}
+                  </td>
                   <td className="max-w-[150px] px-3 py-2 break-words leading-snug">{dash(equipmentText)}</td>
+                  <td className="whitespace-nowrap px-3 py-2 text-right tabular-nums">
+                    {peso(equipmentValue)}
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-2 text-right tabular-nums font-medium">
+                    {peso(totalEstimatedValue)}
+                  </td>
 
                   {fieldDefs.map((fd) => {
                     const fv = fvById.get(fd.id);
@@ -392,7 +432,7 @@ export default async function FullRecordsPage({
 
             {records.length === 0 && (
               <tr>
-                <td colSpan={26 + fieldDefs.length} className="px-4 py-12 text-center text-[14px] text-[var(--muted)]">
+                <td colSpan={30 + fieldDefs.length} className="px-4 py-12 text-center text-[14px] text-[var(--muted)]">
                   No records match these filters.
                 </td>
               </tr>

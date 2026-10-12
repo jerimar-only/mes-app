@@ -46,12 +46,15 @@ export async function GET(req: NextRequest) {
       : {}),
   };
 
-  const [records, total] = await Promise.all([
+  const [rows, total] = await Promise.all([
     prisma.apprehensionRecord.findMany({
       where,
       include: {
         cenroOffice: { select: { name: true } },
         _count: { select: { items: true } },
+        items: { select: { estimatedValue: true } },
+        conveyances: { select: { estimatedValue: true } },
+        equipment: { select: { estimatedValue: true } },
       },
       orderBy: [{ createdAt: "desc" }, { year: "desc" }, { id: "desc" }],
       skip: (page - 1) * pageSize,
@@ -59,6 +62,29 @@ export async function GET(req: NextRequest) {
     }),
     prisma.apprehensionRecord.count({ where }),
   ]);
+
+  const records = rows.map((r) => {
+    const productsValue = r.items.reduce(
+      (s, i) => s + (i.estimatedValue ?? 0),
+      0,
+    );
+    const conveyancesValue = r.conveyances.reduce(
+      (s, c) => s + (c.estimatedValue ?? 0),
+      0,
+    );
+    const equipmentValue = r.equipment.reduce(
+      (s, e) => s + (e.estimatedValue ?? 0),
+      0,
+    );
+    const { items, conveyances, equipment, ...rest } = r;
+    return {
+      ...rest,
+      productsValue,
+      conveyancesValue,
+      equipmentValue,
+      estimatedValue: productsValue + conveyancesValue + equipmentValue,
+    };
+  });
 
   return NextResponse.json({
     records,
