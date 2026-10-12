@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getSession, clearSession } from "@/lib/auth";
+import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Sidebar from "@/components/layout/Sidebar";
 import SidebarLayout from "@/components/layout/SidebarLayout";
@@ -15,9 +15,9 @@ export default async function AppLayout({
     ? await prisma.user.findUnique({ where: { id: session.userId } })
     : null;
 
-  // No user or deactivated → clear cookie then login (avoids infinite redirect)
+  // Cookie changes are not allowed in Server Components — only redirect.
+  // Session is cleared in /api/session (Route Handler) or the login Server Action.
   if (!user || !user.isActive) {
-    await clearSession();
     redirect("/login");
   }
 

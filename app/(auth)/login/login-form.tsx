@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { login } from "./actions";
 import Image from "next/image";
 import { Input } from "@/components/ui/Input";
@@ -71,8 +71,10 @@ export default function LoginForm() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  // Server action already redirects on success; do not client-redirect on empty error
-  // (that pattern could bounce deactivated/stale sessions in a loop)
+  // Drop stale/deactivated session cookies via Route Handler (allowed to set cookies)
+  useEffect(() => {
+    fetch("/api/session", { cache: "no-store" }).catch(() => {});
+  }, []);
 
   const formError = Boolean(state.error);
 
