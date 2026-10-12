@@ -304,6 +304,42 @@ legend {
   color: var(--input-text, var(--foreground)) !important;
 }
 
+/* ── Login page: glass pill inputs (motion Input) ── */
+.login-page input[type="text"],
+.login-page input[type="password"] {
+  background-color: transparent !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  color-scheme: dark;
+  height: 100%;
+}
+.login-page input[type="text"]::placeholder,
+.login-page input[type="password"]::placeholder {
+  color: rgba(255, 255, 255, 0.55) !important;
+  opacity: 1;
+}
+.login-page input[type="text"]:focus,
+.login-page input[type="password"]:focus {
+  outline: none !important;
+  box-shadow: none !important;
+  background-color: transparent !important;
+}
+/* Visible labels on glass card */
+.login-page label {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+/* Chrome/Safari autofill — keep transparent + white text */
+.login-page input:-webkit-autofill,
+.login-page input:-webkit-autofill:hover,
+.login-page input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #fff !important;
+  -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+  caret-color: #fff;
+}
+
 /* ── Status chips ── */
 
 .chip {
@@ -487,19 +523,18 @@ legend {
   color: var(--muted);
 }
 
-/* Login autofill */
-input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:focus,
-input:-webkit-autofill:active {
+/* Login autofill only — do not force white text on app forms */
+.login-page input:-webkit-autofill,
+.login-page input:-webkit-autofill:hover,
+.login-page input:-webkit-autofill:focus,
+.login-page input:-webkit-autofill:active {
   -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
-  -webkit-text-fill-color: white !important;
-  caret-color: white;
+  -webkit-text-fill-color: #fff !important;
+  caret-color: #fff;
   transition: background-color 5000s ease-in-out 0s;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.4) !important;
 }
 
-input:focus {
+.login-page input:focus {
   outline: none !important;
 }
 
