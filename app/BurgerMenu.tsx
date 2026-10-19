@@ -98,7 +98,7 @@ export default function BurgerMenu({
                 }}
               />
               <MenuLink href="/users" onClick={() => setOpen(false)}>
-                Create user account
+                Manage user account
               </MenuLink>
               <MenuLink href="/field-values" onClick={() => setOpen(false)}>
                 Field Values
