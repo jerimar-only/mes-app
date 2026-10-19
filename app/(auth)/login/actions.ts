@@ -12,32 +12,67 @@ export type LoginState = {
   lockedUntil?: number;
 };
 
-const MAX_ATTEMPTS = 5;
-const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOGIN_LOCK_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 
-async function getLockedUntil(ip: string, email: string): Promise<number | null> {
-  const since = new Date(Date.now() - WINDOW_MS);
+type LockScope = { ip?: string; email?: string };
+
+/**
+ * Lock if either this IP or this account has 5+ failed attempts in the last 15 minutes.
+ * - Same computer (IP): locked even if username changes
+ * - Same account (email): locked even from another device
+ */
+export async function getLockedUntil(
+  scope: LockScope,
+): Promise<number | null> {
+  const ip = scope.ip?.trim() || undefined;
+  const email = scope.email?.trim().toLowerCase() || undefined;
+  if (!ip && !email) return null;
+
+  const since = new Date(Date.now() - LOGIN_LOCK_WINDOW_MS);
+  const or: { ip?: string; email?: string }[] = [];
+  if (ip && ip !== "unknown") or.push({ ip });
+  if (email) or.push({ email });
+  if (or.length === 0) return null;
+
   const fails = await prisma.loginAttempt.findMany({
     where: {
       success: false,
       createdAt: { gte: since },
-      OR: [{ ip }, { email }],
+      OR: or,
     },
     orderBy: { createdAt: "asc" },
     select: { createdAt: true },
   });
 
-  if (fails.length < MAX_ATTEMPTS) return null;
+  if (fails.length < MAX_LOGIN_ATTEMPTS) return null;
 
-  // Lock lifts when enough oldest fails age out of the 15‑min window
   const unlockAt =
-    fails[fails.length - MAX_ATTEMPTS].createdAt.getTime() + WINDOW_MS;
+    fails[fails.length - MAX_LOGIN_ATTEMPTS].createdAt.getTime() +
+    LOGIN_LOCK_WINDOW_MS;
   return unlockAt > Date.now() ? unlockAt : null;
+}
+
+/** Page load: lock for this request's IP only. */
+export async function getLockedUntilByIp(ip: string): Promise<number | null> {
+  return getLockedUntil({ ip });
+}
+
+/** Check lock for current IP + optional username. */
+export async function checkLoginLock(
+  email?: string,
+): Promise<{ lockedUntil: number | null }> {
+  const { ip } = await getClientInfo();
+  const lockedUntil = await getLockedUntil({
+    ip,
+    email: email?.trim().toLowerCase() || undefined,
+  });
+  return { lockedUntil };
 }
 
 export async function login(
   prevState: LoginState,
-  formData: FormData
+  formData: FormData,
 ): Promise<LoginState> {
   const email = (formData.get("email") as string | null)?.trim().toLowerCase();
   const password = formData.get("password") as string | null;
@@ -48,8 +83,7 @@ export async function login(
 
   const { ip, country, region, city } = await getClientInfo();
 
-  // ── Rate limit: already locked? ──
-  const lockedUntil = await getLockedUntil(ip, email);
+  const lockedUntil = await getLockedUntil({ ip, email });
   if (lockedUntil) {
     const mins = Math.max(1, Math.ceil((lockedUntil - Date.now()) / 60_000));
     return {
@@ -60,7 +94,6 @@ export async function login(
 
   const user = await prisma.user.findUnique({ where: { email } });
 
-  // Deactivated: never create a session; clear any leftover cookie
   if (user && !user.isActive) {
     const { clearSession } = await import("@/lib/auth");
     await clearSession();
@@ -83,7 +116,6 @@ export async function login(
   const passwordMatches =
     !!user && (await bcrypt.compare(password, user.passwordHash));
 
-  // Always record the attempt, with approximate location
   await prisma.loginAttempt.create({
     data: {
       ip,
@@ -97,12 +129,11 @@ export async function login(
   });
 
   if (!passwordMatches) {
-    // After this fail, may now be locked
-    const nowLocked = await getLockedUntil(ip, email);
+    const nowLocked = await getLockedUntil({ ip, email });
     if (nowLocked) {
       const mins = Math.max(1, Math.ceil((nowLocked - Date.now()) / 60_000));
       return {
-        error: `Too many login attempts. Account locked. Try again in ${mins} minute${mins === 1 ? "" : "s"}.`,
+        error: `Too many login attempts. Locked for ${mins} minute${mins === 1 ? "" : "s"}.`,
         lockedUntil: nowLocked,
       };
     }

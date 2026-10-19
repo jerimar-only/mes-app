@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useMemo, useState } from "react";
-import { login, type LoginState } from "./actions";
+import { login, checkLoginLock, type LoginState } from "./actions";
 import Image from "next/image";
 import { Input } from "@/components/ui/Input";
 
@@ -73,34 +73,76 @@ const glassInput =
   "!text-white !caret-white placeholder:!text-white/55";
 const glassIcon = "!text-white/70";
 
-export default function LoginForm() {
+export default function LoginForm({
+  initialLockedUntil,
+}: {
+  /** From server: IP already locked when the page was rendered (survives refresh). */
+  initialLockedUntil?: number;
+}) {
   const [state, formAction, isPending] = useActionState(login, initialState);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [now, setNow] = useState(() => Date.now());
+  // Avoid Date.now() during render for lock UI — prevents SSR/client hydration mismatch
+  const [mounted, setMounted] = useState(false);
+  const [now, setNow] = useState(0);
+  const [lockedUntil, setLockedUntil] = useState<number | undefined>(
+    initialLockedUntil,
+  );
 
-  // Drop stale/deactivated session cookies via Route Handler
+  // Mount once: start clock, drop stale session cookie, drop expired lock
   useEffect(() => {
+    const t = Date.now();
+    setMounted(true);
+    setNow(t);
+    if (initialLockedUntil && initialLockedUntil <= t) {
+      setLockedUntil(undefined);
+    }
     fetch("/api/session", { cache: "no-store" }).catch(() => {});
-  }, []);
+  }, [initialLockedUntil]);
 
-  // Tick every second while locked
+  // After a failed login that locks, take lockedUntil from the action result
   useEffect(() => {
-    if (!state.lockedUntil || state.lockedUntil <= Date.now()) return;
-    setNow(Date.now());
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
+    if (state.lockedUntil && state.lockedUntil > Date.now()) {
+      setLockedUntil(state.lockedUntil);
+    }
   }, [state.lockedUntil]);
 
-  const remainingMs = useMemo(() => {
-    if (!state.lockedUntil) return 0;
-    return Math.max(0, state.lockedUntil - now);
-  }, [state.lockedUntil, now]);
+  // When username is entered/blurred, also check account-level lock (other device)
+  async function recheckLock(nextEmail?: string) {
+    try {
+      const res = await checkLoginLock(nextEmail ?? email);
+      if (res.lockedUntil && res.lockedUntil > Date.now()) {
+        setLockedUntil(res.lockedUntil);
+      }
+    } catch {
+      /* ignore network errors */
+    }
+  }
 
-  const isLocked = remainingMs > 0;
-  const formError = Boolean(state.error) && !isLocked;
-  const locked = isLocked;
+  // Tick every second while locked (client only)
+  useEffect(() => {
+    if (!mounted || !lockedUntil) return;
+    if (lockedUntil <= Date.now()) {
+      setLockedUntil(undefined);
+      return;
+    }
+    const id = setInterval(() => {
+      const t = Date.now();
+      setNow(t);
+      if (lockedUntil <= t) setLockedUntil(undefined);
+    }, 1000);
+    return () => clearInterval(id);
+  }, [mounted, lockedUntil]);
+
+  const remainingMs = useMemo(() => {
+    if (!lockedUntil || !mounted) return 0;
+    return Math.max(0, lockedUntil - now);
+  }, [lockedUntil, now, mounted]);
+
+  // Same on server + first client paint: locked if server passed a lock time
+  const locked = Boolean(lockedUntil) && (!mounted || remainingMs > 0);
+  const formError = Boolean(state.error) && !locked;
 
   return (
     <div className="login-page relative flex min-h-screen items-center justify-center overflow-hidden px-4">
@@ -146,6 +188,9 @@ export default function LoginForm() {
               autoComplete="username"
               value={email}
               onChange={setEmail}
+              onBlur={() => {
+                if (email.trim()) void recheckLock(email);
+              }}
               error={formError || undefined}
               disabled={locked || isPending}
               leftIcon={<UserIcon />}
@@ -193,18 +238,11 @@ export default function LoginForm() {
 
             {locked ? (
               <div
-                className="rounded-xl border border-amber-400/40 bg-amber-500/20 px-4 py-4 text-center backdrop-blur-sm"
+                className="rounded-xl border border-amber-400/40 bg-amber-500/20 px-4 py-3 text-sm text-amber-50 backdrop-blur-sm"
                 role="alert"
               >
-                <p className="text-sm font-medium text-amber-50">
-                  Login locked — too many failed attempts
-                </p>
-                <p className="mt-2 font-mono text-3xl font-semibold tracking-tight text-white tabular-nums">
-                  {formatRemaining(remainingMs)}
-                </p>
-                <p className="mt-1 text-xs text-amber-100/80">
-                  Time remaining until you can try again
-                </p>
+                Login locked — too many failed attempts. Wait for the button
+                timer to finish.
               </div>
             ) : state.error ? (
               <div className="rounded-xl bg-red-500/25 px-4 py-3 text-sm text-red-50 backdrop-blur-sm">
@@ -218,7 +256,9 @@ export default function LoginForm() {
               className="mt-1 w-full rounded-full bg-white/95 py-3.5 text-[15px] font-semibold text-gray-900 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
             >
               {locked
-                ? `Locked · ${formatRemaining(remainingMs)}`
+                ? mounted
+                  ? `Locked · ${formatRemaining(remainingMs)}`
+                  : "Locked"
                 : isPending
                   ? "Logging in..."
                   : "Log In"}

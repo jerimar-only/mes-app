@@ -170,8 +170,7 @@ export async function changeUserRole(formData: FormData) {
 /**
  * Clears failed login attempts for a user so they can sign in again
  * without waiting out the 15-minute rate-limit window.
- * Login lockout counts recent failures by email (and IP); we delete
- * failed rows for this user's email and userId.
+ * Lock is IP-based: also clears failed attempts from IPs that tried this account.
  */
 export async function resetLoginAttempts(formData: FormData) {
   const session = await getSession();
@@ -194,10 +193,25 @@ export async function resetLoginAttempts(formData: FormData) {
 
   const email = user.email.trim().toLowerCase();
 
-  const result = await prisma.loginAttempt.deleteMany({
+  // IPs that recently failed with this username (so Clear lockout unlocks those devices)
+  const related = await prisma.loginAttempt.findMany({
     where: {
       success: false,
       OR: [{ email }, { userId: user.id }],
+    },
+    select: { ip: true },
+    distinct: ["ip"],
+  });
+  const ips = related.map((r) => r.ip).filter(Boolean);
+
+  const result = await prisma.loginAttempt.deleteMany({
+    where: {
+      success: false,
+      OR: [
+        { email },
+        { userId: user.id },
+        ...(ips.length ? [{ ip: { in: ips } }] : []),
+      ],
     },
   });
 
