@@ -6,10 +6,34 @@ import { createSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { getClientInfo } from "@/lib/get-ip";
 
-type LoginState = { error: string };
+export type LoginState = {
+  error: string;
+  /** Epoch ms when the rate-limit window ends; form should countdown + disable. */
+  lockedUntil?: number;
+};
 
 const MAX_ATTEMPTS = 5;
 const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+
+async function getLockedUntil(ip: string, email: string): Promise<number | null> {
+  const since = new Date(Date.now() - WINDOW_MS);
+  const fails = await prisma.loginAttempt.findMany({
+    where: {
+      success: false,
+      createdAt: { gte: since },
+      OR: [{ ip }, { email }],
+    },
+    orderBy: { createdAt: "asc" },
+    select: { createdAt: true },
+  });
+
+  if (fails.length < MAX_ATTEMPTS) return null;
+
+  // Lock lifts when enough oldest fails age out of the 15‑min window
+  const unlockAt =
+    fails[fails.length - MAX_ATTEMPTS].createdAt.getTime() + WINDOW_MS;
+  return unlockAt > Date.now() ? unlockAt : null;
+}
 
 export async function login(
   prevState: LoginState,
@@ -23,20 +47,14 @@ export async function login(
   }
 
   const { ip, country, region, city } = await getClientInfo();
-  const since = new Date(Date.now() - WINDOW_MS);
 
-  // ── Rate limit: count recent failures by IP or email ──
-  const recentFails = await prisma.loginAttempt.count({
-    where: {
-      success: false,
-      createdAt: { gte: since },
-      OR: [{ ip }, { email }],
-    },
-  });
-
-  if (recentFails >= MAX_ATTEMPTS) {
+  // ── Rate limit: already locked? ──
+  const lockedUntil = await getLockedUntil(ip, email);
+  if (lockedUntil) {
+    const mins = Math.max(1, Math.ceil((lockedUntil - Date.now()) / 60_000));
     return {
-      error: "Too many login attempts. Try again in 15 minutes.",
+      error: `Too many login attempts. Try again in ${mins} minute${mins === 1 ? "" : "s"}.`,
+      lockedUntil,
     };
   }
 
@@ -79,6 +97,15 @@ export async function login(
   });
 
   if (!passwordMatches) {
+    // After this fail, may now be locked
+    const nowLocked = await getLockedUntil(ip, email);
+    if (nowLocked) {
+      const mins = Math.max(1, Math.ceil((nowLocked - Date.now()) / 60_000));
+      return {
+        error: `Too many login attempts. Account locked. Try again in ${mins} minute${mins === 1 ? "" : "s"}.`,
+        lockedUntil: nowLocked,
+      };
+    }
     return { error: "Invalid username or password." };
   }
 

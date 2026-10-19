@@ -1,11 +1,19 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
-import { login } from "./actions";
+import { useActionState, useEffect, useMemo, useState } from "react";
+import { login, type LoginState } from "./actions";
 import Image from "next/image";
 import { Input } from "@/components/ui/Input";
 
-const initialState = { error: "" };
+const initialState: LoginState = { error: "" };
+
+function formatRemaining(ms: number): string {
+  if (ms <= 0) return "0:00";
+  const totalSec = Math.ceil(ms / 1000);
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
 
 function UserIcon() {
   return (
@@ -70,13 +78,29 @@ export default function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
 
-  // Drop stale/deactivated session cookies via Route Handler (allowed to set cookies)
+  // Drop stale/deactivated session cookies via Route Handler
   useEffect(() => {
     fetch("/api/session", { cache: "no-store" }).catch(() => {});
   }, []);
 
-  const formError = Boolean(state.error);
+  // Tick every second while locked
+  useEffect(() => {
+    if (!state.lockedUntil || state.lockedUntil <= Date.now()) return;
+    setNow(Date.now());
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [state.lockedUntil]);
+
+  const remainingMs = useMemo(() => {
+    if (!state.lockedUntil) return 0;
+    return Math.max(0, state.lockedUntil - now);
+  }, [state.lockedUntil, now]);
+
+  const isLocked = remainingMs > 0;
+  const formError = Boolean(state.error) && !isLocked;
+  const locked = isLocked;
 
   return (
     <div className="login-page relative flex min-h-screen items-center justify-center overflow-hidden px-4">
@@ -123,6 +147,7 @@ export default function LoginForm() {
               value={email}
               onChange={setEmail}
               error={formError || undefined}
+              disabled={locked || isPending}
               leftIcon={<UserIcon />}
               classNames={{
                 label: "text-white/90",
@@ -143,14 +168,16 @@ export default function LoginForm() {
               value={password}
               onChange={setPassword}
               error={formError || undefined}
+              disabled={locked || isPending}
               leftIcon={<LockIcon />}
               rightIcon={
                 <button
                   type="button"
                   tabIndex={-1}
+                  disabled={locked}
                   aria-label={showPassword ? "Hide password" : "Show password"}
                   onClick={() => setShowPassword((v) => !v)}
-                  className="text-white/70 transition hover:text-white"
+                  className="text-white/70 transition hover:text-white disabled:opacity-40"
                 >
                   <EyeIcon open={showPassword} />
                 </button>
@@ -164,7 +191,22 @@ export default function LoginForm() {
               }}
             />
 
-            {state.error ? (
+            {locked ? (
+              <div
+                className="rounded-xl border border-amber-400/40 bg-amber-500/20 px-4 py-4 text-center backdrop-blur-sm"
+                role="alert"
+              >
+                <p className="text-sm font-medium text-amber-50">
+                  Login locked — too many failed attempts
+                </p>
+                <p className="mt-2 font-mono text-3xl font-semibold tracking-tight text-white tabular-nums">
+                  {formatRemaining(remainingMs)}
+                </p>
+                <p className="mt-1 text-xs text-amber-100/80">
+                  Time remaining until you can try again
+                </p>
+              </div>
+            ) : state.error ? (
               <div className="rounded-xl bg-red-500/25 px-4 py-3 text-sm text-red-50 backdrop-blur-sm">
                 {state.error}
               </div>
@@ -172,10 +214,14 @@ export default function LoginForm() {
 
             <button
               type="submit"
-              disabled={isPending}
-              className="mt-1 w-full rounded-full bg-white/95 py-3.5 text-[15px] font-semibold text-gray-900 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-70"
+              disabled={isPending || locked}
+              className="mt-1 w-full rounded-full bg-white/95 py-3.5 text-[15px] font-semibold text-gray-900 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isPending ? "Logging in..." : "Log In"}
+              {locked
+                ? `Locked · ${formatRemaining(remainingMs)}`
+                : isPending
+                  ? "Logging in..."
+                  : "Log In"}
             </button>
           </form>
 
