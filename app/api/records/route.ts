@@ -46,15 +46,20 @@ export async function GET(req: NextRequest) {
       : {}),
   };
 
+  // Only the columns the table UI needs — avoid shipping long text fields
   const [rows, total] = await Promise.all([
     prisma.apprehensionRecord.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        year: true,
+        placeOfApprehension: true,
+        dateOfApprehension: true,
+        docketNumber: true,
+        status: true,
+        createdAt: true,
         cenroOffice: { select: { name: true } },
         _count: { select: { items: true } },
-        items: { select: { estimatedValue: true } },
-        conveyances: { select: { estimatedValue: true } },
-        equipment: { select: { estimatedValue: true } },
       },
       orderBy: [{ createdAt: "desc" }, { year: "desc" }, { id: "desc" }],
       skip: (page - 1) * pageSize,
@@ -63,22 +68,53 @@ export async function GET(req: NextRequest) {
     prisma.apprehensionRecord.count({ where }),
   ]);
 
+  type ValueRow = {
+    id: number;
+    productsValue: number;
+    conveyancesValue: number;
+    equipmentValue: number;
+  };
+
+  let valueMap = new Map<number, ValueRow>();
+
+  if (rows.length > 0) {
+    const ids = rows.map((r) => r.id);
+
+    const valueRows = await prisma.$queryRaw<ValueRow[]>`
+      SELECT
+        ar.id,
+        COALESCE(
+          (SELECT SUM(f."estimatedValue")
+           FROM "ForestProductItem" f
+           WHERE f."apprehensionRecordId" = ar.id),
+          0
+        )::float AS "productsValue",
+        COALESCE(
+          (SELECT SUM(c."estimatedValue")
+           FROM "Conveyance" c
+           WHERE c."apprehensionRecordId" = ar.id),
+          0
+        )::float AS "conveyancesValue",
+        COALESCE(
+          (SELECT SUM(e."estimatedValue")
+           FROM "Equipment" e
+           WHERE e."apprehensionRecordId" = ar.id),
+          0
+        )::float AS "equipmentValue"
+      FROM "ApprehensionRecord" ar
+      WHERE ar.id = ANY(${ids})
+    `;
+
+    valueMap = new Map(valueRows.map((v) => [v.id, v]));
+  }
+
   const records = rows.map((r) => {
-    const productsValue = r.items.reduce(
-      (s, i) => s + (i.estimatedValue ?? 0),
-      0,
-    );
-    const conveyancesValue = r.conveyances.reduce(
-      (s, c) => s + (c.estimatedValue ?? 0),
-      0,
-    );
-    const equipmentValue = r.equipment.reduce(
-      (s, e) => s + (e.estimatedValue ?? 0),
-      0,
-    );
-    const { items, conveyances, equipment, ...rest } = r;
+    const v = valueMap.get(r.id);
+    const productsValue = v?.productsValue ?? 0;
+    const conveyancesValue = v?.conveyancesValue ?? 0;
+    const equipmentValue = v?.equipmentValue ?? 0;
     return {
-      ...rest,
+      ...r,
       productsValue,
       conveyancesValue,
       equipmentValue,

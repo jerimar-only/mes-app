@@ -55,15 +55,14 @@ export default async function FullRecordsPage({
   const params = await searchParams;
   const page = Math.max(1, parseInt(params.page ?? "1", 10) || 1);
 
-  // Parse pageSize — support "all" (capped at 500)
+  // Parse pageSize — allowed: 25, 50, 100, 500
   let pageSize = 25;
-  if (params.pageSize === "all") {
+  const parsed = parseInt(params.pageSize ?? "25", 10);
+  if (PAGE_SIZE_OPTIONS.includes(parsed as any)) {
+    pageSize = parsed;
+  } else if (params.pageSize === "all") {
+    // legacy URL support
     pageSize = 500;
-  } else {
-    const parsed = parseInt(params.pageSize ?? "25", 10);
-    if (PAGE_SIZE_OPTIONS.includes(parsed as any)) {
-      pageSize = parsed;
-    }
   }
 
   const [offices, fieldDefs, yearRows] = await Promise.all([
@@ -125,9 +124,6 @@ export default async function FullRecordsPage({
           <p className="mt-1 text-[14px] text-[var(--muted)]">
             Showing {showingFrom.toLocaleString()}–{showingTo.toLocaleString()} of{" "}
             {total.toLocaleString()} records
-            {params.pageSize === "all" && total > 500 && (
-              <span className="ml-1 text-[#8B7355]">(capped at 500)</span>
-            )}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -265,7 +261,7 @@ export default async function FullRecordsPage({
             <option value="25">25</option>
             <option value="50">50</option>
             <option value="100">100</option>
-            <option value="all">All (max 500)</option>
+            <option value="500">500</option>
           </select>
         </div>
 

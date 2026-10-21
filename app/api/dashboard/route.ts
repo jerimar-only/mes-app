@@ -2,8 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
-import { RESOLVED_STATUSES } from "@/lib/recordFilters";
-import { getSession } from "@/lib/auth"; // keep auth if you need it
+import { getSession } from "@/lib/auth";
 
 const OFFICE_ROWS = [
   { label: "Aparri", match: ["APARRI"] },
@@ -40,16 +39,10 @@ export async function GET(req: NextRequest) {
     byStatus,
     total,
     itemTotals,
-    // ProvincialSummary queries
-    byOfficeIncidents,
-    byOfficeResolved,
-    byOfficeAcpPenro,
-    byOfficeAcpRo,
-    byOfficeAcpToDo,
+    provincialCounts,
     volumeRows,
     convRows,
     chainsawRows,
-    // Years list (unfiltered)
     allYears,
   ] = await Promise.all([
     prisma.cenroOffice.findMany({
@@ -78,49 +71,40 @@ export async function GET(req: NextRequest) {
       _sum: { volumeCuM: true, estimatedValue: true },
     }),
 
-    // --- ProvincialSummary ---
-    prisma.apprehensionRecord.groupBy({
-      by: ["cenroOfficeId"],
-      where: { isDeleted: false, ...(year ? { year } : {}) },
-      _count: { _all: true },
-    }),
-    prisma.apprehensionRecord.groupBy({
-      by: ["cenroOfficeId"],
-      where: {
-        isDeleted: false,
-        ...(year ? { year } : {}),
-        status: { in: [...RESOLVED_STATUSES] as any },
-      },
-      _count: { _all: true },
-    }),
-    prisma.apprehensionRecord.groupBy({
-      by: ["cenroOfficeId"],
-      where: {
-        isDeleted: false,
-        ...(year ? { year } : {}),
-        acpEndorsedToPenro: { not: null },
-      },
-      _count: { _all: true },
-    }),
-    prisma.apprehensionRecord.groupBy({
-      by: ["cenroOfficeId"],
-      where: {
-        isDeleted: false,
-        ...(year ? { year } : {}),
-        acpEndorsedToRo: { not: null },
-      },
-      _count: { _all: true },
-    }),
-    prisma.apprehensionRecord.groupBy({
-      by: ["cenroOfficeId"],
-      where: {
-        isDeleted: false,
-        ...(year ? { year } : {}),
-        acpEndorsedToPenro: null,
-        status: { notIn: [...RESOLVED_STATUSES] as any },
-      },
-      _count: { _all: true },
-    }),
+    // All 5 provincial count metrics in one scan.
+    // Statuses hardcoded (same as RESOLVED_STATUSES) to avoid Prisma array-binding issues.
+    prisma.$queryRaw<
+      {
+        cenroOfficeId: number;
+        incidents: number;
+        resolved: number;
+        acpPenro: number;
+        acpRo: number;
+        acpToDo: number;
+      }[]
+    >`
+      SELECT
+        ar."cenroOfficeId",
+        COUNT(*)::int AS incidents,
+        COUNT(*) FILTER (
+          WHERE ar.status IN ('CONFISCATED', 'DONATED', 'RELEASED')
+        )::int AS resolved,
+        COUNT(*) FILTER (
+          WHERE ar."acpEndorsedToPenro" IS NOT NULL
+        )::int AS "acpPenro",
+        COUNT(*) FILTER (
+          WHERE ar."acpEndorsedToRo" IS NOT NULL
+        )::int AS "acpRo",
+        COUNT(*) FILTER (
+          WHERE ar."acpEndorsedToPenro" IS NULL
+            AND ar.status NOT IN ('CONFISCATED', 'DONATED', 'RELEASED')
+        )::int AS "acpToDo"
+      FROM "ApprehensionRecord" ar
+      WHERE ar."isDeleted" = false
+        AND (${yearFilter}::int IS NULL OR ar.year = ${yearFilter})
+      GROUP BY ar."cenroOfficeId"
+    `,
+
     prisma.$queryRaw<{ cenroOfficeId: number; volume: number }[]>`
       SELECT ar."cenroOfficeId",
              COALESCE(SUM(f."volumeBdFt"), 0)::float AS volume
@@ -157,7 +141,6 @@ export async function GET(req: NextRequest) {
     }),
   ]);
 
-  // --- Build ProvincialSummary rows (same logic as before) ---
   type Row = {
     ids: number[];
     label: string;
@@ -171,25 +154,32 @@ export async function GET(req: NextRequest) {
   };
 
   const blank = (ids: number[], label: string): Row => ({
-    ids, label, incidents: 0, conveyance: 0, volume: 0,
-    acpPenro: 0, acpRo: 0, acpToDo: 0, resolved: 0,
+    ids,
+    label,
+    incidents: 0,
+    conveyance: 0,
+    volume: 0,
+    acpPenro: 0,
+    acpRo: 0,
+    acpToDo: 0,
+    resolved: 0,
   });
 
-  const countMap = (rows: { cenroOfficeId: number; _count: { _all: number } }[]) =>
-    new Map(rows.map((r) => [r.cenroOfficeId, r._count._all]));
-
-  const incidentsMap = countMap(byOfficeIncidents);
-  const resolvedMap = countMap(byOfficeResolved);
-  const acpPenroMap = countMap(byOfficeAcpPenro);
-  const acpRoMap = countMap(byOfficeAcpRo);
-  const acpToDoMap = countMap(byOfficeAcpToDo);
+  const incidentsMap = new Map(provincialCounts.map((r) => [r.cenroOfficeId, r.incidents]));
+  const resolvedMap = new Map(provincialCounts.map((r) => [r.cenroOfficeId, r.resolved]));
+  const acpPenroMap = new Map(provincialCounts.map((r) => [r.cenroOfficeId, r.acpPenro]));
+  const acpRoMap = new Map(provincialCounts.map((r) => [r.cenroOfficeId, r.acpRo]));
+  const acpToDoMap = new Map(provincialCounts.map((r) => [r.cenroOfficeId, r.acpToDo]));
   const volumeMap = new Map(volumeRows.map((r) => [r.cenroOfficeId, Number(r.volume)]));
   const convMap = new Map(convRows.map((r) => [r.cenroOfficeId, Number(r.qty)]));
   const chainsawMap = new Map(chainsawRows.map((r) => [r.cenroOfficeId, Number(r.qty)]));
 
   const provincialRows: Row[] = OFFICE_ROWS.map((o) => {
     const matched = offices.filter((x) => o.match.includes(officeKey(x.name)));
-    const row = blank(matched.map((m) => m.id), o.label);
+    const row = blank(
+      matched.map((m) => m.id),
+      o.label
+    );
     for (const m of matched) {
       row.incidents += incidentsMap.get(m.id) ?? 0;
       row.resolved += resolvedMap.get(m.id) ?? 0;
@@ -220,11 +210,9 @@ export async function GET(req: NextRequest) {
   }
 
   return NextResponse.json({
-    // filter options
     offices,
     years: allYears.map((r) => r.year),
 
-    // main stats
     total,
     itemTotals: {
       volumeCuM: itemTotals._sum.volumeCuM ?? 0,
@@ -235,7 +223,6 @@ export async function GET(req: NextRequest) {
     byStatus,
     needsReview: byStatus.find((s) => s.status === "UNKNOWN")?._count._all ?? 0,
 
-    // provincial summary
     provincial: {
       rows: provincialRows,
       total: provincialTotal,
