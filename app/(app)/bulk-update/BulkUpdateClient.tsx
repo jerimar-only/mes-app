@@ -302,9 +302,9 @@ export default function BulkUpdateClient() {
             style={{ maxHeight: "65vh" }}
           >
             <table className="w-full border-collapse text-left text-[12.5px]" style={{ minWidth: "1800px" }}>
-              <thead className="sticky top-0 z-20 bg-[var(--background)]">
-                <tr className="border-b border-[var(--border)] text-[11px] uppercase tracking-wide text-[var(--muted)]">
-                  <th className="sticky left-0 z-30 bg-[var(--background)] px-3 py-2.5 font-semibold">
+              <thead className="sticky top-0 z-20 bg-[var(--accent)]">
+                <tr className="border-b border-[var(--border)] bg-[var(--accent)] text-[11px] font-semibold uppercase tracking-wide text-white">
+                  <th className="sticky left-0 z-30 bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">
                     <input
                       type="checkbox"
                       checked={
@@ -315,12 +315,12 @@ export default function BulkUpdateClient() {
                       aria-label="Select all"
                     />
                   </th>
-                  <th className="bg-[var(--background)] px-3 py-2.5 font-semibold">ID</th>
-                  <th className="bg-[var(--background)] px-3 py-2.5 font-semibold">Changes</th>
+                  <th className="bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">ID</th>
+                  <th className="bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Changes</th>
                   {EDITABLE_COLUMNS.map((c) => (
                     <th
                       key={c.key}
-                      className={`bg-[var(--background)] px-3 py-2.5 font-semibold ${
+                      className={`bg-[var(--accent)] px-3 py-2.5 font-semibold text-white ${
                         c.wide ? "min-w-[140px]" : "whitespace-nowrap"
                       }`}
                     >

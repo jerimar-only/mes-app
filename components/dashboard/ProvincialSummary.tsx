@@ -259,12 +259,12 @@ export async function ProvincialSummary({ year }: { year?: number }) {
                 <Link
                   href={recordsHref(m.filter, year)}
                   title={`Cagayan — ${m.title}: ${fmt(total[m.key], m.decimals)}`}
-                  className="group flex items-baseline justify-between border-b border-[var(--border)] bg-[var(--accent-soft)] px-4 py-3 transition hover:bg-[var(--accent)]/15 dark:hover:bg-[var(--accent)]/25"
+                  className="group flex flex-col gap-1 border-b border-[var(--border)] bg-[var(--accent-soft)] px-4 py-3 transition hover:bg-[var(--accent)]/15 dark:hover:bg-[var(--accent)]/25"
                 >
                   <span className="text-[14px] font-semibold text-[var(--accent)]">
                     Cagayan
                   </span>
-                  <span className="text-2xl font-semibold tabular-nums text-[var(--accent)]">
+                  <span className="break-all text-xl font-semibold tabular-nums leading-tight text-[var(--accent)] sm:text-2xl">
                     {fmt(total[m.key], m.decimals)}
                   </span>
                 </Link>
