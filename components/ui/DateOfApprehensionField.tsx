@@ -23,6 +23,17 @@ function isoToText(iso: string): string {
   return `${MONTHS[mo - 1]} ${d}, ${y}`;
 }
 
+const datePickerClass =
+  "cursor-pointer [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:scale-125";
+
+function openPicker(e: React.MouseEvent<HTMLInputElement>) {
+  try {
+    e.currentTarget.showPicker?.();
+  } catch {
+    /* showPicker not supported or not allowed */
+  }
+}
+
 export function DateOfApprehensionField({
   defaultValue = "",
   className,
@@ -51,7 +62,13 @@ export function DateOfApprehensionField({
 
   return (
     <>
-      <input type="date" value={iso} onChange={handleChange} className={className} />
+      <input
+        type="date"
+        value={iso}
+        onChange={handleChange}
+        onClick={openPicker}
+        className={[className, datePickerClass].filter(Boolean).join(" ")}
+      />
       {/* The text version is what is sent to the server */}
       <input type="hidden" name="dateOfApprehension" value={text} />
       {text && !iso && (

@@ -332,10 +332,38 @@ export default function NewRecordForm({
       <Section title="Endorsement and case status">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="ACP endorsed to PENRO">
-            <input type="date" name="acpEndorsedToPenro" className={inputClass} />
+            <input
+              type="date"
+              name="acpEndorsedToPenro"
+              onClick={(e) => {
+                try {
+                  e.currentTarget.showPicker?.();
+                } catch {
+                  /* showPicker not supported */
+                }
+              }}
+              className={
+                inputClass +
+                " cursor-pointer [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:scale-125"
+              }
+            />
           </Field>
           <Field label="ACP endorsed to RO">
-            <input type="date" name="acpEndorsedToRo" className={inputClass} />
+            <input
+              type="date"
+              name="acpEndorsedToRo"
+              onClick={(e) => {
+                try {
+                  e.currentTarget.showPicker?.();
+                } catch {
+                  /* showPicker not supported */
+                }
+              }}
+              className={
+                inputClass +
+                " cursor-pointer [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:scale-125"
+              }
+            />
           </Field>
         </div>
         <div className="mt-4">

@@ -84,7 +84,22 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
   const dateField = (name: string, title: string) => (
     <div>
       <label className={labelCls}>{title}</label>
-      <input type="date" name={name} defaultValue={record[name]} className={inputCls} />
+      <input
+        type="date"
+        name={name}
+        defaultValue={record[name]}
+        onClick={(e) => {
+          try {
+            e.currentTarget.showPicker?.();
+          } catch {
+            /* showPicker not supported */
+          }
+        }}
+        className={
+          inputCls +
+          " cursor-pointer [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:scale-125"
+        }
+      />
     </div>
   );
 

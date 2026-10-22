@@ -176,6 +176,16 @@ export default function Sidebar({
                 Bulk update
               </NavItem>
             )}
+            {isAdmin && (
+              <NavItem
+                href="/bulk-delete"
+                active={isActive("/bulk-delete")}
+                collapsed={railCollapsed}
+                icon={<TrashIcon />}
+              >
+                Bulk delete
+              </NavItem>
+            )}
 
             <GroupLabel collapsed={railCollapsed}>Reports</GroupLabel>
             <NavItem href="/reports" active={isActive("/reports")} collapsed={railCollapsed} icon={<ChartIcon />}>
@@ -199,7 +209,7 @@ export default function Sidebar({
                 collapsed={railCollapsed}
                 icon={<UsersIcon />}
               >
-                Manage user account
+                Create user account
               </NavItem>
             )}
             <NavItem
@@ -376,6 +386,16 @@ function BulkIcon() {
     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
       <path d="M9 11l3 3L22 4" />
       <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+    </svg>
+  );
+}
+function TrashIcon() {
+  return (
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 6h18" />
+      <path d="M8 6V4h8v2" />
+      <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6" />
+      <path d="M10 11v6M14 11v6" />
     </svg>
   );
 }
