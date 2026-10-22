@@ -143,7 +143,7 @@ export default async function AdminPortalPage() {
         {/* Horizontal scroll on small screens */}
         <div className="overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-sm">
           <table className="w-full min-w-[720px] text-left text-[14px]">
-            <thead className="border-b border-[var(--border)] bg-[var(--background)] text-[12px] uppercase tracking-wide text-[var(--muted)]">
+            <thead className="border-b border-[var(--border)] bg-[var(--accent)] text-[12px] font-semibold uppercase tracking-wide text-white">
               <tr>
                 <th className="px-3 py-3 font-medium sm:px-4">Name</th>
                 <th className="px-3 py-3 font-medium sm:px-4">Username</th>

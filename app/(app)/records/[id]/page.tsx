@@ -148,7 +148,7 @@ export default async function RecordDetailPage({
                 {/* Table: tablets and desktops */}
                 <div className="hidden overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-700 md:block">
                   <table className="w-full text-left text-[14px]">
-                    <thead className="border-b border-zinc-200 bg-zinc-100 text-[13px] text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+                    <thead className="border-b border-[var(--border)] bg-[var(--accent)] text-[13px] font-semibold text-white">
                       <tr>
                         <th className="px-4 py-2 font-medium">Qty</th>
                         <th className="px-4 py-2 font-medium">Species</th>

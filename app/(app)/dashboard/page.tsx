@@ -202,12 +202,12 @@ export default function DashboardPage() {
 
                       <Link
                         href={recordsHref(m.filter, selectedYear)}
-                        className="group flex items-baseline justify-between border-b border-[var(--border)] bg-[var(--background)] px-4 py-3 transition hover:bg-black/5 dark:hover:bg-white/10"
+                        className="group flex items-baseline justify-between border-b border-[var(--border)] bg-[var(--accent-soft)] px-4 py-3 transition hover:bg-[var(--accent)]/15 dark:hover:bg-[var(--accent)]/25"
                       >
-                        <span className="text-[14px] font-semibold text-[var(--foreground)]">
+                        <span className="text-[14px] font-semibold text-[var(--accent)]">
                           Cagayan
                         </span>
-                        <span className="text-2xl font-semibold tabular-nums text-[var(--foreground)]">
+                        <span className="text-2xl font-semibold tabular-nums text-[var(--accent)]">
                           {fmt(data.provincial.total[m.key], m.decimals)}
                         </span>
                       </Link>

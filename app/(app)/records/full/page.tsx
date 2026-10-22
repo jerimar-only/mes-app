@@ -276,46 +276,46 @@ export default async function FullRecordsPage({
       {/* Table */}
       <div className="relative overflow-auto rounded-lg border border-[var(--border)] bg-[var(--card)] shadow-sm" style={{ maxHeight: "70vh" }}>
         <table className="w-full border-collapse text-left text-[12.5px]" style={{ minWidth: "2600px" }}>
-          <thead className="sticky top-0 z-20 bg-[var(--background)]">
-            <tr className="border-b border-[var(--border)] bg-[var(--background)] text-[11px] uppercase tracking-wide text-[var(--muted)]">
+          <thead className="sticky top-0 z-20 bg-[var(--accent)]">
+            <tr className="border-b border-[var(--border)] bg-[var(--accent)] text-[11px] font-semibold uppercase tracking-wide text-white">
               {/* bg on every th so sticky header stays opaque in light + dark */}
-              <th className="sticky left-0 z-30 whitespace-nowrap bg-[var(--background)] px-3 py-2.5 font-semibold shadow-[2px_0_4px_-2px_rgba(0,0,0,0.08)]">
+              <th className="sticky left-0 z-30 whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white shadow-[2px_0_4px_-2px_rgba(0,0,0,0.08)]">
                 ID
               </th>
-              <th className="whitespace-nowrap bg-[var(--background)] px-3 py-2.5 font-semibold">CENRO office</th>
-              <th className="whitespace-nowrap bg-[var(--background)] px-3 py-2.5 font-semibold">Year</th>
-              <th className="whitespace-nowrap bg-[var(--background)] px-3 py-2.5 font-semibold">Month</th>
-              <th className="whitespace-nowrap bg-[var(--background)] px-3 py-2.5 font-semibold">Date</th>
-              <th className="min-w-[140px] bg-[var(--background)] px-3 py-2.5 font-semibold">Place</th>
-              <th className="min-w-[140px] bg-[var(--background)] px-3 py-2.5 font-semibold">Source of products</th>
-              <th className="min-w-[120px] bg-[var(--background)] px-3 py-2.5 font-semibold">GPS</th>
-              <th className="min-w-[110px] bg-[var(--background)] px-3 py-2.5 font-semibold">Land class.</th>
-              <th className="min-w-[120px] bg-[var(--background)] px-3 py-2.5 font-semibold">Apprehending officers</th>
-              <th className="min-w-[120px] bg-[var(--background)] px-3 py-2.5 font-semibold">Claimant/owner</th>
-              <th className="min-w-[180px] bg-[var(--background)] px-3 py-2.5 font-semibold">Circumstances</th>
-              <th className="min-w-[110px] bg-[var(--background)] px-3 py-2.5 font-semibold">Place impounded</th>
-              <th className="min-w-[110px] bg-[var(--background)] px-3 py-2.5 font-semibold">Other agencies</th>
-              <th className="min-w-[160px] bg-[var(--background)] px-3 py-2.5 font-semibold">Other remarks</th>
-              <th className="min-w-[160px] bg-[var(--background)] px-3 py-2.5 font-semibold">Remarks</th>
-              <th className="whitespace-nowrap bg-[var(--background)] px-3 py-2.5 font-semibold">ACP to PENRO</th>
-              <th className="whitespace-nowrap bg-[var(--background)] px-3 py-2.5 font-semibold">ACP to RO</th>
-              <th className="min-w-[220px] bg-[var(--background)] px-3 py-2.5 font-semibold">Case status</th>
-              <th className="whitespace-nowrap bg-[var(--background)] px-3 py-2.5 font-semibold">Status</th>
-              <th className="whitespace-nowrap bg-[var(--background)] px-3 py-2.5 font-semibold">Docket #</th>
-              <th className="whitespace-nowrap bg-[var(--background)] px-3 py-2.5 font-semibold">Finality date</th>
-              <th className="min-w-[150px] bg-[var(--background)] px-3 py-2.5 font-semibold">Forest products</th>
-              <th className="whitespace-nowrap bg-[var(--background)] px-3 py-2.5 font-semibold text-right">Products value</th>
-              <th className="min-w-[130px] bg-[var(--background)] px-3 py-2.5 font-semibold">Conveyances</th>
-              <th className="whitespace-nowrap bg-[var(--background)] px-3 py-2.5 font-semibold text-right">Conveyances value</th>
-              <th className="min-w-[130px] bg-[var(--background)] px-3 py-2.5 font-semibold">Equipment</th>
-              <th className="whitespace-nowrap bg-[var(--background)] px-3 py-2.5 font-semibold text-right">Equipment value</th>
-              <th className="whitespace-nowrap bg-[var(--background)] px-3 py-2.5 font-semibold text-right">Total est. value</th>
+              <th className="whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">CENRO office</th>
+              <th className="whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Year</th>
+              <th className="whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Month</th>
+              <th className="whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Date</th>
+              <th className="min-w-[140px] bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Place</th>
+              <th className="min-w-[140px] bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Source of products</th>
+              <th className="min-w-[120px] bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">GPS</th>
+              <th className="min-w-[110px] bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Land class.</th>
+              <th className="min-w-[120px] bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Apprehending officers</th>
+              <th className="min-w-[120px] bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Claimant/owner</th>
+              <th className="min-w-[180px] bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Circumstances</th>
+              <th className="min-w-[110px] bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Place impounded</th>
+              <th className="min-w-[110px] bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Other agencies</th>
+              <th className="min-w-[160px] bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Other remarks</th>
+              <th className="min-w-[160px] bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Remarks</th>
+              <th className="whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">ACP to PENRO</th>
+              <th className="whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">ACP to RO</th>
+              <th className="min-w-[220px] bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Case status</th>
+              <th className="whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Status</th>
+              <th className="whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Docket #</th>
+              <th className="whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Finality date</th>
+              <th className="min-w-[150px] bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Forest products</th>
+              <th className="whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white text-right">Products value</th>
+              <th className="min-w-[130px] bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Conveyances</th>
+              <th className="whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white text-right">Conveyances value</th>
+              <th className="min-w-[130px] bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Equipment</th>
+              <th className="whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white text-right">Equipment value</th>
+              <th className="whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white text-right">Total est. value</th>
               {fieldDefs.map((fd) => (
-                <th key={fd.id} className="min-w-[120px] whitespace-nowrap bg-[var(--background)] px-3 py-2.5 font-semibold">
+                <th key={fd.id} className="min-w-[120px] whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">
                   {fd.name}
                 </th>
               ))}
-              <th className="whitespace-nowrap bg-[var(--background)] px-3 py-2.5 font-semibold">Deleted</th>
+              <th className="whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Deleted</th>
             </tr>
           </thead>
 

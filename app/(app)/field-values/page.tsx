@@ -87,7 +87,7 @@ export default async function FieldValuesPage({
         </h2>
         <div className="overflow-hidden rounded-lg border border-[var(--border)] bg-white">
           <table className="w-full text-left text-[14px]">
-            <thead className="border-b border-[var(--border)] bg-[var(--shell)] text-[13px] text-[var(--muted)]">
+            <thead className="border-b border-[var(--border)] bg-[var(--accent)] text-[13px] font-semibold text-white">
               <tr>
                 <th className="px-4 py-2 font-medium w-20">Index (order)</th>
                 <th className="px-4 py-2 font-medium">Field Name</th>
@@ -178,7 +178,7 @@ export default async function FieldValuesPage({
             </div>
 
             <table className="w-full text-left text-[14px]">
-              <thead className="border-b border-[var(--border)] text-[13px] text-[var(--muted)]">
+              <thead className="border-b border-[var(--border)] bg-[var(--accent)] text-[13px] font-semibold text-white">
                 <tr>
                   <th className="px-4 py-2 font-medium w-20">Index</th>
                   <th className="px-4 py-2 font-medium">Field Name</th>

@@ -240,7 +240,7 @@ export default async function ReportsPage({
         {/* overflow-x-auto lets the table scroll sideways on phones instead of clipping */}
         <div className="overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--card)]">
           <table className="w-full min-w-[560px] text-left text-[14px]">
-            <thead className="border-b border-[var(--border)] bg-[var(--background)] text-[13px] text-[var(--muted)]">
+            <thead className="border-b border-[var(--border)] bg-[var(--accent)] text-[13px] font-semibold text-white">
               <tr>
                 <th className="px-4 py-3 font-medium">Month</th>
                 <th className="px-4 py-3 font-medium">No. Incidents</th>
@@ -440,7 +440,7 @@ function TableSection({
       </div>
       <div className="max-h-[420px] overflow-auto rounded-xl border border-[var(--border)] bg-[var(--card)]">
         <table className="w-full min-w-[320px] text-left text-[14px]">
-          <thead className="sticky top-0 border-b border-[var(--border)] bg-[var(--background)] text-[13px] text-[var(--muted)]">
+          <thead className="sticky top-0 border-b border-[var(--border)] bg-[var(--accent)] text-[13px] font-semibold text-white">
             <tr>
               {headers.map((h, i) => (
                 <th key={h} className={`whitespace-nowrap px-4 py-3 font-medium ${i > 0 ? "text-right" : ""}`}>
