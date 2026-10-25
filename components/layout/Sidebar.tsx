@@ -135,7 +135,7 @@ export default function Sidebar({
               title={railCollapsed ? "Expand sidebar" : "Collapse sidebar"}
               aria-label={railCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
-              <PanelIcon collapsed={railCollapsed} />
+              <BurgerIcon />
             </button>
 
             <button
@@ -338,11 +338,10 @@ function NavItem({
   );
 }
 
-function PanelIcon({ collapsed }: { collapsed: boolean }) {
+function BurgerIcon() {
   return (
-    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="3" width="18" height="18" rx="3" />
-      {collapsed ? <path d="M9 3v18M13 12h5" /> : <path d="M9 3v18" />}
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round">
+      <path d="M4 7h16M4 12h16M4 17h16" />
     </svg>
   );
 }
