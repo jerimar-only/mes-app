@@ -42,13 +42,13 @@ export default function CreateUserForm() {
         <label className="mb-1.5 block text-[13px] font-medium text-[var(--muted)]">
           Full name
         </label>
-        <input type="text" name="fullName" required placeholder="Juan Dela Cruz" className={field} />
+        <input type="text" name="fullName" required placeholder="Jerimar R. Macatuggal" className={field} />
       </div>
       <div>
         <label className="mb-1.5 block text-[13px] font-medium text-[var(--muted)]">
           Username (login)
         </label>
-        <input type="text" name="email" required placeholder="juan.delacruz" className={field} />
+        <input type="text" name="email" required placeholder="jerimar.macatuggal" className={field} />
       </div>
       <div>
         <label className="mb-1.5 block text-[13px] font-medium text-[var(--muted)]">

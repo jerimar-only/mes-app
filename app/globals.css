@@ -543,3 +543,75 @@ legend {
     transition: none !important;
   }
 }
+
+/* ── Custom scrollbars: left nav, main content, provincial rail ── */
+
+/* Shared thin scrollbar (left sidebar + provincial right rail) */
+.thin-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+.thin-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.thin-scroll::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 6px 0;
+}
+.thin-scroll::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 999px;
+}
+.thin-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+/* Provincial summary sidebar (alias of thin-scroll) */
+.provincial-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+.provincial-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.provincial-scroll::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 6px 0;
+}
+.provincial-scroll::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 999px;
+}
+.provincial-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+/*
+ * Main content column scrollbar.
+ * Sits on the far right of the main pane (next to the provincial sidebar).
+ * Content is padded so it does not sit flush against the track.
+ */
+.main-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+  scrollbar-gutter: stable;
+}
+.main-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+.main-scroll::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 8px 0;
+}
+.main-scroll::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.main-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}

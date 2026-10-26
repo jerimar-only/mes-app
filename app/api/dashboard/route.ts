@@ -49,9 +49,13 @@ export async function GET(req: NextRequest) {
       orderBy: { name: "asc" },
       select: { id: true, name: true },
     }),
+    // Exclude year filter so the chart always shows the full year breakdown
     prisma.apprehensionRecord.groupBy({
       by: ["year"],
-      where,
+      where: {
+        isDeleted: false,
+        ...(office ? { cenroOfficeId: office } : {}),
+      },
       _count: { _all: true },
       orderBy: { year: "asc" },
     }),
@@ -68,7 +72,7 @@ export async function GET(req: NextRequest) {
     prisma.apprehensionRecord.count({ where }),
     prisma.forestProductItem.aggregate({
       where: { apprehensionRecord: where },
-      _sum: { volumeCuM: true, estimatedValue: true },
+      _sum: { volumeCuM: true, volumeBdFt: true, estimatedValue: true },
     }),
 
     // All 5 provincial count metrics in one scan.
@@ -216,6 +220,7 @@ export async function GET(req: NextRequest) {
     total,
     itemTotals: {
       volumeCuM: itemTotals._sum.volumeCuM ?? 0,
+      volumeBdFt: itemTotals._sum.volumeBdFt ?? 0,
       estimatedValue: itemTotals._sum.estimatedValue ?? 0,
     },
     byYear,

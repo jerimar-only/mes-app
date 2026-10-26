@@ -19,7 +19,7 @@ type DashboardData = {
   offices: { id: number; name: string }[];
   years: number[];
   total: number;
-  itemTotals: { volumeCuM: number; estimatedValue: number };
+  itemTotals: { volumeCuM: number; volumeBdFt: number; estimatedValue: number };
   byYear: { year: number; _count: { _all: number } }[];
   byOffice: { cenroOfficeId: number; _count: { _all: number } }[];
   byStatus: { status: string; _count: { _all: number } }[];
@@ -121,6 +121,45 @@ export default function DashboardPage() {
     load();
   }, [load]);
 
+  // Lock page scroll on dashboard — only main column + provincial rail scroll
+  useEffect(() => {
+    const main = document.querySelector<HTMLElement>(".app-main");
+    const body = document.body;
+    const prevBodyOverflow = body.style.overflow;
+
+    body.style.overflow = "hidden";
+    if (main) {
+      main.style.height = "calc(100dvh - 3.5rem)";
+      main.style.maxHeight = "calc(100dvh - 3.5rem)";
+      main.style.overflow = "hidden";
+      main.style.maxWidth = "none";
+      // Equal horizontal padding is applied on the content column so the
+      // left-sidebar → content gap matches the content → right-sidebar gap.
+      main.style.paddingLeft = "0";
+      main.style.paddingRight = "0";
+      main.style.paddingTop = "1.25rem";
+      main.style.paddingBottom = "1.25rem";
+      main.style.display = "flex";
+      main.style.flexDirection = "column";
+    }
+
+    return () => {
+      body.style.overflow = prevBodyOverflow;
+      if (main) {
+        main.style.height = "";
+        main.style.maxHeight = "";
+        main.style.overflow = "";
+        main.style.maxWidth = "";
+        main.style.paddingLeft = "";
+        main.style.paddingRight = "";
+        main.style.paddingTop = "";
+        main.style.paddingBottom = "";
+        main.style.display = "";
+        main.style.flexDirection = "";
+      }
+    };
+  }, []);
+
   const officeName = (id: number) =>
     data?.offices.find((o) => o.id === id)?.name ?? "Unknown";
 
@@ -134,58 +173,197 @@ export default function DashboardPage() {
   ].join(" · ");
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-[var(--foreground)]">
-          Dashboard
-        </h1>
-        <p className="mt-1 text-[15px] text-[var(--muted)]">
-          Live totals from recorded apprehensions — {scopeLabel}
-        </p>
-      </div>
-
-      {/* Filters stay the same */}
-      <DashboardFilters
-        years={data?.years ?? []}
-        offices={data?.offices ?? []}
-        selectedYear={selectedYear}
-        selectedOffice={selectedOffice}
-        showProvincial={showProvincial}
-        onToggleProvincial={() => setShowProvincial((v) => !v)}
-      />
-
+    <div
+      className={`flex min-h-0 flex-1 flex-col ${showProvincial ? "lg:pr-[280px]" : ""}`}
+    >
       {error && (
-        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-[14px] text-red-700">
+        <p className="mb-4 shrink-0 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-[14px] text-red-700">
           {error}
         </p>
       )}
 
       {loading && !data ? (
-        <div className="space-y-6">
-          <div className="h-48 animate-pulse rounded-2xl bg-[var(--border)]" />
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-20 animate-pulse rounded-2xl bg-[var(--border)]" />
-            ))}
+        <div className="main-scroll min-h-0 flex-1 overflow-y-auto">
+          <div className="space-y-6 px-5 sm:px-6">
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight text-[var(--foreground)]">
+                Dashboard
+              </h1>
+              <p className="mt-1 text-[15px] text-[var(--muted)]">
+                Live totals from recorded apprehensions — {scopeLabel}
+              </p>
+            </div>
+            <DashboardFilters
+              years={[]}
+              offices={[]}
+              selectedYear={selectedYear}
+              selectedOffice={selectedOffice}
+              showProvincial={showProvincial}
+              onToggleProvincial={() => setShowProvincial((v) => !v)}
+            />
+            <div className="h-48 animate-pulse rounded-2xl bg-[var(--border)]" />
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-20 animate-pulse rounded-2xl bg-[var(--border)]" />
+              ))}
+            </div>
           </div>
         </div>
       ) : data ? (
         <>
-        {showProvincial && (
-         
-          <section className="space-y-4">
-             {/* ── Provincial Summary ── */}
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h2 className="text-[15px] font-semibold text-[var(--foreground)]">
-                Provincial summary — {selectedYear ? `CY ${selectedYear}` : "All years"}
-              </h2>
-              <p className="text-[12px] text-[var(--muted)]">
-                Click a number to see the records.
+          {/* ── Center: main dashboard content (own scrollbar, track near right rail) ── */}
+          <div className="main-scroll min-h-0 flex-1 overflow-y-auto">
+            <div className="space-y-6 px-5 sm:px-6">
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight text-[var(--foreground)]">
+                Dashboard
+              </h1>
+              <p className="mt-1 text-[15px] text-[var(--muted)]">
+                Live totals from recorded apprehensions — {scopeLabel}
               </p>
             </div>
 
-            <div className="overflow-x-auto pb-2">
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-flow-col lg:auto-cols-[minmax(200px,1fr)] lg:grid-cols-none">
+            <DashboardFilters
+              years={data.years}
+              offices={data.offices}
+              selectedYear={selectedYear}
+              selectedOffice={selectedOffice}
+              showProvincial={showProvincial}
+              onToggleProvincial={() => setShowProvincial((v) => !v)}
+            />
+
+            {/* ── Stat cards ── */}
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              <StatCard label="Total records" value={data.total.toLocaleString()} />
+              <StatCard
+                label="Total volume"
+                value={`${data.itemTotals.volumeCuM.toLocaleString(undefined, {
+                  maximumFractionDigits: 1,
+                })} cu.m. · ${data.itemTotals.volumeBdFt.toLocaleString(undefined, {
+                  maximumFractionDigits: 0,
+                })} bd.ft.`}
+              />
+              <StatCard
+                label="Estimated value"
+                value={`₱${data.itemTotals.estimatedValue.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}`}
+              />
+              <StatCard
+                label="Needs review"
+                value={data.needsReview.toLocaleString()}
+                accent
+              />
+            </div>
+
+            {/* ── By year ── */}
+            <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm">
+              <h2 className="mb-5 text-[15px] font-semibold text-[var(--foreground)]">
+                Apprehensions by year
+              </h2>
+              {data.byYear.length === 0 ? (
+                <p className="text-[14px] text-[var(--muted)]">
+                  No records match these filters.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {data.byYear.map((y) => (
+                    <div key={y.year} className="flex items-center gap-3">
+                      <span className="w-12 shrink-0 text-[13px] font-medium text-[var(--muted)]">
+                        {y.year}
+                      </span>
+                      <div className="h-7 flex-1 overflow-hidden rounded-full bg-[var(--border)]">
+                        <div
+                          className="h-7 rounded-full bg-[var(--accent)] transition-all"
+                          style={{
+                            width: `${(y._count._all / maxYearCount) * 100}%`,
+                          }}
+                        />
+                      </div>
+                      <span className="w-10 shrink-0 text-right text-[13px] font-medium text-[var(--foreground)]">
+                        {y._count._all}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            {/* ── By office + By status ── */}
+            <div className="grid gap-6 sm:grid-cols-2">
+              <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-sm">
+                <div className="border-b border-[var(--border)] px-5 py-4">
+                  <h2 className="text-[15px] font-semibold text-[var(--foreground)]">
+                    By CENRO office
+                  </h2>
+                </div>
+                <ul className="divide-y divide-[var(--border)]">
+                  {data.byOffice.length === 0 && (
+                    <li className="px-5 py-4 text-[14px] text-[var(--muted)]">
+                      No records match these filters.
+                    </li>
+                  )}
+                  {[...data.byOffice]
+                    .sort((a, b) => b._count._all - a._count._all)
+                    .map((o) => (
+                      <li
+                        key={o.cenroOfficeId}
+                        className="flex items-center justify-between px-5 py-3 text-[14px]"
+                      >
+                        <span className="text-[var(--foreground)]">
+                          {officeName(o.cenroOfficeId)}
+                        </span>
+                        <span className="rounded-full bg-[var(--background)] px-2.5 py-0.5 text-[13px] font-medium text-[var(--muted)]">
+                          {o._count._all}
+                        </span>
+                      </li>
+                    ))}
+                </ul>
+              </section>
+
+              <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-sm">
+                <div className="border-b border-[var(--border)] px-5 py-4">
+                  <h2 className="text-[15px] font-semibold text-[var(--foreground)]">
+                    By status
+                  </h2>
+                </div>
+                <ul className="divide-y divide-[var(--border)]">
+                  {data.byStatus.length === 0 && (
+                    <li className="px-5 py-4 text-[14px] text-[var(--muted)]">
+                      No records match these filters.
+                    </li>
+                  )}
+                  {[...data.byStatus]
+                    .sort((a, b) => b._count._all - a._count._all)
+                    .map((s) => (
+                      <li
+                        key={s.status}
+                        className="flex items-center justify-between px-5 py-3 text-[14px]"
+                      >
+                        <span className="text-[var(--foreground)]">
+                          {STATUS_LABEL[s.status] ?? s.status}
+                        </span>
+                        <span className="rounded-full bg-[var(--background)] px-2.5 py-0.5 text-[13px] font-medium text-[var(--muted)]">
+                          {s._count._all}
+                        </span>
+                      </li>
+                    ))}
+                </ul>
+              </section>
+            </div>
+
+            {/* ── Mobile: provincial below main content ── */}
+            {showProvincial && (
+              <div className="mt-6 space-y-3 lg:hidden">
+                <div>
+                  <h2 className="text-[14px] font-semibold text-[var(--foreground)]">
+                    Provincial summary — {selectedYear ? `CY ${selectedYear}` : "All years"}
+                  </h2>
+                  <p className="mt-0.5 text-[12px] text-[var(--muted)]">
+                    Click a number to see the records.
+                  </p>
+                </div>
                 {METRICS.map((m) => {
                   const max = Math.max(
                     ...data.provincial.rows.map((r) => r[m.key]),
@@ -194,24 +372,22 @@ export default function DashboardPage() {
                   return (
                     <div
                       key={m.key}
-                      className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-sm"
+                      className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)]"
                     >
-                      <div className="flex min-h-[64px] items-center bg-[var(--accent)] px-4 py-3 text-[12px] font-semibold uppercase leading-snug tracking-wide text-white">
+                      <div className="flex min-h-[40px] items-center bg-[var(--accent)] px-3 py-2 text-[10px] font-semibold uppercase leading-snug tracking-wide text-white">
                         {m.title}
                       </div>
-
                       <Link
                         href={recordsHref(m.filter, selectedYear)}
-                        className="group flex flex-col gap-1 border-b border-[var(--border)] bg-[var(--accent-soft)] px-4 py-3 transition hover:bg-[var(--accent)]/15 dark:hover:bg-[var(--accent)]/25"
+                        className="group flex flex-col gap-0.5 border-b border-[var(--border)] bg-[var(--accent-soft)] px-3 py-2 transition hover:bg-[var(--accent)]/15 dark:hover:bg-[var(--accent)]/25"
                       >
-                        <span className="text-[14px] font-semibold text-[var(--accent)]">
+                        <span className="text-[12px] font-semibold text-[var(--accent)]">
                           Cagayan
                         </span>
-                        <span className="break-all text-xl font-semibold tabular-nums leading-tight text-[var(--accent)] sm:text-2xl">
+                        <span className="break-all text-[17px] font-semibold tabular-nums leading-tight text-[var(--accent)]">
                           {fmt(data.provincial.total[m.key], m.decimals)}
                         </span>
                       </Link>
-
                       <ul className="divide-y divide-[var(--border)]">
                         {data.provincial.rows.map((r) => {
                           const pct = max > 0 ? (r[m.key] / max) * 100 : 0;
@@ -219,19 +395,17 @@ export default function DashboardPage() {
                             <li key={r.label}>
                               <Link
                                 href={recordsHref(m.filter, selectedYear, r.ids)}
-                                className="group block px-4 py-2 text-[14px] transition hover:bg-black/5 dark:hover:bg-white/10"
+                                className="group block px-3 py-1.5 text-[12px] transition hover:bg-black/5 dark:hover:bg-white/10"
                               >
-                                <div className="flex items-center justify-between gap-3">
-                                  <span className="text-[var(--foreground)]">
-                                    {r.label}
-                                  </span>
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="text-[var(--foreground)]">{r.label}</span>
                                   <span className="tabular-nums text-[var(--muted)] group-hover:text-[var(--foreground)]">
                                     {fmt(r[m.key], m.decimals)}
                                   </span>
                                 </div>
-                                <div className="mt-1 h-1.5 rounded-full bg-[var(--border)]">
+                                <div className="mt-1 h-1 rounded-full bg-[var(--border)]">
                                   <div
-                                    className="h-1.5 rounded-full bg-[var(--accent)] opacity-70"
+                                    className="h-1 rounded-full bg-[var(--accent)] opacity-80"
                                     style={{ width: `${pct}%` }}
                                   />
                                 </div>
@@ -244,135 +418,94 @@ export default function DashboardPage() {
                   );
                 })}
               </div>
+            )}
             </div>
-
-            {data.provincial.notShown > 0 && (
-              <p className="text-[12px] text-[var(--muted)]">
-                Not included: {data.provincial.notShown.toLocaleString()} record
-                {data.provincial.notShown === 1 ? "" : "s"} from offices that are
-                not listed above.
-              </p>
-            )}
-          </section>
-          )}
-          {/* ── Stat cards ── */}
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <StatCard label="Total records" value={data.total.toLocaleString()} />
-            <StatCard
-              label="Total volume"
-              value={`${data.itemTotals.volumeCuM.toLocaleString(undefined, {
-                maximumFractionDigits: 1,
-              })} cu.m.`}
-            />
-            <StatCard
-              label="Estimated value"
-              value={`₱${data.itemTotals.estimatedValue.toLocaleString(undefined, {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}`}
-            />
-            <StatCard
-              label="Needs review"
-              value={data.needsReview.toLocaleString()}
-              accent
-            />
           </div>
 
-          {/* ── By year ── */}
-          <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm">
-            <h2 className="mb-5 text-[15px] font-semibold text-[var(--foreground)]">
-              Apprehensions by year
-            </h2>
-            {data.byYear.length === 0 ? (
-              <p className="text-[14px] text-[var(--muted)]">
-                No records match these filters.
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {data.byYear.map((y) => (
-                  <div key={y.year} className="flex items-center gap-3">
-                    <span className="w-12 shrink-0 text-[13px] font-medium text-[var(--muted)]">
-                      {y.year}
-                    </span>
-                    <div className="h-7 flex-1 overflow-hidden rounded-full bg-[var(--border)]">
-                      <div
-                        className="h-7 rounded-full bg-[var(--accent)] transition-all"
-                        style={{
-                          width: `${(y._count._all / maxYearCount) * 100}%`,
-                        }}
-                      />
+          {/* ── Fixed right sidebar (desktop) ── */}
+          {showProvincial && (
+            <aside
+              className="fixed bottom-0 right-0 top-14 z-20 hidden w-[280px] flex-col border-l border-[var(--border)] bg-[var(--card)] shadow-sm lg:flex"
+              aria-label="Provincial summary"
+            >
+              <div className="shrink-0 border-b border-[var(--border)] px-3.5 py-3">
+                <h2 className="text-[13px] font-semibold leading-snug text-[var(--foreground)]">
+                  Provincial summary — {selectedYear ? `CY ${selectedYear}` : "All years"}
+                </h2>
+                <p className="mt-0.5 text-[11px] text-[var(--muted)]">
+                  Click a number to see the records.
+                </p>
+              </div>
+
+              <div className="thin-scroll min-h-0 flex-1 space-y-3 overflow-y-auto p-2.5">
+                {METRICS.map((m) => {
+                  const max = Math.max(
+                    ...data.provincial.rows.map((r) => r[m.key]),
+                    0
+                  );
+                  return (
+                    <div
+                      key={m.key}
+                      className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--background)]"
+                    >
+                      <div className="flex min-h-[40px] items-center bg-[var(--accent)] px-3 py-2 text-[10px] font-semibold uppercase leading-snug tracking-wide text-white">
+                        {m.title}
+                      </div>
+
+                      <Link
+                        href={recordsHref(m.filter, selectedYear)}
+                        className="group flex flex-col gap-0.5 border-b border-[var(--border)] bg-[var(--accent-soft)] px-3 py-2 transition hover:bg-[var(--accent)]/15 dark:hover:bg-[var(--accent)]/25"
+                      >
+                        <span className="text-[12px] font-semibold text-[var(--accent)]">
+                          Cagayan
+                        </span>
+                        <span className="break-all text-[17px] font-semibold tabular-nums leading-tight text-[var(--accent)]">
+                          {fmt(data.provincial.total[m.key], m.decimals)}
+                        </span>
+                      </Link>
+
+                      <ul className="divide-y divide-[var(--border)]">
+                        {data.provincial.rows.map((r) => {
+                          const pct = max > 0 ? (r[m.key] / max) * 100 : 0;
+                          return (
+                            <li key={r.label}>
+                              <Link
+                                href={recordsHref(m.filter, selectedYear, r.ids)}
+                                className="group block px-3 py-1.5 text-[12px] transition hover:bg-black/5 dark:hover:bg-white/10"
+                              >
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="text-[var(--foreground)]">
+                                    {r.label}
+                                  </span>
+                                  <span className="tabular-nums text-[var(--muted)] group-hover:text-[var(--foreground)]">
+                                    {fmt(r[m.key], m.decimals)}
+                                  </span>
+                                </div>
+                                <div className="mt-1 h-1 rounded-full bg-[var(--border)]">
+                                  <div
+                                    className="h-1 rounded-full bg-[var(--accent)] opacity-80"
+                                    style={{ width: `${pct}%` }}
+                                  />
+                                </div>
+                              </Link>
+                            </li>
+                          );
+                        })}
+                      </ul>
                     </div>
-                    <span className="w-10 shrink-0 text-right text-[13px] font-medium text-[var(--foreground)]">
-                      {y._count._all}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
+                  );
+                })}
 
-          {/* ── By office + By status ── */}
-          <div className="grid gap-6 sm:grid-cols-2">
-            <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-sm">
-              <div className="border-b border-[var(--border)] px-5 py-4">
-                <h2 className="text-[15px] font-semibold text-[var(--foreground)]">
-                  By CENRO office
-                </h2>
-              </div>
-              <ul className="divide-y divide-[var(--border)]">
-                {data.byOffice.length === 0 && (
-                  <li className="px-5 py-4 text-[14px] text-[var(--muted)]">
-                    No records match these filters.
-                  </li>
+                {data.provincial.notShown > 0 && (
+                  <p className="px-1 pb-1 text-[11px] text-[var(--muted)]">
+                    Not included: {data.provincial.notShown.toLocaleString()} record
+                    {data.provincial.notShown === 1 ? "" : "s"} from offices that are
+                    not listed above.
+                  </p>
                 )}
-                {[...data.byOffice]
-                  .sort((a, b) => b._count._all - a._count._all)
-                  .map((o) => (
-                    <li
-                      key={o.cenroOfficeId}
-                      className="flex items-center justify-between px-5 py-3 text-[14px]"
-                    >
-                      <span className="text-[var(--foreground)]">
-                        {officeName(o.cenroOfficeId)}
-                      </span>
-                      <span className="rounded-full bg-[var(--background)] px-2.5 py-0.5 text-[13px] font-medium text-[var(--muted)]">
-                        {o._count._all}
-                      </span>
-                    </li>
-                  ))}
-              </ul>
-            </section>
-
-            <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-sm">
-              <div className="border-b border-[var(--border)] px-5 py-4">
-                <h2 className="text-[15px] font-semibold text-[var(--foreground)]">
-                  By status
-                </h2>
               </div>
-              <ul className="divide-y divide-[var(--border)]">
-                {data.byStatus.length === 0 && (
-                  <li className="px-5 py-4 text-[14px] text-[var(--muted)]">
-                    No records match these filters.
-                  </li>
-                )}
-                {[...data.byStatus]
-                  .sort((a, b) => b._count._all - a._count._all)
-                  .map((s) => (
-                    <li
-                      key={s.status}
-                      className="flex items-center justify-between px-5 py-3 text-[14px]"
-                    >
-                      <span className="text-[var(--foreground)]">
-                        {STATUS_LABEL[s.status] ?? s.status}
-                      </span>
-                      <span className="rounded-full bg-[var(--background)] px-2.5 py-0.5 text-[13px] font-medium text-[var(--muted)]">
-                        {s._count._all}
-                      </span>
-                    </li>
-                  ))}
-              </ul>
-            </section>
-          </div>
+            </aside>
+          )}
         </>
       ) : null}
     </div>
@@ -389,10 +522,10 @@ function StatCard({
   accent?: boolean;
 }) {
   return (
-    <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm">
+    <div className="min-w-0 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm">
       <p className="text-[13px] font-medium text-[var(--muted)]">{label}</p>
       <p
-        className={`mt-1.5 text-xl font-semibold tracking-tight ${
+        className={`mt-1.5 break-words font-semibold leading-snug tracking-tight tabular-nums [overflow-wrap:anywhere] text-[clamp(15px,2.6vw,20px)] ${
           accent ? "text-amber-500 dark:text-amber-400" : "text-[var(--foreground)]"
         }`}
       >

@@ -97,7 +97,7 @@ export default function Sidebar({
         `}
         aria-label="Navigation"
       >
-        <div className="flex h-full flex-col overflow-x-hidden overflow-y-auto px-2 py-3">
+        <div className="thin-scroll flex h-full flex-col overflow-x-hidden overflow-y-auto px-2 py-3">
           <div
             className={`mb-2 flex items-center gap-2 px-1 ${
               railCollapsed ? "flex-col gap-2" : ""
@@ -127,16 +127,6 @@ export default function Sidebar({
                 <p className="truncate text-[11.5px] text-[var(--muted)]">Cagayan</p>
               </div>
             )}
-
-            <button
-              type="button"
-              onClick={() => setCollapsed((c) => !c)}
-              className="hidden h-9 w-9 shrink-0 place-items-center rounded-xl text-[var(--muted)] transition hover:bg-[var(--border)] hover:text-[var(--foreground)] sm:grid"
-              title={railCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-              aria-label={railCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-            >
-              <BurgerIcon />
-            </button>
 
             <button
               type="button"
@@ -209,7 +199,7 @@ export default function Sidebar({
                 collapsed={railCollapsed}
                 icon={<UsersIcon />}
               >
-                Create user account
+                Manage Users
               </NavItem>
             )}
             <NavItem
@@ -335,14 +325,6 @@ function NavItem({
         </span>
       )}
     </Link>
-  );
-}
-
-function BurgerIcon() {
-  return (
-    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round">
-      <path d="M4 7h16M4 12h16M4 17h16" />
-    </svg>
   );
 }
 

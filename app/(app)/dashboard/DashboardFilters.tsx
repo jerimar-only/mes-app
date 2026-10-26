@@ -36,11 +36,10 @@ export default function DashboardFilters({
   const hasFilters = Boolean(year || office);
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm">
-      {/* Row 1: Year + CENRO aligned on the same baseline */}
-      <div className="flex flex-wrap items-end gap-4">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-3.5 shadow-sm">
+      <div className="flex flex-wrap items-end gap-3">
         <div>
-          <label className="mb-1.5 block text-[13px] font-medium text-[var(--muted)]">
+          <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-[var(--muted)]">
             Year
           </label>
           <select
@@ -61,7 +60,7 @@ export default function DashboardFilters({
         </div>
 
         <div>
-          <label className="mb-1.5 block text-[13px] font-medium text-[var(--muted)]">
+          <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-[var(--muted)]">
             CENRO Office
           </label>
           <select
@@ -72,7 +71,7 @@ export default function DashboardFilters({
             }}
             className="min-w-[160px] rounded-lg border border-[var(--border-strong)] bg-[var(--card)] px-3 py-2 text-[14px] text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none"
           >
-            <option value="">All CENRO</option>
+            <option value="">All CENROs</option>
             {offices.map((o) => (
               <option key={o.id} value={o.id}>
                 {o.name}
@@ -96,7 +95,6 @@ export default function DashboardFilters({
         )}
       </div>
 
-      {/* Row 2: Provincial summary toggle — always under Year */}
       <div className="mt-3 flex items-center gap-2">
         <button
           type="button"
