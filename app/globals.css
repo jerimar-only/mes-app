@@ -491,6 +491,7 @@ body {
  */
 @media (min-width: 1024px) {
   .app-shell:has(.dashboard-page) {
+    --app-footer-h: 2.75rem;
     height: 100dvh;
     max-height: 100dvh;
     overflow: hidden;
@@ -498,6 +499,7 @@ body {
     flex-direction: column;
   }
   .app-shell:has(.dashboard-page) .app-main {
+    flex: 1 1 auto;
     min-height: 0;
     overflow: hidden;
     max-width: none;
@@ -505,13 +507,28 @@ body {
     flex-direction: column;
     padding-left: 0;
     padding-right: 0;
-    padding-top: 1.25rem;
-    padding-bottom: 0.75rem;
+    /* Flush under sticky header — content scrolls underneath */
+    padding-top: 0;
+    padding-bottom: 0.25rem;
   }
   .dashboard-page {
     min-height: 0;
     flex: 1 1 auto;
     overflow: hidden;
+  }
+  /* Pin footer to the bottom of the shell; provincial rail stops above it */
+  .app-shell:has(.dashboard-page) .app-footer {
+    flex-shrink: 0;
+    height: var(--app-footer-h);
+    min-height: var(--app-footer-h);
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+  }
+  /* Provincial rail: from under header to top of footer (full shell width bar) */
+  .provincial-rail {
+    top: 3.5rem; /* header ~min-h-14 */
+    bottom: var(--app-footer-h);
   }
 }
 
@@ -537,17 +554,22 @@ body {
 }
 
 .app-header {
-  background: var(--card);
+  /* Sticky overlay: content scrolls underneath; keep surface opaque enough to read. */
+  background: color-mix(in srgb, var(--card) 92%, transparent);
   border-bottom: 1px solid var(--border);
   color: var(--foreground);
   box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .app-footer {
   background: var(--card);
   border-top: 1px solid var(--border);
   color: var(--muted);
-  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+  /* Full width of the shell (runs under the provincial rail column) */
+  width: 100%;
+  padding-bottom: max(0.35rem, env(safe-area-inset-bottom, 0px));
 }
 
 .sidebar-panel {

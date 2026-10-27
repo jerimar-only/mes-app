@@ -147,8 +147,9 @@ export default function DashboardPage() {
         <>
           {/* Mobile: normal document scroll. Desktop (lg+): nested panel scroll. */}
           <div className="main-scroll lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:overscroll-contain">
-            <div className="space-y-6 px-5 pb-10 sm:px-6 sm:pb-8">
-              <p className="text-[14px] text-[var(--muted)]">{scopeLabel}</p>
+            {/* Mobile: app-main padding. Desktop: horizontal pad (app-main is 0 on lg dashboard). */}
+            <div className="space-y-4 pb-6 lg:px-4 lg:pb-5">
+              <p className="text-[13px] text-[var(--muted)]">{scopeLabel}</p>
               <DashboardFilters
                 years={[]}
                 offices={[]}
@@ -157,10 +158,10 @@ export default function DashboardPage() {
                 showProvincial={showProvincial}
                 onToggleProvincial={() => setShowProvincial((v) => !v)}
               />
-              <div className="h-48 animate-pulse rounded-2xl bg-[var(--border)]" />
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              <div className="h-36 animate-pulse rounded-xl bg-[var(--border)]" />
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="h-20 animate-pulse rounded-2xl bg-[var(--border)]" />
+                  <div key={i} className="h-16 animate-pulse rounded-xl bg-[var(--border)]" />
                 ))}
               </div>
 
@@ -180,7 +181,7 @@ export default function DashboardPage() {
           {/* Desktop provincial skeleton */}
           {showProvincial && (
             <aside
-              className="fixed bottom-0 right-0 top-14 z-20 hidden w-[280px] flex-col border-l border-[var(--border)] bg-[var(--card)] shadow-sm lg:flex"
+              className="provincial-rail fixed right-0 z-20 hidden w-[280px] flex-col border-l border-[var(--border)] bg-[var(--card)] shadow-sm lg:flex"
               aria-label="Provincial summary loading"
               aria-busy="true"
             >
@@ -200,8 +201,9 @@ export default function DashboardPage() {
               Mobile: document scroll (no overflow lock).
               Desktop lg+: nested panel scroll beside provincial rail. */}
           <div className="main-scroll lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:overscroll-contain">
-            <div className="space-y-6 px-5 pb-10 sm:px-6 sm:pb-8">
-            <p className="text-[14px] text-[var(--muted)]">{scopeLabel}</p>
+            {/* Mobile: rely on app-main padding. Desktop: restore horizontal pad (app-main is 0 on lg dashboard). */}
+            <div className="space-y-4 pb-6 lg:px-4 lg:pb-5">
+            <p className="text-[13px] text-[var(--muted)]">{scopeLabel}</p>
 
             <DashboardFilters
               years={data.years}
@@ -213,7 +215,7 @@ export default function DashboardPage() {
             />
 
             {/* ── Stat cards ── */}
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <StatCard label="Total records" value={data.total.toLocaleString()} />
               <StatCard
                 label="Total volume"
@@ -238,8 +240,8 @@ export default function DashboardPage() {
             </div>
 
             {/* ── By year ── */}
-            <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm">
-              <h2 className="mb-5 text-[15px] font-semibold text-[var(--foreground)]">
+            <section className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm">
+              <h2 className="mb-3 text-[14px] font-semibold text-[var(--foreground)]">
                 Apprehensions by year
               </h2>
               {data.byYear.length === 0 ? (
@@ -249,19 +251,19 @@ export default function DashboardPage() {
               ) : (
                 <div className="space-y-3">
                   {data.byYear.map((y) => (
-                    <div key={y.year} className="flex items-center gap-3">
-                      <span className="w-12 shrink-0 text-[13px] font-medium text-[var(--muted)]">
+                    <div key={y.year} className="flex items-center gap-2.5">
+                      <span className="w-11 shrink-0 text-[12px] font-medium text-[var(--muted)]">
                         {y.year}
                       </span>
-                      <div className="h-7 flex-1 overflow-hidden rounded-full bg-[var(--border)]">
+                      <div className="h-6 flex-1 overflow-hidden rounded-full bg-[var(--border)]">
                         <div
-                          className="h-7 rounded-full bg-[var(--accent)] transition-all"
+                          className="h-6 rounded-full bg-[var(--accent)] transition-all"
                           style={{
                             width: `${(y._count._all / maxYearCount) * 100}%`,
                           }}
                         />
                       </div>
-                      <span className="w-10 shrink-0 text-right text-[13px] font-medium text-[var(--foreground)]">
+                      <span className="w-9 shrink-0 text-right text-[12px] font-medium text-[var(--foreground)]">
                         {y._count._all}
                       </span>
                     </div>
@@ -271,16 +273,16 @@ export default function DashboardPage() {
             </section>
 
             {/* ── By office + By status ── */}
-            <div className="grid gap-6 sm:grid-cols-2">
-              <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-sm">
-                <div className="border-b border-[var(--border)] px-5 py-4">
-                  <h2 className="text-[15px] font-semibold text-[var(--foreground)]">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <section className="rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-sm">
+                <div className="border-b border-[var(--border)] px-4 py-3">
+                  <h2 className="text-[14px] font-semibold text-[var(--foreground)]">
                     By CENRO office
                   </h2>
                 </div>
                 <ul className="divide-y divide-[var(--border)]">
                   {data.byOffice.length === 0 && (
-                    <li className="px-5 py-4 text-[14px] text-[var(--muted)]">
+                    <li className="px-4 py-3 text-[13px] text-[var(--muted)]">
                       No records match these filters.
                     </li>
                   )}
@@ -289,12 +291,12 @@ export default function DashboardPage() {
                     .map((o) => (
                       <li
                         key={o.cenroOfficeId}
-                        className="flex items-center justify-between px-5 py-3 text-[14px]"
+                        className="flex items-center justify-between px-4 py-2.5 text-[13px]"
                       >
                         <span className="text-[var(--foreground)]">
                           {officeName(o.cenroOfficeId)}
                         </span>
-                        <span className="rounded-full bg-[var(--background)] px-2.5 py-0.5 text-[13px] font-medium text-[var(--muted)]">
+                        <span className="rounded-full bg-[var(--background)] px-2 py-0.5 text-[12px] font-medium text-[var(--muted)]">
                           {o._count._all}
                         </span>
                       </li>
@@ -302,15 +304,15 @@ export default function DashboardPage() {
                 </ul>
               </section>
 
-              <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-sm">
-                <div className="border-b border-[var(--border)] px-5 py-4">
-                  <h2 className="text-[15px] font-semibold text-[var(--foreground)]">
+              <section className="rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-sm">
+                <div className="border-b border-[var(--border)] px-4 py-3">
+                  <h2 className="text-[14px] font-semibold text-[var(--foreground)]">
                     By status
                   </h2>
                 </div>
                 <ul className="divide-y divide-[var(--border)]">
                   {data.byStatus.length === 0 && (
-                    <li className="px-5 py-4 text-[14px] text-[var(--muted)]">
+                    <li className="px-4 py-3 text-[13px] text-[var(--muted)]">
                       No records match these filters.
                     </li>
                   )}
@@ -319,12 +321,12 @@ export default function DashboardPage() {
                     .map((s) => (
                       <li
                         key={s.status}
-                        className="flex items-center justify-between px-5 py-3 text-[14px]"
+                        className="flex items-center justify-between px-4 py-2.5 text-[13px]"
                       >
                         <span className="text-[var(--foreground)]">
                           {STATUS_LABEL[s.status] ?? s.status}
                         </span>
-                        <span className="rounded-full bg-[var(--background)] px-2.5 py-0.5 text-[13px] font-medium text-[var(--muted)]">
+                        <span className="rounded-full bg-[var(--background)] px-2 py-0.5 text-[12px] font-medium text-[var(--muted)]">
                           {s._count._all}
                         </span>
                       </li>
@@ -405,7 +407,7 @@ export default function DashboardPage() {
           {/* ── Fixed right sidebar (desktop) ── */}
           {showProvincial && (
             <aside
-              className="fixed bottom-0 right-0 top-14 z-20 hidden w-[280px] flex-col border-l border-[var(--border)] bg-[var(--card)] shadow-sm lg:flex"
+              className="provincial-rail fixed right-0 z-20 hidden w-[280px] flex-col border-l border-[var(--border)] bg-[var(--card)] shadow-sm lg:flex"
               aria-label="Provincial summary"
             >
               <div className="shrink-0 border-b border-[var(--border)] px-3.5 py-3">
@@ -532,10 +534,10 @@ function StatCard({
   accent?: boolean;
 }) {
   return (
-    <div className="min-w-0 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm">
-      <p className="text-[13px] font-medium text-[var(--muted)]">{label}</p>
+    <div className="min-w-0 rounded-xl border border-[var(--border)] bg-[var(--card)] px-3.5 py-3 shadow-sm">
+      <p className="text-[12px] font-medium text-[var(--muted)]">{label}</p>
       <p
-        className={`mt-1.5 break-words font-semibold leading-snug tracking-tight tabular-nums [overflow-wrap:anywhere] text-[clamp(15px,2.6vw,20px)] ${
+        className={`mt-1 break-words font-semibold leading-snug tracking-tight tabular-nums [overflow-wrap:anywhere] text-[clamp(14px,2.4vw,18px)] ${
           accent ? "text-amber-500 dark:text-amber-400" : "text-[var(--foreground)]"
         }`}
       >

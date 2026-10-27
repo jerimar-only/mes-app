@@ -34,7 +34,7 @@ export default async function AppLayout({
       />
       <SidebarLayout>
         <Header />
-        <main className="app-main mx-auto w-full max-w-6xl px-5 py-7 sm:px-6 sm:py-8 xl:max-w-7xl 2xl:max-w-[1800px]">
+        <main className="app-main mx-auto w-full max-w-6xl px-4 pt-2 pb-6 sm:px-5 sm:pt-3 sm:pb-8 xl:max-w-7xl 2xl:max-w-[1800px]">
           {children}
         </main>
         <Footer />

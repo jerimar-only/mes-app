@@ -36,8 +36,8 @@ export default function DashboardFilters({
   const hasFilters = Boolean(year || office);
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] px-4 py-3.5 shadow-sm">
-      <div className="flex flex-wrap items-end gap-3">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] px-3.5 py-3 shadow-sm">
+      <div className="flex flex-wrap items-end gap-2.5">
         <div>
           <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-[var(--muted)]">
             Year
