@@ -267,6 +267,7 @@ export default async function AdminPortalPage() {
                         year: "numeric",
                         month: "short",
                         day: "numeric",
+                        timeZone: "Asia/Manila",
                       })}
                     </td>
                     <td className="px-3 py-3 text-right sm:px-4">
@@ -308,6 +309,7 @@ function formatUnlock(untilMs: number) {
     day: "numeric",
     hour: "numeric",
     minute: "2-digit",
+    timeZone: "Asia/Manila",
   });
 }
 

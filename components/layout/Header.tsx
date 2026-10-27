@@ -127,7 +127,7 @@ export default function Header() {
   }
 
   return (
-    <header className="app-header sticky top-0 z-30 flex min-h-14 items-center justify-between gap-3 px-4 py-2 sm:px-6">
+    <header className="app-header sticky top-0 z-30 flex min-h-14 shrink-0 items-center justify-between gap-3 px-4 py-2 sm:px-6">
       <button
         type="button"
         className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-[var(--border)] bg-[var(--card)] text-[var(--muted)] transition hover:text-[var(--foreground)]"

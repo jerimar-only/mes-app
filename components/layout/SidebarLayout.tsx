@@ -6,7 +6,10 @@ const EXPANDED_WIDTH = 260;
 const COLLAPSED_WIDTH = 68;
 
 export default function SidebarLayout({ children }: { children: React.ReactNode }) {
-  const [margin, setMargin] = useState(EXPANDED_WIDTH);
+  // Start at 0 so mobile never paints with a 260px offset (header would be off-screen).
+  // Desktop margin is applied after mount.
+  const [margin, setMargin] = useState(0);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const update = () => {
@@ -20,6 +23,7 @@ export default function SidebarLayout({ children }: { children: React.ReactNode 
     };
 
     update();
+    setReady(true);
     window.addEventListener("resize", update);
     window.addEventListener("sidebar-change", update);
     return () => {
@@ -31,7 +35,9 @@ export default function SidebarLayout({ children }: { children: React.ReactNode 
   return (
     <div
       style={{ marginLeft: margin }}
-      className="flex min-h-dvh min-w-0 flex-col transition-[margin] duration-200 ease-out supports-[height:100dvh]:min-h-dvh"
+      className={`flex min-h-dvh min-w-0 flex-col supports-[height:100dvh]:min-h-dvh max-sm:!ml-0 ${
+        ready ? "transition-[margin] duration-200 ease-out" : ""
+      }`}
     >
       {children}
     </div>
