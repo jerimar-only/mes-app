@@ -484,6 +484,10 @@ legend {
   box-shadow: var(--shadow);
 }
 
+.app-footer {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+}
+
 .sidebar-panel {
   background: var(--nav);
   border-right: 1px solid var(--nav-border);

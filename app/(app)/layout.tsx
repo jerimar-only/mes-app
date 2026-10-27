@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import Sidebar from "@/components/layout/Sidebar";
 import SidebarLayout from "@/components/layout/SidebarLayout";
 import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
 import SessionGuard from "@/components/layout/SessionGuard";
 import AppProviders from "@/components/layout/AppProviders";
 
@@ -34,6 +35,7 @@ export default async function AppLayout({
         <main className="app-main mx-auto max-w-6xl px-5 py-7 sm:px-6 sm:py-8 xl:max-w-7xl 2xl:max-w-[1800px]">
           {children}
         </main>
+        <Footer />
       </SidebarLayout>
     </AppProviders>
   );

@@ -121,29 +121,39 @@ export default function DashboardPage() {
     load();
   }, [load]);
 
-  // Lock page scroll on dashboard — only main column + provincial rail scroll
+  // Lock page scroll on dashboard — only main column + provincial rail scroll.
+  // Height accounts for header (3.5rem) + footer (~2.75rem) so the bottom
+  // content remains reachable on mobile.
   useEffect(() => {
     const main = document.querySelector<HTMLElement>(".app-main");
+    const footer = document.querySelector<HTMLElement>(".app-footer");
     const body = document.body;
     const prevBodyOverflow = body.style.overflow;
 
-    body.style.overflow = "hidden";
-    if (main) {
-      main.style.height = "calc(100dvh - 3.5rem)";
-      main.style.maxHeight = "calc(100dvh - 3.5rem)";
-      main.style.overflow = "hidden";
-      main.style.maxWidth = "none";
-      // Equal horizontal padding is applied on the content column so the
-      // left-sidebar → content gap matches the content → right-sidebar gap.
-      main.style.paddingLeft = "0";
-      main.style.paddingRight = "0";
-      main.style.paddingTop = "1.25rem";
-      main.style.paddingBottom = "1.25rem";
-      main.style.display = "flex";
-      main.style.flexDirection = "column";
-    }
+    const apply = () => {
+      const footerH = footer?.offsetHeight ?? 44;
+      const height = `calc(100dvh - 3.5rem - ${footerH}px)`;
+      body.style.overflow = "hidden";
+      if (main) {
+        main.style.height = height;
+        main.style.maxHeight = height;
+        main.style.overflow = "hidden";
+        main.style.maxWidth = "none";
+        // Equal horizontal padding is applied on the content column so the
+        // left-sidebar → content gap matches the content → right-sidebar gap.
+        main.style.paddingLeft = "0";
+        main.style.paddingRight = "0";
+        main.style.paddingTop = "1.25rem";
+        main.style.paddingBottom = "0.75rem";
+        main.style.display = "flex";
+        main.style.flexDirection = "column";
+      }
+    };
 
+    apply();
+    window.addEventListener("resize", apply);
     return () => {
+      window.removeEventListener("resize", apply);
       body.style.overflow = prevBodyOverflow;
       if (main) {
         main.style.height = "";
@@ -183,8 +193,8 @@ export default function DashboardPage() {
       )}
 
       {loading && !data ? (
-        <div className="main-scroll min-h-0 flex-1 overflow-y-auto">
-          <div className="space-y-6 px-5 sm:px-6">
+        <div className="main-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <div className="space-y-6 px-5 pb-10 sm:px-6 sm:pb-8">
             <div>
               <h1 className="text-2xl font-semibold tracking-tight text-[var(--foreground)]">
                 Dashboard
@@ -212,8 +222,8 @@ export default function DashboardPage() {
       ) : data ? (
         <>
           {/* ── Center: main dashboard content (own scrollbar, track near right rail) ── */}
-          <div className="main-scroll min-h-0 flex-1 overflow-y-auto">
-            <div className="space-y-6 px-5 sm:px-6">
+          <div className="main-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain">
+            <div className="space-y-6 px-5 pb-10 sm:px-6 sm:pb-8">
             <div>
               <h1 className="text-2xl font-semibold tracking-tight text-[var(--foreground)]">
                 Dashboard
