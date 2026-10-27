@@ -109,14 +109,38 @@ body {
   outline-offset: 2px;
 }
 
-/* ── Cards & page chrome ── */
+/* ── Cards & page chrome (aligned with dashboard modern style) ── */
 
 .card {
-  background: var(--card);
-  border-radius: var(--radius);
-  padding: 22px;
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(160deg, color-mix(in srgb, var(--card) 92%, var(--accent)) 0%, var(--card) 48%);
+  border-radius: 1rem;
+  padding: 1.25rem 1.35rem;
   box-shadow: var(--shadow);
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--accent) 12%, var(--border));
+  transition:
+    box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.card:hover {
+  box-shadow: var(--shadow-lg);
+  border-color: color-mix(in srgb, var(--accent) 20%, var(--border));
+}
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 50%);
+  opacity: 0.85;
+}
+.card > * {
+  position: relative;
+  z-index: 1;
 }
 
 .card-title {
@@ -140,14 +164,66 @@ body {
   font-size: 14px;
 }
 
+/* Filter bars / toolbars used across records, reports, bulk pages */
+.app-filters {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 14%, var(--border));
+  background:
+    linear-gradient(160deg, color-mix(in srgb, var(--card) 92%, var(--accent)) 0%, var(--card) 50%);
+  box-shadow: var(--shadow);
+  padding: 0.85rem 1rem;
+}
+.app-filters::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 55%);
+}
+.app-filters > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Table shells */
+.app-table-shell {
+  overflow-x: auto;
+  border-radius: 1rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 14%, var(--border));
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+.app-table-shell thead {
+  background: linear-gradient(135deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 75%, #0f766e) 100%);
+}
+.app-table-shell tbody tr {
+  transition: background-color 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.app-table-shell tbody tr:hover {
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+}
+
 /* ── Stat tiles ── */
 
 .stat {
-  background: var(--card);
-  border-radius: 16px;
-  padding: 16px 18px;
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--accent) 8%, var(--card)) 0%, var(--card) 55%);
+  border-radius: 1rem;
+  padding: 1rem 1.1rem;
   box-shadow: var(--shadow);
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--border));
+  transition:
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.stat:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
 }
 .stat > span {
   color: var(--muted);

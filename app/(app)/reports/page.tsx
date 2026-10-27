@@ -178,21 +178,24 @@ export default async function ReportsPage({
   ];
 
   return (
-    <div className="space-y-10">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <p className="text-[14px] text-[var(--muted)]">
-          January to present — {selectedYear}
-          {unparsedCount > 0 && (
-            <span className="ml-2 text-amber-600 dark:text-amber-400">
-              ({unparsedCount} record{unparsedCount > 1 ? "s" : ""} could not be assigned to a month)
-            </span>
-          )}
-        </p>
+    <div className="space-y-8">
+      <div className="app-filters flex flex-wrap items-center justify-between gap-4">
+        <div className="dash-scope">
+          <span className="dash-scope-dot" aria-hidden />
+          <p className="text-[13px] font-medium text-[var(--muted)]">
+            January to present — {selectedYear}
+            {unparsedCount > 0 && (
+              <span className="ml-2 text-amber-600 dark:text-amber-400">
+                ({unparsedCount} record{unparsedCount > 1 ? "s" : ""} could not be assigned to a month)
+              </span>
+            )}
+          </p>
+        </div>
         <form method="get" className="flex items-center gap-2">
           <select
             name="year"
             defaultValue={selectedYear}
-            className="rounded-md border border-[var(--border-strong)] bg-[var(--card)] px-3 py-2 text-[14px] text-[var(--foreground)]"
+            className="rounded-lg border border-[var(--border-strong)] bg-[var(--card)]/80 px-3 py-2 text-[14px] text-[var(--foreground)] shadow-sm backdrop-blur-sm"
           >
             {years.map((y) => (
               <option key={y} value={y}>{y}</option>
@@ -200,44 +203,46 @@ export default async function ReportsPage({
           </select>
           <button
             type="submit"
-            className="rounded-md bg-[var(--accent)] px-4 py-2 text-[14px] text-white hover:bg-[var(--accent-hover)]"
+            className="rounded-xl bg-[var(--accent)] px-4 py-2 text-[14px] font-medium text-white shadow-sm transition hover:bg-[var(--accent-hover)]"
           >
             View
           </button>
         </form>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatCard label="Total incidents" value={totalIncidents.toLocaleString()} />
         <StatCard label="Volume (bd. ft.)" value={totalVolume.toLocaleString(undefined, { maximumFractionDigits: 1 })} />
         <StatCard label="Conveyances" value={totalConv.toLocaleString()} />
         <StatCard label="Tools/equipment" value={totalEquip.toLocaleString()} />
       </div>
 
-      <section className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm">
-        <h2 className="mb-5 text-[15px] font-semibold text-[var(--foreground)]">Incidents by month</h2>
+      <section className="dash-panel p-4 sm:p-5">
+        <h2 className="dash-panel-title mb-4">Incidents by month</h2>
         <div className="space-y-3">
           {monthlyData.map((d) => (
             <div key={d.month} className="flex items-center gap-3">
               <span className="w-24 shrink-0 text-[13px] text-[var(--muted)]">{MONTH_NAMES[d.month]}</span>
-              <div className="h-7 flex-1 overflow-hidden rounded-full bg-[var(--border)]">
+              <div className="h-6 flex-1 overflow-hidden rounded-full bg-[var(--border)]/80">
                 <div
-                  className="h-7 rounded-full bg-[var(--accent)]"
-                  style={{ width: `${(d.incidents / maxIncidents) * 100}%` }}
+                  className="h-6 rounded-full bg-gradient-to-r from-[var(--accent)] to-emerald-400/90"
+                  style={{
+                    width: `${(d.incidents / maxIncidents) * 100}%`,
+                    transition: "width 0.75s cubic-bezier(0.16, 1, 0.3, 1)",
+                  }}
                 />
               </div>
-              <span className="w-10 shrink-0 text-right text-[13px] text-[var(--muted)]">{d.incidents}</span>
+              <span className="w-10 shrink-0 text-right text-[13px] font-semibold tabular-nums text-[var(--foreground)]">{d.incidents}</span>
             </div>
           ))}
         </div>
       </section>
 
       <section>
-        <h2 className="mb-4 text-[15px] font-semibold text-[var(--foreground)]">Monthly breakdown</h2>
-        {/* overflow-x-auto lets the table scroll sideways on phones instead of clipping */}
-        <div className="overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--card)]">
+        <h2 className="dash-panel-title mb-3">Monthly breakdown</h2>
+        <div className="app-table-shell">
           <table className="w-full min-w-[560px] text-left text-[14px]">
-            <thead className="border-b border-[var(--border)] bg-[var(--accent)] text-[13px] font-semibold text-white">
+            <thead className="border-b border-[var(--border)] text-[13px] font-semibold text-white">
               <tr>
                 <th className="px-4 py-3 font-medium">Month</th>
                 <th className="px-4 py-3 font-medium">No. Incidents</th>
@@ -323,7 +328,7 @@ export default async function ReportsPage({
         <form
           action="/api/export/detailed"
           method="get"
-          className="flex flex-wrap items-end gap-3 rounded-xl border border-[var(--border)] bg-[var(--card)] p-4"
+          className="app-filters flex flex-wrap items-end gap-3"
         >
           <div>
             <label className="mb-1 block text-[13px] font-medium text-[var(--muted)]">
@@ -357,7 +362,7 @@ export default async function ReportsPage({
         <form
           action="/api/export/quarterly"
           method="get"
-          className="flex flex-wrap items-end gap-3 rounded-xl border border-[var(--border)] bg-[var(--card)] p-4"
+          className="app-filters flex flex-wrap items-end gap-3"
         >
           <div>
             <label className="mb-1 block text-[13px] font-medium text-[var(--muted)]">
@@ -406,9 +411,11 @@ export default async function ReportsPage({
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm">
-      <p className="text-[13px] font-medium text-[var(--muted)]">{label}</p>
-      <p className="mt-1.5 text-xl font-semibold tracking-tight text-[var(--foreground)]">
+    <div className="stat-card stat-card-records group relative min-w-0 overflow-hidden rounded-2xl border border-[var(--border)] px-3.5 py-3.5 shadow-sm">
+      <div className="stat-card-orb pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full opacity-60 blur-2xl transition-opacity group-hover:opacity-90" />
+      <div className="stat-card-mesh pointer-events-none absolute inset-0 opacity-[0.35]" />
+      <p className="relative z-[1] text-[12px] font-medium tracking-wide text-[var(--muted)]">{label}</p>
+      <p className="relative z-[1] mt-1.5 text-[clamp(15px,2.5vw,19px)] font-semibold tracking-tight tabular-nums text-[var(--foreground)]">
         {value}
       </p>
     </div>
@@ -432,10 +439,10 @@ function TableSection({
   return (
     <section>
       <div className="mb-3 flex flex-wrap items-baseline gap-x-3">
-        <h3 className="text-[15px] font-semibold text-[var(--foreground)]">{title}</h3>
+        <h3 className="dash-panel-title">{title}</h3>
         <span className="text-[12px] text-[var(--muted)]">Table: {table}</span>
       </div>
-      <div className="max-h-[420px] overflow-auto rounded-xl border border-[var(--border)] bg-[var(--card)]">
+      <div className="app-table-shell max-h-[420px] overflow-auto">
         <table className="w-full min-w-[320px] text-left text-[14px]">
           <thead className="sticky top-0 border-b border-[var(--border)] bg-[var(--accent)] text-[13px] font-semibold text-white">
             <tr>

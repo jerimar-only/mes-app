@@ -271,7 +271,7 @@ export default async function FullRecordsPage({
 
       {/* Table */}
       {/* max-height only on large screens so mobile uses normal page scroll */}
-      <div className="relative overflow-x-auto rounded-lg border border-[var(--border)] bg-[var(--card)] shadow-sm lg:max-h-[70vh] lg:overflow-auto">
+      <div className="app-table-shell relative lg:max-h-[70vh] lg:overflow-auto">
         <table className="w-full border-collapse text-left text-[12.5px]" style={{ minWidth: "2600px" }}>
           <thead className="sticky top-0 z-20 bg-[var(--accent)]">
             <tr className="border-b border-[var(--border)] bg-[var(--accent)] text-[11px] font-semibold uppercase tracking-wide text-white">

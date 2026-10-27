@@ -122,7 +122,7 @@ export default function BulkDeleteClient() {
   return (
     <div className="space-y-5">
       {/* Filters */}
-      <div className="grid grid-cols-1 gap-3 rounded-lg border border-[var(--border)] bg-[var(--card)] p-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="app-filters grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <div>
           <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-[var(--muted)]">
             Year
@@ -209,7 +209,7 @@ export default function BulkDeleteClient() {
       </div>
 
       {/* Table */}
-      <div className="overflow-auto rounded-lg border border-[var(--border)] bg-[var(--card)] shadow-sm">
+      <div className="app-table-shell overflow-auto">
         <table className="w-full text-left text-[13px]">
           <thead className="border-b border-[var(--border)] bg-[var(--accent)] text-[11px] font-semibold uppercase tracking-wide text-white">
             <tr>

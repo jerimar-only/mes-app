@@ -131,9 +131,9 @@ export default function RecordsClient({
       </div>
 
       {/* Table — horizontal scroll only; vertical scroll is the page (mobile-friendly) */}
-      <div className="overflow-x-auto rounded-lg border border-[var(--border)] bg-[var(--card)] shadow-sm">
+      <div className="app-table-shell">
         <table className="w-full min-w-[640px] text-left text-[13px]">
-          <thead className="border-b border-[var(--border)] bg-[var(--accent)] text-[11px] font-semibold uppercase tracking-wide text-white">
+          <thead className="border-b border-[var(--border)] text-[11px] font-semibold uppercase tracking-wide text-white">
               <tr>
                 <th className="px-4 py-2.5 font-semibold">Year</th>
                 <th className="px-4 py-2.5 font-semibold">Office</th>

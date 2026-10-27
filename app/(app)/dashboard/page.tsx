@@ -274,9 +274,10 @@ export default function DashboardPage() {
                       </span>
                       <div className="h-6 flex-1 overflow-hidden rounded-full bg-[var(--border)]/80">
                         <div
-                          className="h-6 rounded-full bg-gradient-to-r from-[var(--accent)] to-emerald-400/90 transition-all"
+                          className="h-6 rounded-full bg-gradient-to-r from-[var(--accent)] to-emerald-400/90"
                           style={{
                             width: `${(y._count._all / maxYearCount) * 100}%`,
+                            transition: "width 0.75s cubic-bezier(0.16, 1, 0.3, 1)",
                           }}
                         />
                       </div>

@@ -290,7 +290,7 @@ export default async function RecordDetailPage({
               <DeleteButton recordId={record.id} />
             </div>
           ) : (
-            <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-4 text-[14px] text-[var(--muted)]">
+            <div className="dash-panel p-4 text-[14px] text-[var(--muted)]">
               Only administrators can edit saved records.
             </div>
           )}

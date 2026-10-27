@@ -175,7 +175,7 @@ export default function BulkUpdateClient() {
 
   return (
     <div className="space-y-5">
-      <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-4 text-[13px] text-[var(--muted)] leading-relaxed">
+      <div className="dash-panel p-4 text-[13px] text-[var(--muted)] leading-relaxed">
         <p className="font-medium text-[var(--foreground)]">How to use</p>
         <ol className="mt-2 list-decimal space-y-1 pl-5">
           <li>
@@ -298,7 +298,7 @@ export default function BulkUpdateClient() {
           </div>
 
           <div
-            className="relative overflow-auto rounded-lg border border-[var(--border)] bg-[var(--card)] shadow-sm"
+            className="app-table-shell relative overflow-auto"
             style={{ maxHeight: "65vh" }}
           >
             <table className="w-full border-collapse text-left text-[12.5px]" style={{ minWidth: "1800px" }}>

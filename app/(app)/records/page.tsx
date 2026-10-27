@@ -24,7 +24,7 @@ export default async function RecordsPage({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
         <Link
           href="/records/full"
-          className="inline-flex shrink-0 items-center rounded-md border border-[var(--border-strong)] bg-[var(--card)] px-4 py-2 text-[14px] font-medium text-[var(--foreground)] shadow-sm transition hover:bg-gray-50"
+          className="inline-flex shrink-0 items-center rounded-xl border border-[var(--border-strong)] bg-[var(--card)] px-4 py-2 text-[14px] font-medium text-[var(--foreground)] shadow-sm transition hover:border-[var(--accent)]/30 hover:bg-[var(--accent-soft)]"
         >
           Full view →
         </Link>
@@ -33,7 +33,7 @@ export default async function RecordsPage({
         {/* Filters */}
         <form
           method="get"
-          className="grid grid-cols-2 gap-2.5 rounded-lg border border-[var(--border)] bg-[var(--shell)] p-3 sm:flex sm:flex-wrap sm:items-end"
+          className="app-filters grid grid-cols-2 gap-2.5 sm:flex sm:flex-wrap sm:items-end"
         >
           <div className="col-span-2 min-w-0 sm:min-w-[200px] sm:flex-1">
             <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-[var(--muted)]">
@@ -130,7 +130,7 @@ export default async function RecordsPage({
           <div className="col-span-2 sm:col-span-1 sm:self-end">
             <button
               type="submit"
-              className="w-full rounded-md bg-[var(--accent)] px-4 py-2 text-[13px] font-medium text-white hover:bg-[var(--accent-hover)] sm:w-auto"
+              className="w-full rounded-xl bg-[var(--accent)] px-4 py-2 text-[13px] font-medium text-white shadow-sm transition hover:bg-[var(--accent-hover)] sm:w-auto"
             >
               Apply
             </button>

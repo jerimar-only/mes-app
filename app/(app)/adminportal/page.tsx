@@ -94,7 +94,7 @@ export default async function AdminPortalPage() {
       )}
 
       {/* Create user */}
-      <section className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm sm:p-6">
+      <section className="dash-panel p-4 sm:p-6">
         <h2 className="mb-4 text-[15px] font-semibold text-[var(--foreground)] sm:mb-5">
           Create new account
         </h2>
@@ -174,7 +174,7 @@ export default async function AdminPortalPage() {
         </h2>
 
         {/* Horizontal scroll on small screens */}
-        <div className="overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-sm">
+        <div className="app-table-shell">
           <table className="w-full min-w-[720px] text-left text-[14px]">
             <thead className="border-b border-[var(--border)] bg-[var(--accent)] text-[12px] font-semibold uppercase tracking-wide text-white">
               <tr>
@@ -315,7 +315,7 @@ function formatUnlock(untilMs: number) {
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-3 shadow-sm sm:p-4">
+    <div className="dash-panel p-3 sm:p-4">
       <p className="text-[11px] font-medium text-[var(--muted)] sm:text-[12px]">
         {label}
       </p>
