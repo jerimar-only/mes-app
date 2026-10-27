@@ -6,6 +6,7 @@ import SidebarLayout from "@/components/layout/SidebarLayout";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import SessionGuard from "@/components/layout/SessionGuard";
+import ScrollUnlock from "@/components/layout/ScrollUnlock";
 import AppProviders from "@/components/layout/AppProviders";
 
 export default async function AppLayout({
@@ -25,6 +26,7 @@ export default async function AppLayout({
   return (
     <AppProviders>
       <SessionGuard />
+      <ScrollUnlock />
       <Sidebar
         isAdmin={user.role === "ADMINISTRATOR" || user.role === "SUPERADMIN"}
         isSuperAdmin={user.role === "SUPERADMIN"}
@@ -32,7 +34,7 @@ export default async function AppLayout({
       />
       <SidebarLayout>
         <Header />
-        <main className="app-main mx-auto w-full max-w-6xl flex-1 px-5 py-7 sm:px-6 sm:py-8 xl:max-w-7xl 2xl:max-w-[1800px]">
+        <main className="app-main mx-auto w-full max-w-6xl px-5 py-7 sm:px-6 sm:py-8 xl:max-w-7xl 2xl:max-w-[1800px]">
           {children}
         </main>
         <Footer />

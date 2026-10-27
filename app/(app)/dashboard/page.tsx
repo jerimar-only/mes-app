@@ -121,55 +121,6 @@ export default function DashboardPage() {
     load();
   }, [load]);
 
-  // Lock page scroll on dashboard — only main column + provincial rail scroll.
-  // Shell is fixed to the viewport so header + main + footer all stay visible.
-  useEffect(() => {
-    const main = document.querySelector<HTMLElement>(".app-main");
-    const shell = main?.parentElement;
-    const body = document.body;
-    const prevBodyOverflow = body.style.overflow;
-
-    body.style.overflow = "hidden";
-    if (shell) {
-      shell.style.height = "100dvh";
-      shell.style.maxHeight = "100dvh";
-      shell.style.overflow = "hidden";
-    }
-    if (main) {
-      main.style.minHeight = "0";
-      main.style.overflow = "hidden";
-      main.style.maxWidth = "none";
-      // Equal horizontal padding is applied on the content column so the
-      // left-sidebar → content gap matches the content → right-sidebar gap.
-      main.style.paddingLeft = "0";
-      main.style.paddingRight = "0";
-      main.style.paddingTop = "1.25rem";
-      main.style.paddingBottom = "0.75rem";
-      main.style.display = "flex";
-      main.style.flexDirection = "column";
-    }
-
-    return () => {
-      body.style.overflow = prevBodyOverflow;
-      if (shell) {
-        shell.style.height = "";
-        shell.style.maxHeight = "";
-        shell.style.overflow = "";
-      }
-      if (main) {
-        main.style.minHeight = "";
-        main.style.overflow = "";
-        main.style.maxWidth = "";
-        main.style.paddingLeft = "";
-        main.style.paddingRight = "";
-        main.style.paddingTop = "";
-        main.style.paddingBottom = "";
-        main.style.display = "";
-        main.style.flexDirection = "";
-      }
-    };
-  }, []);
-
   const officeName = (id: number) =>
     data?.offices.find((o) => o.id === id)?.name ?? "Unknown";
 
@@ -184,7 +135,7 @@ export default function DashboardPage() {
 
   return (
     <div
-      className={`flex min-h-0 flex-1 flex-col ${showProvincial ? "lg:pr-[280px]" : ""}`}
+      className={`dashboard-page flex min-h-0 flex-1 flex-col ${showProvincial ? "lg:pr-[280px]" : ""}`}
     >
       {error && (
         <p className="mb-4 shrink-0 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-[14px] text-red-700">

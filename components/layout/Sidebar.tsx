@@ -59,10 +59,12 @@ export default function Sidebar({
 
   useEffect(() => {
     if (!mobileOpen) return;
-    const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = prev;
+      // Always unlock — never restore a previous "hidden" from another page
+      document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
+      document.documentElement.classList.remove("dashboard-lock");
     };
   }, [mobileOpen]);
 

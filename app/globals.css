@@ -476,6 +476,45 @@ legend {
   background: var(--background);
 }
 
+/* Let the browser handle document scroll — no touch-action / overflow tricks */
+html {
+  height: auto;
+}
+body {
+  min-height: 100%;
+  height: auto;
+}
+
+/*
+ * Desktop dashboard layout only — scoped to .dashboard-page, never touches html/body.
+ * Mobile: normal document scroll (no height lock).
+ */
+@media (min-width: 1024px) {
+  .app-shell:has(.dashboard-page) {
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .app-shell:has(.dashboard-page) .app-main {
+    min-height: 0;
+    overflow: hidden;
+    max-width: none;
+    display: flex;
+    flex-direction: column;
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: 1.25rem;
+    padding-bottom: 0.75rem;
+  }
+  .dashboard-page {
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+  }
+}
+
 .app-header {
   background: var(--card);
   border-bottom: 1px solid var(--border);
@@ -550,105 +589,4 @@ legend {
   }
 }
 
-/* ── Custom scrollbars (same look as dashboard) ──
- * Do NOT style `*` — that breaks scroll on Vercel / Safari / mobile.
- * Target: document, dashboard main, Tailwind overflow utilities, thin rails.
- */
-
-/* Firefox */
-html,
-body,
-.main-scroll,
-.custom-scroll,
-.overflow-auto,
-.overflow-y-auto,
-.overflow-x-auto,
-.overflow-scroll {
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-strong) transparent;
-}
-
-/* Chromium / Safari (desktop) */
-html::-webkit-scrollbar,
-body::-webkit-scrollbar,
-.main-scroll::-webkit-scrollbar,
-.custom-scroll::-webkit-scrollbar,
-.overflow-auto::-webkit-scrollbar,
-.overflow-y-auto::-webkit-scrollbar,
-.overflow-x-auto::-webkit-scrollbar,
-.overflow-scroll::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-html::-webkit-scrollbar-track,
-body::-webkit-scrollbar-track,
-.main-scroll::-webkit-scrollbar-track,
-.custom-scroll::-webkit-scrollbar-track,
-.overflow-auto::-webkit-scrollbar-track,
-.overflow-y-auto::-webkit-scrollbar-track,
-.overflow-x-auto::-webkit-scrollbar-track,
-.overflow-scroll::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-html::-webkit-scrollbar-thumb,
-body::-webkit-scrollbar-thumb,
-.main-scroll::-webkit-scrollbar-thumb,
-.custom-scroll::-webkit-scrollbar-thumb,
-.overflow-auto::-webkit-scrollbar-thumb,
-.overflow-y-auto::-webkit-scrollbar-thumb,
-.overflow-x-auto::-webkit-scrollbar-thumb,
-.overflow-scroll::-webkit-scrollbar-thumb {
-  background-color: var(--border-strong);
-  border-radius: 999px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
-}
-
-html::-webkit-scrollbar-thumb:hover,
-body::-webkit-scrollbar-thumb:hover,
-.main-scroll::-webkit-scrollbar-thumb:hover,
-.custom-scroll::-webkit-scrollbar-thumb:hover,
-.overflow-auto::-webkit-scrollbar-thumb:hover,
-.overflow-y-auto::-webkit-scrollbar-thumb:hover,
-.overflow-x-auto::-webkit-scrollbar-thumb:hover,
-.overflow-scroll::-webkit-scrollbar-thumb:hover {
-  background-color: var(--muted);
-}
-
-html::-webkit-scrollbar-corner,
-body::-webkit-scrollbar-corner,
-.main-scroll::-webkit-scrollbar-corner,
-.custom-scroll::-webkit-scrollbar-corner {
-  background: transparent;
-}
-
-.main-scroll {
-  scrollbar-gutter: stable;
-}
-
-/* Narrower variant — left nav + provincial right rail */
-.thin-scroll,
-.provincial-scroll {
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-strong) transparent;
-}
-.thin-scroll::-webkit-scrollbar,
-.provincial-scroll::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-.thin-scroll::-webkit-scrollbar-track,
-.provincial-scroll::-webkit-scrollbar-track {
-  background: transparent;
-}
-.thin-scroll::-webkit-scrollbar-thumb,
-.provincial-scroll::-webkit-scrollbar-thumb {
-  background-color: var(--border-strong);
-  border-radius: 999px;
-}
-.thin-scroll::-webkit-scrollbar-thumb:hover,
-.provincial-scroll::-webkit-scrollbar-thumb:hover {
-  background-color: var(--muted);
-}
+/* Native browser scrollbars only — no custom scrollbar styling */
