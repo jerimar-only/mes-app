@@ -57,11 +57,19 @@ export default function Sidebar({
     };
   }, []);
 
+  // Lock body scroll only while the mobile drawer is open.
+  // Always clear to "" (never restore a previous value) so a leftover
+  // "hidden" from another modal cannot stick and kill single-finger scroll.
   useEffect(() => {
-    if (!mobileOpen) return;
-    document.body.style.overflow = "hidden";
+    if (mobileOpen) {
+      document.body.style.overflow = "hidden";
+      document.documentElement.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
+      document.documentElement.classList.remove("dashboard-lock");
+    }
     return () => {
-      // Always unlock — never restore a previous "hidden" from another page
       document.body.style.overflow = "";
       document.documentElement.style.overflow = "";
       document.documentElement.classList.remove("dashboard-lock");

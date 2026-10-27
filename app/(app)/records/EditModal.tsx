@@ -52,11 +52,14 @@ export function EditModal({
       if (e.key === "Escape") close();
     };
     window.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
+    // Always force-unlock on close — never restore a prior "hidden"
+    // (restoring prev can leave mobile scroll stuck after sidebar/modal stacking).
     document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
     return () => {
       window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
+      document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
     };
   }, [open]);
 

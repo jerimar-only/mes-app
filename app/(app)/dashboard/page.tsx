@@ -135,7 +135,7 @@ export default function DashboardPage() {
 
   return (
     <div
-      className={`dashboard-page flex min-h-0 flex-1 flex-col ${showProvincial ? "lg:pr-[280px]" : ""}`}
+      className={`dashboard-page flex flex-col lg:min-h-0 lg:flex-1 ${showProvincial ? "lg:pr-[280px]" : ""}`}
     >
       {error && (
         <p className="mb-4 shrink-0 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-[14px] text-red-700">
@@ -145,7 +145,8 @@ export default function DashboardPage() {
 
       {loading && !data ? (
         <>
-          <div className="main-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          {/* Mobile: normal document scroll. Desktop (lg+): nested panel scroll. */}
+          <div className="main-scroll lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:overscroll-contain">
             <div className="space-y-6 px-5 pb-10 sm:px-6 sm:pb-8">
               <p className="text-[14px] text-[var(--muted)]">{scopeLabel}</p>
               <DashboardFilters
@@ -195,8 +196,10 @@ export default function DashboardPage() {
         </>
       ) : data ? (
         <>
-          {/* ── Center: main dashboard content (own scrollbar, track near right rail) ── */}
-          <div className="main-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          {/* ── Center: main dashboard content ──
+              Mobile: document scroll (no overflow lock).
+              Desktop lg+: nested panel scroll beside provincial rail. */}
+          <div className="main-scroll lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:overscroll-contain">
             <div className="space-y-6 px-5 pb-10 sm:px-6 sm:pb-8">
             <p className="text-[14px] text-[var(--muted)]">{scopeLabel}</p>
 
