@@ -64,7 +64,7 @@ export default async function EditRecordPage({
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Edit record #{r.id}</h1>
+      <p className="text-[14px] text-[var(--muted)]">Record #{r.id}</p>
       <EditForm record={record} />
     </div>
   );

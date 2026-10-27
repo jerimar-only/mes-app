@@ -117,15 +117,11 @@ export default async function FullRecordsPage({
 
   return (
     <div className="space-y-5">
-      {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">All records — full view</h1>
-          <p className="mt-1 text-[14px] text-[var(--muted)]">
-            Showing {showingFrom.toLocaleString()}–{showingTo.toLocaleString()} of{" "}
-            {total.toLocaleString()} records
-          </p>
-        </div>
+        <p className="text-[14px] text-[var(--muted)]">
+          Showing {showingFrom.toLocaleString()}–{showingTo.toLocaleString()} of{" "}
+          {total.toLocaleString()} records
+        </p>
         <div className="flex flex-wrap gap-2">
           <a
             href={`/records/full/export?${exportQs.toString()}`}

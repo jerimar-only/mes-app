@@ -63,15 +63,7 @@ export default async function FieldValuesPage({
 
   return (
     <div className="space-y-10 p-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Custom Field Values
-          </h1>
-          <p className="mt-1 text-[15px] text-[var(--muted)]">
-            View dynamic fields and their order/index in the column layout
-          </p>
-        </div>
+      <div className="flex items-center justify-end">
         <Link
           href="/reports"
           className="text-sm text-[var(--accent)] hover:underline"

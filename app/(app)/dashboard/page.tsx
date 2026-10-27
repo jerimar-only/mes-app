@@ -122,42 +122,42 @@ export default function DashboardPage() {
   }, [load]);
 
   // Lock page scroll on dashboard — only main column + provincial rail scroll.
-  // Height accounts for header (3.5rem) + footer (~2.75rem) so the bottom
-  // content remains reachable on mobile.
+  // Shell is fixed to the viewport so header + main + footer all stay visible.
   useEffect(() => {
     const main = document.querySelector<HTMLElement>(".app-main");
-    const footer = document.querySelector<HTMLElement>(".app-footer");
+    const shell = main?.parentElement;
     const body = document.body;
     const prevBodyOverflow = body.style.overflow;
 
-    const apply = () => {
-      const footerH = footer?.offsetHeight ?? 44;
-      const height = `calc(100dvh - 3.5rem - ${footerH}px)`;
-      body.style.overflow = "hidden";
-      if (main) {
-        main.style.height = height;
-        main.style.maxHeight = height;
-        main.style.overflow = "hidden";
-        main.style.maxWidth = "none";
-        // Equal horizontal padding is applied on the content column so the
-        // left-sidebar → content gap matches the content → right-sidebar gap.
-        main.style.paddingLeft = "0";
-        main.style.paddingRight = "0";
-        main.style.paddingTop = "1.25rem";
-        main.style.paddingBottom = "0.75rem";
-        main.style.display = "flex";
-        main.style.flexDirection = "column";
-      }
-    };
+    body.style.overflow = "hidden";
+    if (shell) {
+      shell.style.height = "100dvh";
+      shell.style.maxHeight = "100dvh";
+      shell.style.overflow = "hidden";
+    }
+    if (main) {
+      main.style.minHeight = "0";
+      main.style.overflow = "hidden";
+      main.style.maxWidth = "none";
+      // Equal horizontal padding is applied on the content column so the
+      // left-sidebar → content gap matches the content → right-sidebar gap.
+      main.style.paddingLeft = "0";
+      main.style.paddingRight = "0";
+      main.style.paddingTop = "1.25rem";
+      main.style.paddingBottom = "0.75rem";
+      main.style.display = "flex";
+      main.style.flexDirection = "column";
+    }
 
-    apply();
-    window.addEventListener("resize", apply);
     return () => {
-      window.removeEventListener("resize", apply);
       body.style.overflow = prevBodyOverflow;
+      if (shell) {
+        shell.style.height = "";
+        shell.style.maxHeight = "";
+        shell.style.overflow = "";
+      }
       if (main) {
-        main.style.height = "";
-        main.style.maxHeight = "";
+        main.style.minHeight = "";
         main.style.overflow = "";
         main.style.maxWidth = "";
         main.style.paddingLeft = "";
@@ -193,45 +193,61 @@ export default function DashboardPage() {
       )}
 
       {loading && !data ? (
-        <div className="main-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain">
-          <div className="space-y-6 px-5 pb-10 sm:px-6 sm:pb-8">
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-[var(--foreground)]">
-                Dashboard
-              </h1>
-              <p className="mt-1 text-[15px] text-[var(--muted)]">
-                Live totals from recorded apprehensions — {scopeLabel}
-              </p>
-            </div>
-            <DashboardFilters
-              years={[]}
-              offices={[]}
-              selectedYear={selectedYear}
-              selectedOffice={selectedOffice}
-              showProvincial={showProvincial}
-              onToggleProvincial={() => setShowProvincial((v) => !v)}
-            />
-            <div className="h-48 animate-pulse rounded-2xl bg-[var(--border)]" />
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-20 animate-pulse rounded-2xl bg-[var(--border)]" />
-              ))}
+        <>
+          <div className="main-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain">
+            <div className="space-y-6 px-5 pb-10 sm:px-6 sm:pb-8">
+              <p className="text-[14px] text-[var(--muted)]">{scopeLabel}</p>
+              <DashboardFilters
+                years={[]}
+                offices={[]}
+                selectedYear={selectedYear}
+                selectedOffice={selectedOffice}
+                showProvincial={showProvincial}
+                onToggleProvincial={() => setShowProvincial((v) => !v)}
+              />
+              <div className="h-48 animate-pulse rounded-2xl bg-[var(--border)]" />
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="h-20 animate-pulse rounded-2xl bg-[var(--border)]" />
+                ))}
+              </div>
+
+              {/* Mobile provincial skeleton */}
+              {showProvincial && (
+                <div className="mt-2 space-y-3 lg:hidden">
+                  <div className="space-y-1.5">
+                    <div className="h-4 w-48 animate-pulse rounded bg-[var(--border)]" />
+                    <div className="h-3 w-36 animate-pulse rounded bg-[var(--border)]" />
+                  </div>
+                  <ProvincialSummarySkeleton count={4} />
+                </div>
+              )}
             </div>
           </div>
-        </div>
+
+          {/* Desktop provincial skeleton */}
+          {showProvincial && (
+            <aside
+              className="fixed bottom-0 right-0 top-14 z-20 hidden w-[280px] flex-col border-l border-[var(--border)] bg-[var(--card)] shadow-sm lg:flex"
+              aria-label="Provincial summary loading"
+              aria-busy="true"
+            >
+              <div className="shrink-0 space-y-1.5 border-b border-[var(--border)] px-3.5 py-3">
+                <div className="h-3.5 w-40 animate-pulse rounded bg-[var(--border)]" />
+                <div className="h-3 w-32 animate-pulse rounded bg-[var(--border)]" />
+              </div>
+              <div className="thin-scroll min-h-0 flex-1 space-y-3 overflow-y-auto p-2.5">
+                <ProvincialSummarySkeleton count={5} />
+              </div>
+            </aside>
+          )}
+        </>
       ) : data ? (
         <>
           {/* ── Center: main dashboard content (own scrollbar, track near right rail) ── */}
           <div className="main-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain">
             <div className="space-y-6 px-5 pb-10 sm:px-6 sm:pb-8">
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-[var(--foreground)]">
-                Dashboard
-              </h1>
-              <p className="mt-1 text-[15px] text-[var(--muted)]">
-                Live totals from recorded apprehensions — {scopeLabel}
-              </p>
-            </div>
+            <p className="text-[14px] text-[var(--muted)]">{scopeLabel}</p>
 
             <DashboardFilters
               years={data.years}
@@ -519,6 +535,36 @@ export default function DashboardPage() {
         </>
       ) : null}
     </div>
+  );
+}
+
+function ProvincialSummarySkeleton({ count = 4 }: { count?: number }) {
+  return (
+    <>
+      {Array.from({ length: count }, (_, i) => (
+        <div
+          key={i}
+          className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--background)]"
+        >
+          <div className="h-9 animate-pulse bg-[var(--border)]" />
+          <div className="space-y-1.5 border-b border-[var(--border)] bg-[var(--accent-soft)]/40 px-3 py-2.5">
+            <div className="h-3 w-16 animate-pulse rounded bg-[var(--border)]" />
+            <div className="h-5 w-24 animate-pulse rounded bg-[var(--border)]" />
+          </div>
+          <ul className="divide-y divide-[var(--border)]">
+            {[1, 2, 3, 4, 5].map((row) => (
+              <li key={row} className="space-y-1.5 px-3 py-2">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="h-3 w-20 animate-pulse rounded bg-[var(--border)]" />
+                  <div className="h-3 w-8 animate-pulse rounded bg-[var(--border)]" />
+                </div>
+                <div className="h-1 w-full animate-pulse rounded-full bg-[var(--border)]" />
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </>
   );
 }
 

@@ -11,13 +11,6 @@ export default async function ExportPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Export to Excel</h1>
-        <p className="mt-1 text-[15px] text-[var(--muted)]">
-          Download the apprehension records for a specific year and CENRO office.
-        </p>
-      </div>
-
       <form action="/api/export" method="get" className="flex max-w-md flex-wrap items-end gap-4">
         <div>
           <label className="mb-1 block text-[13px] font-medium text-[var(--muted)]">Year</label>

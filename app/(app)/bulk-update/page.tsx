@@ -12,12 +12,6 @@ export default async function BulkUpdatePage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Bulk update from Excel</h1>
-        <p className="mt-1 text-[15px] text-[var(--muted)]">
-          Upload a spreadsheet with record IDs, review changes in the table, then apply updates.
-        </p>
-      </div>
       <BulkUpdateClient />
     </div>
   );

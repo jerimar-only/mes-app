@@ -2,6 +2,7 @@ import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { createUser } from "@/app/(app)/users/actions";
+import { getLockedUntil } from "@/app/(auth)/login/actions";
 import UserActions from "@/app/(app)/users/UserActions";
 import Link from "next/link";
 
@@ -25,6 +26,16 @@ export default async function AdminPortalPage() {
     },
   });
 
+  // Account-level login locks (5+ failed attempts in 15 min for that username)
+  const lockEntries = await Promise.all(
+    users.map(async (u) => {
+      const lockedUntil = await getLockedUntil({ email: u.email });
+      return [u.id, lockedUntil] as const;
+    })
+  );
+  const lockedUntilById = new Map(lockEntries);
+  const lockedUsers = users.filter((u) => lockedUntilById.get(u.id) != null);
+
   const totalUsers = users.length;
   const activeUsers = users.filter((u) => u.isActive).length;
   const superAdmins = users.filter((u) => u.role === "SUPERADMIN").length;
@@ -33,16 +44,7 @@ export default async function AdminPortalPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-8 px-1 sm:space-y-10">
-      {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight text-[var(--foreground)] sm:text-2xl">
-            Admin Portal
-          </h1>
-          <p className="mt-1 text-[14px] text-[var(--muted)] sm:text-[15px]">
-            Super Admin control panel — manage users and system access
-          </p>
-        </div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
         <Link
           href="/dashboard"
           className="inline-flex w-full shrink-0 items-center justify-center rounded-md border border-gray-200 bg-white px-4 py-2 text-[14px] font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 dark:border-white/10 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700 sm:w-auto"
@@ -59,6 +61,37 @@ export default async function AdminPortalPage() {
         <StatCard label="Administrator" value={String(admins)} />
         <StatCard label="Encoder" value={String(encoders)} />
       </div>
+
+      {lockedUsers.length > 0 && (
+        <div
+          role="alert"
+          className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-[14px] text-amber-950 dark:border-amber-700/60 dark:bg-amber-950/40 dark:text-amber-100"
+        >
+          <p className="font-semibold">
+            {lockedUsers.length === 1
+              ? "1 account is temporarily locked"
+              : `${lockedUsers.length} accounts are temporarily locked`}
+          </p>
+          <p className="mt-1 text-[13px] opacity-90">
+            Too many failed login attempts (5 within 15 minutes). Locked accounts
+            cannot sign in until the lock window ends. Rows marked{" "}
+            <span className="font-medium">Locked</span> below show when they unlock.
+          </p>
+          <ul className="mt-2 list-inside list-disc space-y-0.5 text-[13px]">
+            {lockedUsers.map((u) => {
+              const until = lockedUntilById.get(u.id)!;
+              return (
+                <li key={u.id}>
+                  <span className="font-medium">{u.fullName}</span>
+                  <span className="opacity-80"> ({u.email})</span>
+                  {" — unlocks "}
+                  {formatUnlock(until)}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
 
       {/* Create user */}
       <section className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm sm:p-6">
@@ -160,19 +193,35 @@ export default async function AdminPortalPage() {
             <tbody>
               {users.map((user) => {
                 const isSelf = user.id === session.userId;
+                const lockedUntil = lockedUntilById.get(user.id) ?? null;
+                const isLocked = lockedUntil != null;
                 return (
                   <tr
                     key={user.id}
-                    className="border-b border-[var(--border)] last:border-0"
+                    className={`border-b border-[var(--border)] last:border-0 ${
+                      isLocked
+                        ? "bg-amber-50/80 dark:bg-amber-950/25"
+                        : ""
+                    }`}
                   >
                     <td className="px-3 py-3 font-medium text-[var(--foreground)] sm:px-4">
                       <div className="flex flex-col gap-0.5">
                         <span>{user.fullName}</span>
-                        {isSelf && (
-                          <span className="w-fit rounded-full bg-[var(--accent)]/15 px-2 py-0.5 text-[11px] font-medium text-[var(--accent)]">
-                            You
-                          </span>
-                        )}
+                        <div className="flex flex-wrap gap-1">
+                          {isSelf && (
+                            <span className="w-fit rounded-full bg-[var(--accent)]/15 px-2 py-0.5 text-[11px] font-medium text-[var(--accent)]">
+                              You
+                            </span>
+                          )}
+                          {isLocked && (
+                            <span
+                              className="w-fit rounded-full bg-amber-200 px-2 py-0.5 text-[11px] font-semibold text-amber-950 dark:bg-amber-800/60 dark:text-amber-100"
+                              title={`Unlocks ${formatUnlock(lockedUntil)}`}
+                            >
+                              Locked
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </td>
                     <td className="px-3 py-3 text-[var(--muted)] sm:px-4">
@@ -196,15 +245,22 @@ export default async function AdminPortalPage() {
                       </span>
                     </td>
                     <td className="px-3 py-3 sm:px-4">
-                      {user.isActive ? (
-                        <span className="rounded-full bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-800 dark:bg-green-900/40 dark:text-green-300 sm:text-[12px]">
-                          Active
-                        </span>
-                      ) : (
-                        <span className="rounded-full bg-red-100 px-2.5 py-1 text-[11px] font-medium text-red-800 dark:bg-red-900/40 dark:text-red-300 sm:text-[12px]">
-                          Inactive
-                        </span>
-                      )}
+                      <div className="flex flex-col gap-1">
+                        {user.isActive ? (
+                          <span className="w-fit rounded-full bg-green-100 px-2.5 py-1 text-[11px] font-medium text-green-800 dark:bg-green-900/40 dark:text-green-300 sm:text-[12px]">
+                            Active
+                          </span>
+                        ) : (
+                          <span className="w-fit rounded-full bg-red-100 px-2.5 py-1 text-[11px] font-medium text-red-800 dark:bg-red-900/40 dark:text-red-300 sm:text-[12px]">
+                            Inactive
+                          </span>
+                        )}
+                        {isLocked && (
+                          <span className="text-[11px] font-medium text-amber-800 dark:text-amber-300">
+                            Login locked until {formatUnlock(lockedUntil)}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="hidden px-3 py-3 text-[var(--muted)] sm:table-cell sm:px-4">
                       {user.createdAt.toLocaleDateString("en-PH", {
@@ -244,6 +300,15 @@ export default async function AdminPortalPage() {
       </section>
     </div>
   );
+}
+
+function formatUnlock(untilMs: number) {
+  return new Date(untilMs).toLocaleString("en-PH", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 function StatCard({ label, value }: { label: string; value: string }) {

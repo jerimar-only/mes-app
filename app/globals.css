@@ -474,7 +474,6 @@ legend {
 
 .app-main {
   background: var(--background);
-  min-height: calc(100vh - 3.5rem);
 }
 
 .app-header {
@@ -485,6 +484,9 @@ legend {
 }
 
 .app-footer {
+  background: var(--card);
+  border-top: 1px solid var(--border);
+  color: var(--muted);
   padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
 }
 

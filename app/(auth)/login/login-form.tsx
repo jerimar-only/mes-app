@@ -82,6 +82,7 @@ export default function LoginForm({
   const [state, formAction, isPending] = useActionState(login, initialState);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [usernameSpaceError, setUsernameSpaceError] = useState<string | undefined>();
   const [showPassword, setShowPassword] = useState(false);
   // Avoid Date.now() during render for lock UI — prevents SSR/client hydration mismatch
   const [mounted, setMounted] = useState(false);
@@ -187,11 +188,22 @@ export default function LoginForm({
               required
               autoComplete="username"
               value={email}
-              onChange={setEmail}
-              onBlur={() => {
-                if (email.trim()) void recheckLock(email);
+              onChange={(v) => {
+                setEmail(v);
+                setUsernameSpaceError(
+                  /\s/.test(v) ? "Username cannot contain spaces." : undefined
+                );
               }}
-              error={formError || undefined}
+              onBlur={() => {
+                if (/\s/.test(email)) {
+                  setUsernameSpaceError("Username cannot contain spaces.");
+                  return;
+                }
+                const cleaned = email.trim();
+                if (cleaned !== email) setEmail(cleaned);
+                if (cleaned) void recheckLock(cleaned);
+              }}
+              error={usernameSpaceError || formError || undefined}
               disabled={locked || isPending}
               leftIcon={<UserIcon />}
               classNames={{
@@ -252,7 +264,7 @@ export default function LoginForm({
 
             <button
               type="submit"
-              disabled={isPending || locked}
+              disabled={isPending || locked || Boolean(usernameSpaceError)}
               className="mt-1 w-full rounded-full bg-white/95 py-3.5 text-[15px] font-semibold text-gray-900 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
             >
               {locked

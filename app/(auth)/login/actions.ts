@@ -74,8 +74,14 @@ export async function login(
   prevState: LoginState,
   formData: FormData,
 ): Promise<LoginState> {
-  const email = (formData.get("email") as string | null)?.trim().toLowerCase();
+  const rawEmail = (formData.get("email") as string | null) ?? "";
   const password = formData.get("password") as string | null;
+
+  if (/\s/.test(rawEmail)) {
+    return { error: "Username cannot contain spaces." };
+  }
+
+  const email = rawEmail.trim().toLowerCase();
 
   if (!email || !password) {
     return { error: "Username and password are required." };

@@ -11,10 +11,16 @@ export async function createUser(formData: FormData) {
     throw new Error("Only Super Admin can create accounts.");
   }
 
-  const email = (formData.get("email") as string)?.trim();
+  const rawEmail = (formData.get("email") as string) ?? "";
   const password = formData.get("password") as string;
   const fullName = (formData.get("fullName") as string)?.trim();
   const role = formData.get("role") as "SUPERADMIN" | "ADMINISTRATOR" | "ENCODER";
+
+  if (/\s/.test(rawEmail)) {
+    throw new Error("Username cannot contain spaces.");
+  }
+
+  const email = rawEmail.trim().toLowerCase();
 
   if (!email || !password || !fullName || !role) {
     throw new Error("All fields are required.");

@@ -180,17 +180,14 @@ export default async function ReportsPage({
   return (
     <div className="space-y-10">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-[var(--foreground)]">Reports</h1>
-          <p className="mt-1 text-[15px] text-[var(--muted)]">
-            Summary of apprehensions from January to present — {selectedYear}
-            {unparsedCount > 0 && (
-              <span className="ml-2 text-amber-600 dark:text-amber-400">
-                ({unparsedCount} record{unparsedCount > 1 ? "s" : ""} could not be assigned to a month)
-              </span>
-            )}
-          </p>
-        </div>
+        <p className="text-[14px] text-[var(--muted)]">
+          January to present — {selectedYear}
+          {unparsedCount > 0 && (
+            <span className="ml-2 text-amber-600 dark:text-amber-400">
+              ({unparsedCount} record{unparsedCount > 1 ? "s" : ""} could not be assigned to a month)
+            </span>
+          )}
+        </p>
         <form method="get" className="flex items-center gap-2">
           <select
             name="year"

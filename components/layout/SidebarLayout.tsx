@@ -31,7 +31,7 @@ export default function SidebarLayout({ children }: { children: React.ReactNode 
   return (
     <div
       style={{ marginLeft: margin }}
-      className="min-h-screen min-w-0 transition-[margin] duration-200 ease-out"
+      className="flex min-h-dvh min-w-0 flex-col transition-[margin] duration-200 ease-out supports-[height:100dvh]:min-h-dvh"
     >
       {children}
     </div>
