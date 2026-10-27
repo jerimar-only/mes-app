@@ -36,7 +36,18 @@ export default function DashboardFilters({
   const hasFilters = Boolean(year || office);
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] px-3.5 py-3 shadow-sm">
+    <div className="dash-panel px-3.5 py-3.5">
+      <div className="mb-2.5 flex items-center justify-between gap-2">
+        <p className="text-[12px] font-semibold tracking-wide text-[var(--muted)]">
+          Filters
+        </p>
+        <span className="dash-panel-icon bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h18M6 12h12M10 20h4" />
+          </svg>
+        </span>
+      </div>
+
       <div className="flex flex-wrap items-end gap-2.5">
         <div>
           <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-[var(--muted)]">
@@ -48,7 +59,7 @@ export default function DashboardFilters({
               setYear(e.target.value);
               go(e.target.value, office);
             }}
-            className="min-w-[120px] rounded-lg border border-[var(--border-strong)] bg-[var(--card)] px-3 py-2 text-[14px] text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none"
+            className="min-w-[120px] rounded-lg border border-[var(--border-strong)] bg-[var(--card)]/80 px-3 py-2 text-[14px] text-[var(--foreground)] shadow-sm backdrop-blur-sm focus:border-[var(--accent)] focus:outline-none"
           >
             <option value="">All years</option>
             {years.map((y) => (
@@ -69,7 +80,7 @@ export default function DashboardFilters({
               setOffice(e.target.value);
               go(year, e.target.value);
             }}
-            className="min-w-[160px] rounded-lg border border-[var(--border-strong)] bg-[var(--card)] px-3 py-2 text-[14px] text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none"
+            className="min-w-[160px] rounded-lg border border-[var(--border-strong)] bg-[var(--card)]/80 px-3 py-2 text-[14px] text-[var(--foreground)] shadow-sm backdrop-blur-sm focus:border-[var(--accent)] focus:outline-none"
           >
             <option value="">All CENROs</option>
             {offices.map((o) => (

@@ -127,10 +127,10 @@ export default function Header() {
   }
 
   return (
-    <header className="app-header sticky top-0 z-30 flex min-h-14 shrink-0 items-center justify-between gap-3 border-b border-[var(--border)] bg-[var(--card)]/95 px-4 py-2 shadow-sm backdrop-blur-md sm:px-6">
+    <header className="app-header sticky top-0 z-30 flex min-h-14 shrink-0 items-center justify-between gap-3 px-4 py-2 sm:px-6">
       <button
         type="button"
-        className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-[var(--border)] bg-[var(--card)] text-[var(--muted)] transition hover:text-[var(--foreground)]"
+        className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-[var(--border)] bg-[var(--card)]/80 text-[var(--muted)] shadow-sm backdrop-blur-sm transition hover:border-[var(--accent)]/30 hover:bg-[var(--accent-soft)] hover:text-[var(--accent)]"
         aria-label="Toggle navigation"
         onClick={handleBurgerClick}
       >
@@ -147,9 +147,16 @@ export default function Header() {
       </button>
 
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[15px] font-semibold leading-tight tracking-tight text-[var(--foreground)]">
-          {title}
-        </p>
+        <div className="flex min-w-0 items-center gap-2">
+          <p className="truncate text-[15px] font-semibold leading-tight tracking-tight text-[var(--foreground)]">
+            {title}
+          </p>
+          {pathname === "/dashboard" || pathname.startsWith("/dashboard/") ? (
+            <span className="hidden shrink-0 rounded-full bg-[var(--accent)]/12 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--accent)] sm:inline">
+              Live
+            </span>
+          ) : null}
+        </div>
         {description ? (
           <p className="mt-0.5 truncate text-[12px] leading-tight text-[var(--muted)]">
             {description}

@@ -149,7 +149,10 @@ export default function DashboardPage() {
           <div className="main-scroll lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:overscroll-contain">
             {/* Mobile: app-main padding. Desktop: horizontal pad (app-main is 0 on lg dashboard). */}
             <div className="space-y-4 pb-6 lg:px-4 lg:pb-5">
-              <p className="text-[13px] text-[var(--muted)]">{scopeLabel}</p>
+              <div className="dash-scope">
+                <span className="dash-scope-dot" aria-hidden />
+                <p className="text-[13px] font-medium text-[var(--muted)]">{scopeLabel}</p>
+              </div>
               <DashboardFilters
                 years={[]}
                 offices={[]}
@@ -203,7 +206,10 @@ export default function DashboardPage() {
           <div className="main-scroll lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:overscroll-contain">
             {/* Mobile: rely on app-main padding. Desktop: restore horizontal pad (app-main is 0 on lg dashboard). */}
             <div className="space-y-4 pb-6 lg:px-4 lg:pb-5">
-            <p className="text-[13px] text-[var(--muted)]">{scopeLabel}</p>
+            <div className="dash-scope">
+              <span className="dash-scope-dot" aria-hidden />
+              <p className="text-[13px] font-medium text-[var(--muted)]">{scopeLabel}</p>
+            </div>
 
             <DashboardFilters
               years={data.years}
@@ -216,7 +222,11 @@ export default function DashboardPage() {
 
             {/* ── Stat cards ── */}
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <StatCard label="Total records" value={data.total.toLocaleString()} />
+              <StatCard
+                label="Total records"
+                value={data.total.toLocaleString()}
+                variant="records"
+              />
               <StatCard
                 label="Total volume"
                 value={`${data.itemTotals.volumeCuM.toLocaleString(undefined, {
@@ -224,6 +234,7 @@ export default function DashboardPage() {
                 })} cu.m. · ${data.itemTotals.volumeBdFt.toLocaleString(undefined, {
                   maximumFractionDigits: 0,
                 })} bd.ft.`}
+                variant="volume"
               />
               <StatCard
                 label="Estimated value"
@@ -231,19 +242,25 @@ export default function DashboardPage() {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })}`}
+                variant="value"
               />
               <StatCard
                 label="Needs review"
                 value={data.needsReview.toLocaleString()}
-                accent
+                variant="review"
               />
             </div>
 
             {/* ── By year ── */}
-            <section className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm">
-              <h2 className="mb-3 text-[14px] font-semibold text-[var(--foreground)]">
-                Apprehensions by year
-              </h2>
+            <section className="dash-panel p-4">
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <h2 className="dash-panel-title">Apprehensions by year</h2>
+                <span className="dash-panel-icon bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3M4 11h16M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </span>
+              </div>
               {data.byYear.length === 0 ? (
                 <p className="text-[14px] text-[var(--muted)]">
                   No records match these filters.
@@ -255,15 +272,15 @@ export default function DashboardPage() {
                       <span className="w-11 shrink-0 text-[12px] font-medium text-[var(--muted)]">
                         {y.year}
                       </span>
-                      <div className="h-6 flex-1 overflow-hidden rounded-full bg-[var(--border)]">
+                      <div className="h-6 flex-1 overflow-hidden rounded-full bg-[var(--border)]/80">
                         <div
-                          className="h-6 rounded-full bg-[var(--accent)] transition-all"
+                          className="h-6 rounded-full bg-gradient-to-r from-[var(--accent)] to-emerald-400/90 transition-all"
                           style={{
                             width: `${(y._count._all / maxYearCount) * 100}%`,
                           }}
                         />
                       </div>
-                      <span className="w-9 shrink-0 text-right text-[12px] font-medium text-[var(--foreground)]">
+                      <span className="w-9 shrink-0 text-right text-[12px] font-semibold tabular-nums text-[var(--foreground)]">
                         {y._count._all}
                       </span>
                     </div>
@@ -274,11 +291,15 @@ export default function DashboardPage() {
 
             {/* ── By office + By status ── */}
             <div className="grid gap-3 sm:grid-cols-2">
-              <section className="rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-sm">
-                <div className="border-b border-[var(--border)] px-4 py-3">
-                  <h2 className="text-[14px] font-semibold text-[var(--foreground)]">
-                    By CENRO office
-                  </h2>
+              <section className="dash-panel dash-panel-sky">
+                <div className="dash-panel-header">
+                  <h2 className="dash-panel-title">By CENRO office</h2>
+                  <span className="dash-panel-icon bg-sky-500/15 text-sky-600 dark:text-sky-400">
+                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </span>
                 </div>
                 <ul className="divide-y divide-[var(--border)]">
                   {data.byOffice.length === 0 && (
@@ -291,24 +312,25 @@ export default function DashboardPage() {
                     .map((o) => (
                       <li
                         key={o.cenroOfficeId}
-                        className="flex items-center justify-between px-4 py-2.5 text-[13px]"
+                        className="dash-row flex items-center justify-between px-4 py-2.5 text-[13px]"
                       >
                         <span className="text-[var(--foreground)]">
                           {officeName(o.cenroOfficeId)}
                         </span>
-                        <span className="rounded-full bg-[var(--background)] px-2 py-0.5 text-[12px] font-medium text-[var(--muted)]">
-                          {o._count._all}
-                        </span>
+                        <span className="dash-pill">{o._count._all}</span>
                       </li>
                     ))}
                 </ul>
               </section>
 
-              <section className="rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-sm">
-                <div className="border-b border-[var(--border)] px-4 py-3">
-                  <h2 className="text-[14px] font-semibold text-[var(--foreground)]">
-                    By status
-                  </h2>
+              <section className="dash-panel dash-panel-amber">
+                <div className="dash-panel-header">
+                  <h2 className="dash-panel-title">By status</h2>
+                  <span className="dash-panel-icon bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                  </span>
                 </div>
                 <ul className="divide-y divide-[var(--border)]">
                   {data.byStatus.length === 0 && (
@@ -321,14 +343,12 @@ export default function DashboardPage() {
                     .map((s) => (
                       <li
                         key={s.status}
-                        className="flex items-center justify-between px-4 py-2.5 text-[13px]"
+                        className="dash-row flex items-center justify-between px-4 py-2.5 text-[13px]"
                       >
                         <span className="text-[var(--foreground)]">
                           {STATUS_LABEL[s.status] ?? s.status}
                         </span>
-                        <span className="rounded-full bg-[var(--background)] px-2 py-0.5 text-[12px] font-medium text-[var(--muted)]">
-                          {s._count._all}
-                        </span>
+                        <span className="dash-pill">{s._count._all}</span>
                       </li>
                     ))}
                 </ul>
@@ -352,16 +372,11 @@ export default function DashboardPage() {
                     0
                   );
                   return (
-                    <div
-                      key={m.key}
-                      className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)]"
-                    >
-                      <div className="flex min-h-[40px] items-center bg-[var(--accent)] px-3 py-2 text-[10px] font-semibold uppercase leading-snug tracking-wide text-white">
-                        {m.title}
-                      </div>
+                    <div key={m.key} className="prov-block">
+                      <div className="prov-block-head">{m.title}</div>
                       <Link
                         href={recordsHref(m.filter, selectedYear)}
-                        className="group flex flex-col gap-0.5 border-b border-[var(--border)] bg-[var(--accent-soft)] px-3 py-2 transition hover:bg-[var(--accent)]/15 dark:hover:bg-[var(--accent)]/25"
+                        className="prov-block-total"
                       >
                         <span className="text-[12px] font-semibold text-[var(--accent)]">
                           Cagayan
@@ -377,7 +392,7 @@ export default function DashboardPage() {
                             <li key={r.label}>
                               <Link
                                 href={recordsHref(m.filter, selectedYear, r.ids)}
-                                className="group block px-3 py-1.5 text-[12px] transition hover:bg-black/5 dark:hover:bg-white/10"
+                                className="dash-row group block px-3 py-1.5 text-[12px]"
                               >
                                 <div className="flex items-center justify-between gap-2">
                                   <span className="text-[var(--foreground)]">{r.label}</span>
@@ -385,9 +400,9 @@ export default function DashboardPage() {
                                     {fmt(r[m.key], m.decimals)}
                                   </span>
                                 </div>
-                                <div className="mt-1 h-1 rounded-full bg-[var(--border)]">
+                                <div className="dash-bar-track mt-1">
                                   <div
-                                    className="h-1 rounded-full bg-[var(--accent)] opacity-80"
+                                    className="dash-bar-fill"
                                     style={{ width: `${pct}%` }}
                                   />
                                 </div>
@@ -407,16 +422,25 @@ export default function DashboardPage() {
           {/* ── Fixed right sidebar (desktop) ── */}
           {showProvincial && (
             <aside
-              className="provincial-rail fixed right-0 z-20 hidden w-[280px] flex-col border-l border-[var(--border)] bg-[var(--card)] shadow-sm lg:flex"
+              className="provincial-rail fixed right-0 z-20 hidden w-[280px] flex-col border-l border-[var(--border)] shadow-sm lg:flex"
               aria-label="Provincial summary"
             >
               <div className="shrink-0 border-b border-[var(--border)] px-3.5 py-3">
-                <h2 className="text-[13px] font-semibold leading-snug text-[var(--foreground)]">
-                  Provincial summary — {selectedYear ? `CY ${selectedYear}` : "All years"}
-                </h2>
-                <p className="mt-0.5 text-[11px] text-[var(--muted)]">
-                  Click a number to see the records.
-                </p>
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <h2 className="text-[13px] font-semibold leading-snug text-[var(--foreground)]">
+                      Provincial summary — {selectedYear ? `CY ${selectedYear}` : "All years"}
+                    </h2>
+                    <p className="mt-0.5 text-[11px] text-[var(--muted)]">
+                      Click a number to see the records.
+                    </p>
+                  </div>
+                  <span className="dash-panel-icon bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                  </span>
+                </div>
               </div>
 
               <div className="thin-scroll min-h-0 flex-1 space-y-3 overflow-y-auto p-2.5">
@@ -426,17 +450,12 @@ export default function DashboardPage() {
                     0
                   );
                   return (
-                    <div
-                      key={m.key}
-                      className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--background)]"
-                    >
-                      <div className="flex min-h-[40px] items-center bg-[var(--accent)] px-3 py-2 text-[10px] font-semibold uppercase leading-snug tracking-wide text-white">
-                        {m.title}
-                      </div>
+                    <div key={m.key} className="prov-block">
+                      <div className="prov-block-head">{m.title}</div>
 
                       <Link
                         href={recordsHref(m.filter, selectedYear)}
-                        className="group flex flex-col gap-0.5 border-b border-[var(--border)] bg-[var(--accent-soft)] px-3 py-2 transition hover:bg-[var(--accent)]/15 dark:hover:bg-[var(--accent)]/25"
+                        className="prov-block-total"
                       >
                         <span className="text-[12px] font-semibold text-[var(--accent)]">
                           Cagayan
@@ -453,7 +472,7 @@ export default function DashboardPage() {
                             <li key={r.label}>
                               <Link
                                 href={recordsHref(m.filter, selectedYear, r.ids)}
-                                className="group block px-3 py-1.5 text-[12px] transition hover:bg-black/5 dark:hover:bg-white/10"
+                                className="dash-row group block px-3 py-1.5 text-[12px]"
                               >
                                 <div className="flex items-center justify-between gap-2">
                                   <span className="text-[var(--foreground)]">
@@ -463,9 +482,9 @@ export default function DashboardPage() {
                                     {fmt(r[m.key], m.decimals)}
                                   </span>
                                 </div>
-                                <div className="mt-1 h-1 rounded-full bg-[var(--border)]">
+                                <div className="dash-bar-track mt-1">
                                   <div
-                                    className="h-1 rounded-full bg-[var(--accent)] opacity-80"
+                                    className="dash-bar-fill"
                                     style={{ width: `${pct}%` }}
                                   />
                                 </div>
@@ -524,22 +543,74 @@ function ProvincialSummarySkeleton({ count = 4 }: { count?: number }) {
   );
 }
 
+const STAT_VARIANTS = {
+  records: {
+    card: "stat-card-records",
+    iconWrap: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+    value: "text-[var(--foreground)]",
+    icon: (
+      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+    ),
+  },
+  volume: {
+    card: "stat-card-volume",
+    iconWrap: "bg-sky-500/15 text-sky-600 dark:text-sky-400",
+    value: "text-[var(--foreground)]",
+    icon: (
+      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+      </svg>
+    ),
+  },
+  value: {
+    card: "stat-card-value",
+    iconWrap: "bg-violet-500/15 text-violet-600 dark:text-violet-400",
+    value: "text-[var(--foreground)]",
+    icon: (
+      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+  },
+  review: {
+    card: "stat-card-review",
+    iconWrap: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+    value: "text-amber-600 dark:text-amber-400",
+    icon: (
+      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+      </svg>
+    ),
+  },
+} as const;
+
 function StatCard({
   label,
   value,
-  accent,
+  variant = "records",
 }: {
   label: string;
   value: string;
-  accent?: boolean;
+  variant?: keyof typeof STAT_VARIANTS;
 }) {
+  const v = STAT_VARIANTS[variant];
   return (
-    <div className="min-w-0 rounded-xl border border-[var(--border)] bg-[var(--card)] px-3.5 py-3 shadow-sm">
-      <p className="text-[12px] font-medium text-[var(--muted)]">{label}</p>
+    <div className={`stat-card group relative min-w-0 overflow-hidden rounded-2xl border border-[var(--border)] px-3.5 py-3.5 shadow-sm ${v.card}`}>
+      {/* Decorative glow orb */}
+      <div className="stat-card-orb pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full opacity-60 blur-2xl transition-opacity group-hover:opacity-90" />
+      {/* Soft mesh / grid overlay */}
+      <div className="stat-card-mesh pointer-events-none absolute inset-0 opacity-[0.35]" />
+
+      <div className="relative z-[1] flex items-start justify-between gap-2">
+        <p className="text-[12px] font-medium tracking-wide text-[var(--muted)]">{label}</p>
+        <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg ${v.iconWrap}`}>
+          {v.icon}
+        </span>
+      </div>
       <p
-        className={`mt-1 break-words font-semibold leading-snug tracking-tight tabular-nums [overflow-wrap:anywhere] text-[clamp(14px,2.4vw,18px)] ${
-          accent ? "text-amber-500 dark:text-amber-400" : "text-[var(--foreground)]"
-        }`}
+        className={`relative z-[1] mt-2 break-words font-semibold leading-snug tracking-tight tabular-nums [overflow-wrap:anywhere] text-[clamp(15px,2.5vw,19px)] ${v.value}`}
       >
         {value}
       </p>
