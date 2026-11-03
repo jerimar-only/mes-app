@@ -101,7 +101,7 @@ const PAGE_META: { match: (path: string) => boolean; meta: PageMeta }[] = [
 ];
 
 const FALLBACK: PageMeta = {
-  title: "EMS Tracker",
+  title: "MES Tracker",
   description: "Apprehension monitoring system",
 };
 

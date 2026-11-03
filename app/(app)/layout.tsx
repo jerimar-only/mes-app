@@ -14,23 +14,43 @@ export default async function AppLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   const session = await getSession();
   const user = session
-    ? await prisma.user.findUnique({ where: { id: session.userId } })
+    ? await prisma.user.findUnique({
+        where: { id: session.userId },
+        select: {
+          id: true,
+          fullName: true,
+          role: true,
+          isActive: true,
+          cenroOfficeId: true,
+          cenroOffice: { select: { name: true } },
+        },
+      })
     : null;
 
-  // Cookie changes are not allowed in Server Components — only redirect.
-  // Session is cleared in /api/session (Route Handler) or the login Server Action.
   if (!user || !user.isActive) {
     redirect("/login");
   }
+
+  // CENRO accounts must have an assigned office
+  if (user.role === "CENRO" && !user.cenroOfficeId) {
+    redirect("/login");
+  }
+
+  const isCenro = user.role === "CENRO";
+  const isAdmin =
+    user.role === "ADMINISTRATOR" || user.role === "SUPERADMIN";
+  const isSuperAdmin = user.role === "SUPERADMIN";
 
   return (
     <AppProviders>
       <SessionGuard />
       <ScrollUnlock />
       <Sidebar
-        isAdmin={user.role === "ADMINISTRATOR" || user.role === "SUPERADMIN"}
-        isSuperAdmin={user.role === "SUPERADMIN"}
+        isAdmin={isAdmin}
+        isSuperAdmin={isSuperAdmin}
+        isCenro={isCenro}
         userName={user.fullName}
+        officeName={user.cenroOffice?.name ?? null}
       />
       <SidebarLayout>
         <Header />

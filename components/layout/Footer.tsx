@@ -7,7 +7,7 @@ export default function Footer() {
         <p className="min-w-0 truncate">
           © {year} PENRO Cagayan — Monitoring and Enforcement
         </p>
-        <p className="shrink-0 text-[11px] opacity-80">EMS Apprehension Tracker</p>
+        <p className="shrink-0 text-[11px] opacity-80">MES Tracker</p>
       </div>
     </footer>
   );

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { buildRecordWhere } from "@/lib/recordFilters";
+import { getOfficeScope } from "@/lib/officeScope";
 
 const STATUS_LABEL: Record<string, string> = {
   FOR_RESOLUTION: "For resolution",
@@ -49,10 +50,14 @@ export default async function FullRecordsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const raw = await searchParams;
+  const scope = await getOfficeScope();
   const params = {
     q: paramOne(raw.q),
     year: paramOne(raw.year),
-    office: paramOne(raw.office),
+    office:
+      scope?.isCenro && scope.officeId
+        ? String(scope.officeId)
+        : paramOne(raw.office),
     status: paramOne(raw.status),
     deleted: paramOne(raw.deleted),
     acp: paramOne(raw.acp),
@@ -61,6 +66,7 @@ export default async function FullRecordsPage({
     page: paramOne(raw.page),
     pageSize: paramOne(raw.pageSize),
   };
+  const isCenro = Boolean(scope?.isCenro);
   const page = Math.max(1, parseInt(params.page ?? "1", 10) || 1);
 
   // Parse pageSize — allowed: 25, 50, 100, 500

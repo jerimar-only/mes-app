@@ -14,16 +14,23 @@ enum UserRole {
   SUPERADMIN
   ADMINISTRATOR
   ENCODER
+  CENRO // CENRO portal account — scoped to one office
 }
 
 model User {
-  id           Int      @id @default(autoincrement())
-  email        String   @unique // used as the login username
-  passwordHash String
-  fullName     String
-  role         UserRole @default(ENCODER)
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
+  id            Int          @id @default(autoincrement())
+  email         String       @unique // used as the login username
+  passwordHash  String
+  fullName      String
+  role          UserRole     @default(ENCODER)
+  /// Required when role = CENRO; null for Super Admin / Administrator / Encoder
+  cenroOfficeId Int?
+  isActive      Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+
+  cenroOffice CenroOffice? @relation(fields: [cenroOfficeId], references: [id])
+
+  @@index([cenroOfficeId])
 }
 
 model LoginAttempt {
@@ -56,6 +63,7 @@ model CenroOffice {
   id      Int                  @id @default(autoincrement())
   name    String               @unique
   records ApprehensionRecord[]
+  users   User[]
 }
 
 model ApprehensionRecord {

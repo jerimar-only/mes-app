@@ -14,7 +14,15 @@ export async function createUser(formData: FormData) {
   const rawEmail = (formData.get("email") as string) ?? "";
   const password = formData.get("password") as string;
   const fullName = (formData.get("fullName") as string)?.trim();
-  const role = formData.get("role") as "SUPERADMIN" | "ADMINISTRATOR" | "ENCODER";
+  const role = formData.get("role") as
+    | "SUPERADMIN"
+    | "ADMINISTRATOR"
+    | "ENCODER"
+    | "CENRO";
+  const cenroOfficeRaw = (formData.get("cenroOfficeId") as string) || "";
+  const cenroOfficeId = cenroOfficeRaw
+    ? parseInt(cenroOfficeRaw, 10)
+    : null;
 
   if (/\s/.test(rawEmail)) {
     throw new Error("Username cannot contain spaces.");
@@ -26,8 +34,14 @@ export async function createUser(formData: FormData) {
     throw new Error("All fields are required.");
   }
 
-  if (!["SUPERADMIN", "ADMINISTRATOR", "ENCODER"].includes(role)) {
+  if (!["SUPERADMIN", "ADMINISTRATOR", "ENCODER", "CENRO"].includes(role)) {
     throw new Error("Invalid role.");
+  }
+
+  if (role === "CENRO") {
+    if (!cenroOfficeId || Number.isNaN(cenroOfficeId)) {
+      throw new Error("CENRO accounts must be assigned to an office.");
+    }
   }
 
   if (password.length < 6) {
@@ -42,7 +56,13 @@ export async function createUser(formData: FormData) {
   const passwordHash = await bcrypt.hash(password, 10);
 
   await prisma.user.create({
-    data: { email, passwordHash, fullName, role },
+    data: {
+      email,
+      passwordHash,
+      fullName,
+      role,
+      cenroOfficeId: role === "CENRO" ? cenroOfficeId : null,
+    },
   });
 
   revalidatePath("/adminportal");

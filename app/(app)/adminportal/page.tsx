@@ -23,8 +23,13 @@ export default async function AdminPortalPage() {
       role: true,
       isActive: true,
       createdAt: true,
+      cenroOfficeId: true,
+      cenroOffice: { select: { name: true } },
     },
   });
+
+  const offices = await prisma.cenroOffice.findMany({ orderBy: { name: "asc" } });
+  const cenroCount = users.filter((u) => u.role === "CENRO").length;
 
   // Account-level login locks (5+ failed attempts in 15 min for that username)
   const lockEntries = await Promise.all(
@@ -153,6 +158,25 @@ export default async function AdminPortalPage() {
               <option value="ENCODER">Encoder</option>
               <option value="ADMINISTRATOR">Administrator</option>
               <option value="SUPERADMIN">Super Admin</option>
+              <option value="CENRO">CENRO (office portal)</option>
+            </select>
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="mb-1.5 block text-[13px] font-medium text-[var(--muted)]">
+              CENRO office <span className="font-normal">(required for CENRO role)</span>
+            </label>
+            <select
+              name="cenroOfficeId"
+              className="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--card)] px-3.5 py-2.5 text-[14px] text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
+              defaultValue=""
+            >
+              <option value="">— Not applicable —</option>
+              {offices.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.name}
+                </option>
+              ))}
             </select>
           </div>
 

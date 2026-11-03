@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "EMS Apprehension Tracker",
+  title: "MES Tracker",
   description:
     "Monitoring system for apprehended, seized, and confiscated forest products — Province of Cagayan",
   icons: {

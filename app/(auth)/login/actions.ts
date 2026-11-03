@@ -146,6 +146,19 @@ export async function login(
     return { error: "Invalid username or password." };
   }
 
-  await createSession(user!.id, user!.role);
+  // Include office id for CENRO portal accounts
+  const officeId =
+    user!.role === "CENRO"
+      ? ((user as { cenroOfficeId?: number | null }).cenroOfficeId ?? null)
+      : null;
+
+  if (user!.role === "CENRO" && !officeId) {
+    return {
+      error:
+        "This CENRO account has no office assigned. Contact a Super Admin.",
+    };
+  }
+
+  await createSession(user!.id, user!.role, officeId);
   redirect("/dashboard");
 }

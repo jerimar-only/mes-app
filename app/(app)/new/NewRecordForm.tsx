@@ -19,9 +19,12 @@ const inputClass =
 export default function NewRecordForm({
   offices,
   action,
+  lockedOfficeId = null,
 }: {
   offices: Office[];
   action: (formData: FormData) => void | Promise<void>;
+  /** When set (CENRO users), office cannot be changed */
+  lockedOfficeId?: number | null;
 }) {
   const [itemRows, setItemRows] = useState([0]);
   const [convRows, setConvRows] = useState<number[]>([]);
@@ -62,16 +65,27 @@ export default function NewRecordForm({
       <Section title="Basic information">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Field label="CENRO office">
-            <select name="cenroOfficeId" required defaultValue="" className={inputClass}>
-              <option value="" disabled>
-                — Please Select One —
-              </option>
+            <select
+              name="cenroOfficeId"
+              required
+              defaultValue={lockedOfficeId ? String(lockedOfficeId) : ""}
+              disabled={Boolean(lockedOfficeId)}
+              className={inputClass + (lockedOfficeId ? " opacity-80" : "")}
+            >
+              {!lockedOfficeId && (
+                <option value="" disabled>
+                  — Please Select One —
+                </option>
+              )}
               {offices.map((o) => (
                 <option key={o.id} value={o.id}>
                   {o.name}
                 </option>
               ))}
             </select>
+            {lockedOfficeId ? (
+              <input type="hidden" name="cenroOfficeId" value={lockedOfficeId} />
+            ) : null}
           </Field>
 
           <Field label="Year">

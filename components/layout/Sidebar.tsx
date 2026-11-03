@@ -12,11 +12,15 @@ const COLLAPSED_WIDTH = 68;
 export default function Sidebar({
   isAdmin,
   isSuperAdmin,
+  isCenro = false,
   userName,
+  officeName = null,
 }: {
   isAdmin: boolean;
   isSuperAdmin: boolean;
+  isCenro?: boolean;
   userName: string;
+  officeName?: string | null;
 }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
@@ -115,13 +119,13 @@ export default function Sidebar({
           >
             <Link
               href="/dashboard"
-              aria-label="EMS Tracker home"
+              aria-label="MES Tracker home"
               className="flex shrink-0 items-center justify-center rounded-xl p-1.5 transition hover:bg-[var(--border)]"
-              title={railCollapsed ? "EMS Tracker" : undefined}
+              title={railCollapsed ? "MES Tracker" : undefined}
             >
               <Image
                 src="/seal.png"
-                alt="EMS Tracker"
+                alt="MES Tracker"
                 width={36}
                 height={36}
                 priority
@@ -132,9 +136,11 @@ export default function Sidebar({
             {!railCollapsed && (
               <div className="min-w-0 flex-1 px-1">
                 <p className="truncate text-[14.5px] font-semibold leading-tight tracking-tight text-[var(--foreground)]">
-                  EMS Tracker
+                  MES Tracker
                 </p>
-                <p className="truncate text-[11.5px] text-[var(--muted)]">Cagayan</p>
+                <p className="truncate text-[11.5px] text-[var(--muted)]">
+                  {isCenro && officeName ? officeName : "Cagayan"}
+                </p>
               </div>
             )}
 
@@ -166,7 +172,7 @@ export default function Sidebar({
             <NavItem href="/upload" active={isActive("/upload")} collapsed={railCollapsed} icon={<UploadIcon />}>
               Upload Excel file
             </NavItem>
-            {isAdmin && (
+            {isAdmin && !isCenro && (
               <NavItem
                 href="/bulk-update"
                 active={isActive("/bulk-update")}
@@ -176,7 +182,7 @@ export default function Sidebar({
                 Bulk update
               </NavItem>
             )}
-            {isAdmin && (
+            {isAdmin && !isCenro && (
               <NavItem
                 href="/bulk-delete"
                 active={isActive("/bulk-delete")}
@@ -191,35 +197,41 @@ export default function Sidebar({
             <NavItem href="/reports" active={isActive("/reports")} collapsed={railCollapsed} icon={<ChartIcon />}>
               Reports
             </NavItem>
-            <NavItem
-              href="/export"
-              collapsed={railCollapsed}
-              disabled
-              disabledReason="Export is currently unavailable"
-              icon={<DownloadIcon />}
-            >
-              Export to Excel
-            </NavItem>
-
-            <GroupLabel collapsed={railCollapsed}>Administration</GroupLabel>
-            {isSuperAdmin && (
+            {!isCenro && (
               <NavItem
-                href="/adminportal"
-                active={isActive("/adminportal")}
+                href="/export"
                 collapsed={railCollapsed}
-                icon={<UsersIcon />}
+                disabled
+                disabledReason="Export is currently unavailable"
+                icon={<DownloadIcon />}
               >
-                Manage Users
+                Export to Excel
               </NavItem>
             )}
-            <NavItem
-              href="/field-values"
-              active={isActive("/field-values")}
-              collapsed={railCollapsed}
-              icon={<SlidersIcon />}
-            >
-              Field Values
-            </NavItem>
+
+            {!isCenro && (
+              <>
+                <GroupLabel collapsed={railCollapsed}>Administration</GroupLabel>
+                {isSuperAdmin && (
+                  <NavItem
+                    href="/adminportal"
+                    active={isActive("/adminportal")}
+                    collapsed={railCollapsed}
+                    icon={<UsersIcon />}
+                  >
+                    Manage Users
+                  </NavItem>
+                )}
+                <NavItem
+                  href="/field-values"
+                  active={isActive("/field-values")}
+                  collapsed={railCollapsed}
+                  icon={<SlidersIcon />}
+                >
+                  Field Values
+                </NavItem>
+              </>
+            )}
 
             <div className="mt-2 border-t border-[var(--border)] pt-2">
               <form action={logout}>

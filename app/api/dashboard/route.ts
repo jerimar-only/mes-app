@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import { getSession } from "@/lib/auth";
+import { getOfficeScope, forcedOfficeId } from "@/lib/officeScope";
 
 const OFFICE_ROWS = [
   { label: "Aparri", match: ["APARRI"] },
@@ -20,9 +21,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const scope = await getOfficeScope();
+  if (!scope) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const sp = req.nextUrl.searchParams;
   const year = sp.get("year") ? parseInt(sp.get("year")!, 10) || undefined : undefined;
-  const office = sp.get("office") ? parseInt(sp.get("office")!, 10) || undefined : undefined;
+  const office = forcedOfficeId(scope, sp.get("office"));
   const status = sp.get("status")?.trim() || undefined;
   const q = sp.get("q")?.trim() || undefined;
 
@@ -51,6 +57,7 @@ export async function GET(req: NextRequest) {
   };
 
   const yearFilter = year ?? null;
+  const officeFilter = office ?? null;
 
   const [
     offices,
@@ -124,6 +131,7 @@ export async function GET(req: NextRequest) {
       FROM "ApprehensionRecord" ar
       WHERE ar."isDeleted" = false
         AND (${yearFilter}::int IS NULL OR ar.year = ${yearFilter})
+        AND (${officeFilter}::int IS NULL OR ar."cenroOfficeId" = ${officeFilter})
       GROUP BY ar."cenroOfficeId"
     `,
 
@@ -134,6 +142,7 @@ export async function GET(req: NextRequest) {
       LEFT JOIN "ForestProductItem" f ON f."apprehensionRecordId" = ar.id
       WHERE ar."isDeleted" = false
         AND (${yearFilter}::int IS NULL OR ar.year = ${yearFilter})
+        AND (${officeFilter}::int IS NULL OR ar."cenroOfficeId" = ${officeFilter})
       GROUP BY ar."cenroOfficeId"
     `,
     prisma.$queryRaw<{ cenroOfficeId: number; qty: number }[]>`
@@ -143,6 +152,7 @@ export async function GET(req: NextRequest) {
       LEFT JOIN "Conveyance" c ON c."apprehensionRecordId" = ar.id
       WHERE ar."isDeleted" = false
         AND (${yearFilter}::int IS NULL OR ar.year = ${yearFilter})
+        AND (${officeFilter}::int IS NULL OR ar."cenroOfficeId" = ${officeFilter})
       GROUP BY ar."cenroOfficeId"
     `,
     prisma.$queryRaw<{ cenroOfficeId: number; qty: number }[]>`
@@ -153,6 +163,7 @@ export async function GET(req: NextRequest) {
         ON e."apprehensionRecordId" = ar.id AND e.type ~* 'chain\\s*saw'
       WHERE ar."isDeleted" = false
         AND (${yearFilter}::int IS NULL OR ar.year = ${yearFilter})
+        AND (${officeFilter}::int IS NULL OR ar."cenroOfficeId" = ${officeFilter})
       GROUP BY ar."cenroOfficeId"
     `,
     prisma.apprehensionRecord.findMany({
@@ -231,9 +242,20 @@ export async function GET(req: NextRequest) {
     if (!listedIds.has(id)) notShown += count;
   }
 
+  // CENRO: only expose their office in the filter list
+  const officesOut =
+    scope.isCenro && scope.officeId
+      ? offices.filter((o) => o.id === scope.officeId)
+      : offices;
+
   return NextResponse.json({
-    offices,
+    offices: officesOut,
     years: allYears.map((r) => r.year),
+    scope: {
+      isCenro: scope.isCenro,
+      officeId: scope.officeId,
+      officeName: scope.officeName,
+    },
 
     total,
     itemTotals: {

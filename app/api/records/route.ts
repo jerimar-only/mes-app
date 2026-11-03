@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { getOfficeScope, forcedOfficeId } from "@/lib/officeScope";
 import type { Prisma } from "@prisma/client";
 
 export async function GET(req: NextRequest) {
@@ -20,8 +21,13 @@ export async function GET(req: NextRequest) {
       ? 500
       : Math.min(500, Math.max(10, parseInt(rawSize, 10) || 25));
 
+  const scope = await getOfficeScope();
+  if (!scope) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const year = sp.get("year") ? parseInt(sp.get("year")!, 10) : undefined;
-  const office = sp.get("office") ? parseInt(sp.get("office")!, 10) : undefined;
+  const office = forcedOfficeId(scope, sp.get("office"));
   const status = sp.get("status") || undefined;
   const q = sp.get("q") || undefined;
   const deleted = sp.get("deleted") || ""; // "only" | "all" | ""

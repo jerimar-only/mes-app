@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import RecordsClient from "./RecordsClient";
 import FullViewLink from "./FullViewLink";
+import { getOfficeScope } from "@/lib/officeScope";
 
 const STATUS_LABEL: Record<string, string> = {
   FOR_RESOLUTION: "For resolution",
@@ -27,15 +28,23 @@ export default async function RecordsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const raw = await searchParams;
+  const scope = await getOfficeScope();
   const params: Record<string, string | undefined> = {
     q: paramOne(raw.q),
     year: paramOne(raw.year),
-    office: paramOne(raw.office),
+    office: scope?.isCenro && scope.officeId
+      ? String(scope.officeId)
+      : paramOne(raw.office),
     status: paramOne(raw.status),
     deleted: paramOne(raw.deleted),
     pageSize: paramOne(raw.pageSize),
   };
-  const offices = await prisma.cenroOffice.findMany({ orderBy: { name: "asc" } });
+  const allOffices = await prisma.cenroOffice.findMany({ orderBy: { name: "asc" } });
+  const offices =
+    scope?.isCenro && scope.officeId
+      ? allOffices.filter((o) => o.id === scope.officeId)
+      : allOffices;
+  const isCenro = Boolean(scope?.isCenro);
 
   // Carry current URL filters into Full view (also read live form in FullViewLink)
   const fullViewQs = new URLSearchParams();
@@ -98,13 +107,17 @@ export default async function RecordsPage({
             <select
               name="office"
               defaultValue={params.office ? String(params.office) : ""}
-              className="w-full rounded-md border border-[var(--border-strong)] bg-[var(--card)] text-[var(--foreground)] px-3 py-2 text-[13px]"
+              disabled={isCenro}
+              className="w-full rounded-md border border-[var(--border-strong)] bg-[var(--card)] text-[var(--foreground)] px-3 py-2 text-[13px] disabled:opacity-70"
             >
-              <option value="">All</option>
+              {!isCenro && <option value="">All</option>}
               {offices.map((o) => (
                 <option key={o.id} value={String(o.id)}>{o.name}</option>
               ))}
             </select>
+            {isCenro && params.office ? (
+              <input type="hidden" name="office" value={params.office} />
+            ) : null}
           </div>
 
           <div>

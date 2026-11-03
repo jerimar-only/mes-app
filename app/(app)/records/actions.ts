@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { permissions, type Role } from "@/lib/permissions";
+import { getOfficeScope } from "@/lib/officeScope";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
@@ -35,7 +36,12 @@ export async function createRecord(formData: FormData) {
     throw new Error("You don't have permission to create records.");
   }
 
-  const cenroOfficeId = parseInt(formData.get("cenroOfficeId") as string, 10);
+  const scope = await getOfficeScope();
+  let cenroOfficeId = parseInt(formData.get("cenroOfficeId") as string, 10);
+  // CENRO accounts may only create records for their own office
+  if (scope?.isCenro && scope.officeId) {
+    cenroOfficeId = scope.officeId;
+  }
   const year = parseInt(formData.get("year") as string, 10);
   const month = formData.get("month") ? parseInt(formData.get("month") as string, 10) : null;
   const dateOfApprehension = (formData.get("dateOfApprehension") as string) || null;

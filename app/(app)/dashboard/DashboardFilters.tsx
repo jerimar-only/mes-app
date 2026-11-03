@@ -27,6 +27,8 @@ export default function DashboardFilters({
   selectedQ,
   showProvincial,
   onToggleProvincial,
+  isCenro = false,
+  lockedOfficeId,
 }: {
   years: number[];
   offices: Office[];
@@ -36,6 +38,8 @@ export default function DashboardFilters({
   selectedQ?: string;
   showProvincial: boolean;
   onToggleProvincial: () => void;
+  isCenro?: boolean;
+  lockedOfficeId?: number | null;
 }) {
   const router = useRouter();
   const [year, setYear] = useState(selectedYear ? String(selectedYear) : "");
@@ -70,7 +74,6 @@ export default function DashboardFilters({
     router.push(str ? `/dashboard?${str}` : "/dashboard");
   }
 
-  const needsReview = status === "UNKNOWN";
   const hasFilters = Boolean(year || office || status || q.trim());
 
   return (
@@ -115,14 +118,16 @@ export default function DashboardFilters({
               CENRO Office
             </label>
             <select
-              value={office}
+              value={isCenro && lockedOfficeId ? String(lockedOfficeId) : office}
               onChange={(e) => {
+                if (isCenro) return;
                 setOffice(e.target.value);
                 go({ office: e.target.value });
               }}
-              className={`${selectClass} min-w-[160px]`}
+              disabled={isCenro}
+              className={`${selectClass} min-w-[160px] disabled:opacity-70`}
             >
-              <option value="">All CENROs</option>
+              {!isCenro && <option value="">All CENROs</option>}
               {offices.map((o) => (
                 <option key={o.id} value={o.id}>
                   {o.name}
@@ -203,33 +208,8 @@ export default function DashboardFilters({
           )}
         </div>
 
-        {/* Right: toggles — fills wide layout */}
+        {/* Right: provincial toggle */}
         <div className="flex flex-wrap items-center gap-4 border-t border-[var(--border)] pt-3 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-4">
-          <label className="flex cursor-pointer items-center gap-2">
-            <button
-              type="button"
-              role="switch"
-              aria-checked={needsReview}
-              onClick={() => {
-                const next = needsReview ? "" : "UNKNOWN";
-                setStatus(next);
-                go({ status: next });
-              }}
-              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 ${
-                needsReview ? "bg-amber-500" : "bg-[var(--border)]"
-              }`}
-            >
-              <span
-                className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow transition ${
-                  needsReview ? "translate-x-4" : "translate-x-0"
-                }`}
-              />
-            </button>
-            <span className="text-[13px] font-medium text-[var(--muted)]">
-              Needs review only
-            </span>
-          </label>
-
           <label className="flex cursor-pointer items-center gap-2">
             <button
               type="button"

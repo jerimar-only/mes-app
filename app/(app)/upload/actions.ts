@@ -4,6 +4,7 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { permissions, type Role } from "@/lib/permissions";
+import { getOfficeScope } from "@/lib/officeScope";
 import { revalidatePath } from "next/cache";
 import * as XLSX from "xlsx";
 
@@ -104,6 +105,11 @@ export async function uploadExcel(formData: FormData): Promise<{
     throw new Error("You don't have permission to upload records.");
   }
 
+  const scope = await getOfficeScope();
+  // CENRO accounts may only import into their assigned office
+  const lockedOfficeId =
+    scope?.isCenro && scope.officeId ? scope.officeId : null;
+
   const file = formData.get("file") as File | null;
   if (!file || file.size === 0) throw new Error("No file was uploaded.");
 
@@ -128,12 +134,20 @@ export async function uploadExcel(formData: FormData): Promise<{
 
   const offices = await prisma.cenroOffice.findMany();
   const officeByKey = new Map(offices.map((o) => [officeKey(o.name), o]));
-  const validList = offices.map((o) => o.name).join(", ");
+  const lockedOffice = lockedOfficeId
+    ? offices.find((o) => o.id === lockedOfficeId) ?? null
+    : null;
+  const validList = lockedOffice
+    ? lockedOffice.name
+    : offices.map((o) => o.name).join(", ");
 
   const errors: RowResult[] = [];
   const entries: Entry[] = [];
 
-  let lastOffice: { id: number; name: string } | null = null;
+  // CENRO users start locked to their office even before a heading row
+  let lastOffice: { id: number; name: string } | null = lockedOffice
+    ? { id: lockedOffice.id, name: lockedOffice.name }
+    : null;
   let lastEntry: Entry | null = null;
 
   // ---- Phase 1: read the whole sheet in memory (no database calls) ----
@@ -157,7 +171,16 @@ export async function uploadExcel(formData: FormData): Promise<{
     if (typeof inc === "string" && !isEmpty(inc) && row.slice(2).every(isEmpty)) {
       const office = officeByKey.get(officeKey(inc));
       lastEntry = null;
-      if (office) {
+      if (lockedOffice) {
+        // CENRO portal: always stay on assigned office; warn if file names another
+        if (office && office.id !== lockedOffice.id) {
+          errors.push({
+            row: rowNum,
+            message: `Skipped office heading "${inc}" — your account is limited to ${lockedOffice.name}.`,
+          });
+        }
+        lastOffice = { id: lockedOffice.id, name: lockedOffice.name };
+      } else if (office) {
         lastOffice = office;
       } else {
         lastOffice = null;
@@ -238,7 +261,7 @@ export async function uploadExcel(formData: FormData): Promise<{
         bdFt ?? "",
       ].join("|"),
       data: {
-        cenroOfficeId: lastOffice.id,
+        cenroOfficeId: lockedOfficeId ?? lastOffice.id,
         year,
         month,
         dateOfApprehension: dateText,

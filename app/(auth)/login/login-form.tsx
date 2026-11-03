@@ -278,7 +278,7 @@ export default function LoginForm({
           </form>
 
           <p className="mt-8 text-center text-sm text-white/80">
-            EMS Apprehension Tracker · Province of Cagayan
+            MES Tracker · Province of Cagayan
           </p>
           <p className="mt-1 text-center text-xs text-white/55">
             Authorized personnel only
