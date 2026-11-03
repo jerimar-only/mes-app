@@ -16,7 +16,7 @@ const STATUS_OPTIONS: { value: string; label: string }[] = [
 ];
 
 const selectClass =
-  "w-full min-w-0 rounded-lg border border-[var(--border-strong)] bg-[var(--card)]/80 px-3 py-2 text-[14px] text-[var(--foreground)] shadow-sm backdrop-blur-sm focus:border-[var(--accent)] focus:outline-none";
+  "w-full min-w-0 rounded-lg border border-[var(--border-strong)] bg-[var(--card)]/80 px-3 py-2 text-[14px] text-[var(--foreground)] shadow-sm backdrop-blur-sm focus:border-[var(--accent)] focus:outline-none lg:w-auto lg:min-w-[130px]";
 
 export default function DashboardFilters({
   years,
@@ -90,8 +90,8 @@ export default function DashboardFilters({
       </div>
 
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-        {/* 2-col grid on mobile; wrap row on larger screens */}
-        <div className="grid min-w-0 flex-1 grid-cols-2 gap-x-2.5 gap-y-2.5 sm:flex sm:flex-wrap sm:items-end">
+        {/* Always 2 columns below lg — flex row only on desktop */}
+        <div className="grid min-w-0 flex-1 grid-cols-2 gap-x-2.5 gap-y-2.5 lg:flex lg:flex-wrap lg:items-end">
           <div className="min-w-0">
             <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-[var(--muted)]">
               Year
@@ -157,7 +157,7 @@ export default function DashboardFilters({
             </select>
           </div>
 
-          <div className="min-w-0 sm:min-w-[220px] sm:flex-1">
+          <div className="min-w-0 lg:min-w-[220px] lg:flex-1">
             <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-[var(--muted)]">
               Search
             </label>
@@ -192,7 +192,7 @@ export default function DashboardFilters({
           </div>
 
           {hasFilters && (
-            <div className="col-span-2 sm:col-span-1">
+            <div className="col-span-2 lg:col-span-1">
               <button
                 type="button"
                 onClick={() => {
@@ -202,7 +202,7 @@ export default function DashboardFilters({
                   setQ("");
                   router.push("/dashboard");
                 }}
-                className="w-full rounded-lg px-3 py-2 text-left text-[13px] font-medium text-[var(--accent)] transition-colors hover:bg-[var(--accent-soft)] sm:mb-0.5 sm:w-auto"
+                className="w-full rounded-lg px-3 py-2 text-left text-[13px] font-medium text-[var(--accent)] transition-colors hover:bg-[var(--accent-soft)] lg:mb-0.5 lg:w-auto"
               >
                 Clear filters
               </button>
