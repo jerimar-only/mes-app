@@ -188,8 +188,8 @@ export default function DashboardPage() {
                 selectedQ={selectedQ}
                 showProvincial={showProvincial}
                 onToggleProvincial={() => setShowProvincial((v) => !v)}
-                isCenro={Boolean(data?.scope?.isCenro)}
-                lockedOfficeId={data?.scope?.officeId}
+                isCenro={false}
+                lockedOfficeId={null}
               />
               <div className="h-36 animate-pulse rounded-xl bg-[var(--border)]" />
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
