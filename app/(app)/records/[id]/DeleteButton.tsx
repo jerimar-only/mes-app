@@ -46,7 +46,7 @@ export function DeleteButton({ recordId }: { recordId: number }) {
       <ConfirmModal
         open={open}
         title="Delete this record?"
-        message="This cannot be undone. The record will be marked as deleted."
+        message="The record will be marked as deleted and removed from the dashboard and reports. It can be restored later."
         confirmLabel={isPending ? "Deleting…" : "Delete"}
         cancelLabel="Cancel"
         danger

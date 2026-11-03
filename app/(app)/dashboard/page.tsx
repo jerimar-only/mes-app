@@ -81,6 +81,23 @@ function recordsHref(
   return `/records/full?${qs.toString()}`;
 }
 
+/** Link to All Records with the given office/status, keeping active dashboard filters. */
+function allRecordsHref(opts: {
+  year?: number;
+  office?: number;
+  status?: string;
+  q?: string;
+}) {
+  const qs = new URLSearchParams();
+  if (opts.year) qs.set("year", String(opts.year));
+  if (opts.office) qs.set("office", String(opts.office));
+  if (opts.status) qs.set("status", opts.status);
+  if (opts.q) qs.set("q", opts.q);
+  qs.set("pageSize", "25");
+  const s = qs.toString();
+  return s ? `/records?${s}` : "/records";
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -91,8 +108,10 @@ export default function DashboardPage() {
   const selectedOffice = searchParams.get("office")
     ? parseInt(searchParams.get("office")!, 10) || undefined
     : undefined;
+  const selectedStatus = searchParams.get("status")?.trim() || undefined;
+  const selectedQ = searchParams.get("q")?.trim() || undefined;
 
-  const [showProvincial, setShowProvincial] = useState(true);    
+  const [showProvincial, setShowProvincial] = useState(true);
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -104,6 +123,8 @@ export default function DashboardPage() {
     const qs = new URLSearchParams();
     if (selectedYear) qs.set("year", String(selectedYear));
     if (selectedOffice) qs.set("office", String(selectedOffice));
+    if (selectedStatus) qs.set("status", selectedStatus);
+    if (selectedQ) qs.set("q", selectedQ);
 
     try {
       const res = await fetch(`/api/dashboard?${qs}`);
@@ -115,7 +136,7 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedYear, selectedOffice]);
+  }, [selectedYear, selectedOffice, selectedStatus, selectedQ]);
 
   useEffect(() => {
     load();
@@ -131,7 +152,11 @@ export default function DashboardPage() {
   const scopeLabel = [
     selectedYear ? String(selectedYear) : "All years",
     selectedOffice ? officeName(selectedOffice) : "All CENRO",
-  ].join(" · ");
+    selectedStatus ? STATUS_LABEL[selectedStatus] ?? selectedStatus : null,
+    selectedQ ? `“${selectedQ}”` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <div
@@ -158,6 +183,8 @@ export default function DashboardPage() {
                 offices={[]}
                 selectedYear={selectedYear}
                 selectedOffice={selectedOffice}
+                selectedStatus={selectedStatus}
+                selectedQ={selectedQ}
                 showProvincial={showProvincial}
                 onToggleProvincial={() => setShowProvincial((v) => !v)}
               />
@@ -216,6 +243,8 @@ export default function DashboardPage() {
               offices={data.offices}
               selectedYear={selectedYear}
               selectedOffice={selectedOffice}
+              selectedStatus={selectedStatus}
+              selectedQ={selectedQ}
               showProvincial={showProvincial}
               onToggleProvincial={() => setShowProvincial((v) => !v)}
             />
@@ -311,14 +340,22 @@ export default function DashboardPage() {
                   {[...data.byOffice]
                     .sort((a, b) => b._count._all - a._count._all)
                     .map((o) => (
-                      <li
-                        key={o.cenroOfficeId}
-                        className="dash-row flex items-center justify-between px-4 py-2.5 text-[13px]"
-                      >
-                        <span className="text-[var(--foreground)]">
-                          {officeName(o.cenroOfficeId)}
-                        </span>
-                        <span className="dash-pill">{o._count._all}</span>
+                      <li key={o.cenroOfficeId}>
+                        <Link
+                          href={allRecordsHref({
+                            year: selectedYear,
+                            office: o.cenroOfficeId,
+                            status: selectedStatus,
+                            q: selectedQ,
+                          })}
+                          className="dash-row flex items-center justify-between px-4 py-2.5 text-[13px] transition hover:text-[var(--accent)]"
+                          title={`View ${officeName(o.cenroOfficeId)} records`}
+                        >
+                          <span className="text-[var(--foreground)] group-hover:text-[var(--accent)]">
+                            {officeName(o.cenroOfficeId)}
+                          </span>
+                          <span className="dash-pill">{o._count._all}</span>
+                        </Link>
                       </li>
                     ))}
                 </ul>
@@ -342,14 +379,22 @@ export default function DashboardPage() {
                   {[...data.byStatus]
                     .sort((a, b) => b._count._all - a._count._all)
                     .map((s) => (
-                      <li
-                        key={s.status}
-                        className="dash-row flex items-center justify-between px-4 py-2.5 text-[13px]"
-                      >
-                        <span className="text-[var(--foreground)]">
-                          {STATUS_LABEL[s.status] ?? s.status}
-                        </span>
-                        <span className="dash-pill">{s._count._all}</span>
+                      <li key={s.status}>
+                        <Link
+                          href={allRecordsHref({
+                            year: selectedYear,
+                            office: selectedOffice,
+                            status: s.status,
+                            q: selectedQ,
+                          })}
+                          className="dash-row flex items-center justify-between px-4 py-2.5 text-[13px] transition hover:text-[var(--accent)]"
+                          title={`View ${STATUS_LABEL[s.status] ?? s.status} records`}
+                        >
+                          <span className="text-[var(--foreground)]">
+                            {STATUS_LABEL[s.status] ?? s.status}
+                          </span>
+                          <span className="dash-pill">{s._count._all}</span>
+                        </Link>
                       </li>
                     ))}
                 </ul>

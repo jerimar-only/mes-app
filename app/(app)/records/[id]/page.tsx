@@ -63,7 +63,10 @@ export default async function RecordDetailPage({
 
   const session = await getSession();
   const canEdit = session ? permissions.editSavedRecord(session.role as Role) : false;
-  const isAdmin = session?.role === "ADMINISTRATOR";
+  const canSoftDelete = session ? permissions.softDeleteRecord(session.role as Role) : false;
+  const canPermanentDelete = session
+    ? permissions.permanentDeleteRecord(session.role as Role)
+    : false;
 
   const totalBdFt = record.items.reduce((s, i) => s + (i.volumeBdFt ?? 0), 0);
   const totalCuM = record.items.reduce((s, i) => s + (i.volumeCuM ?? 0), 0);
@@ -259,18 +262,31 @@ export default async function RecordDetailPage({
 
         {/* ---------- Action panel (stays in view on wide screens) ---------- */}
         <aside className="lg:sticky lg:top-6">
-          {canEdit && record.isDeleted ? (
+          {record.isDeleted ? (
             <div className="space-y-4">
-              <form action={restoreRecord}>
-                <input type="hidden" name="id" value={record.id} />
-                <button
-                  type="submit"
-                  className="w-full rounded-md bg-[var(--accent)] px-4 py-2 text-[14px] text-white hover:bg-[var(--accent-hover)]"
-                >
-                  Restore record
-                </button>
-              </form>
-              {isAdmin && <PermanentDeleteButton recordId={record.id} />}
+              {canSoftDelete && (
+                <form action={restoreRecord}>
+                  <input type="hidden" name="id" value={record.id} />
+                  <button
+                    type="submit"
+                    className="w-full rounded-md bg-[var(--accent)] px-4 py-2 text-[14px] text-white hover:bg-[var(--accent-hover)]"
+                  >
+                    Restore record
+                  </button>
+                </form>
+              )}
+              {/* Permanent delete: Super Admin only, and only after soft-delete */}
+              {canPermanentDelete && (
+                <PermanentDeleteButton
+                  recordId={record.id}
+                  redirectTo="/records?deleted=only"
+                />
+              )}
+              {!canSoftDelete && !canPermanentDelete && (
+                <p className="text-[13px] text-[var(--muted)]">
+                  This record is deleted. Contact an administrator to restore it.
+                </p>
+              )}
             </div>
           ) : canEdit ? (
             <div className="space-y-4">
@@ -287,7 +303,8 @@ export default async function RecordDetailPage({
                 className="block w-full rounded-md border border-zinc-300 bg-white px-4 py-2 text-center text-[14px] font-medium text-zinc-900 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
               />
 
-              <DeleteButton recordId={record.id} />
+              {/* Soft delete: Administrator + Super Admin. Permanent delete is only on deleted records. */}
+              {canSoftDelete && <DeleteButton recordId={record.id} />}
             </div>
           ) : (
             <div className="dash-panel p-4 text-[14px] text-[var(--muted)]">

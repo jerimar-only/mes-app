@@ -3,12 +3,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { permanentlyDeleteRecord } from "../actions";
 import { useToast } from "@/components/ui/Toast";
 
-export function PermanentDeleteButton({ recordId }: { recordId: number }) {
+export function PermanentDeleteButton({
+  recordId,
+  redirectTo = "/records?deleted=only",
+}: {
+  recordId: number;
+  redirectTo?: string;
+}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [password, setPassword] = useState("");
@@ -51,7 +56,7 @@ export function PermanentDeleteButton({ recordId }: { recordId: number }) {
         return;
       }
       flash("success", "Record permanently deleted.", "Deleted");
-      router.push("/records?deleted=only");
+      router.push(redirectTo);
       router.refresh();
     } catch {
       const msg = "Something went wrong. Please try again.";
@@ -71,15 +76,11 @@ export function PermanentDeleteButton({ recordId }: { recordId: number }) {
         Delete permanently
       </button>
 
-      {open &&
-        createPortal(
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-            onMouseDown={(e) => {
-              if (e.target === e.currentTarget) close();
-            }}
-          >
-            <form onSubmit={submit} className="w-full max-w-md space-y-4 rounded-lg bg-[var(--card)] p-6 text-[var(--foreground)] shadow-xl">
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={close} />
+          <div className="relative w-full max-w-md">
+            <form onSubmit={submit} className="w-full space-y-4 rounded-lg bg-[var(--card)] p-6 text-[var(--foreground)] shadow-xl">
               <h2 className="text-lg font-semibold tracking-tight">Delete permanently?</h2>
               <p className="text-[14px] text-[var(--muted)]">
                 This removes the record and all its products, conveyances and equipment for good.
@@ -118,9 +119,9 @@ export function PermanentDeleteButton({ recordId }: { recordId: number }) {
                 </button>
               </div>
             </form>
-          </div>,
-          document.body
-        )}
+          </div>
+        </div>
+      )}
     </>
   );
 }

@@ -6,7 +6,7 @@ import BulkDeleteClient from "./BulkDeleteClient";
 export default async function BulkDeletePage() {
   const session = await getSession();
   if (!session) redirect("/login");
-  if (!permissions.editSavedRecord(session.role as Role)) {
+  if (!permissions.softDeleteRecord(session.role as Role)) {
     redirect("/records");
   }
 

@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import RecordsClient from "./RecordsClient";
+import FullViewLink from "./FullViewLink";
 
 const STATUS_LABEL: Record<string, string> = {
   FOR_RESOLUTION: "For resolution",
@@ -11,28 +11,55 @@ const STATUS_LABEL: Record<string, string> = {
   UNKNOWN: "Needs review",
 };
 
+/** Next may give string | string[] for a search param */
+function paramOne(
+  value: string | string[] | undefined
+): string | undefined {
+  if (value == null) return undefined;
+  const s = Array.isArray(value) ? value[0] : value;
+  const t = s?.trim();
+  return t ? t : undefined;
+}
+
 export default async function RecordsPage({
   searchParams,
 }: {
-  searchParams: Promise<Record<string, string | undefined>>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const params = await searchParams;
+  const raw = await searchParams;
+  const params: Record<string, string | undefined> = {
+    q: paramOne(raw.q),
+    year: paramOne(raw.year),
+    office: paramOne(raw.office),
+    status: paramOne(raw.status),
+    deleted: paramOne(raw.deleted),
+    pageSize: paramOne(raw.pageSize),
+  };
   const offices = await prisma.cenroOffice.findMany({ orderBy: { name: "asc" } });
+
+  // Carry current URL filters into Full view (also read live form in FullViewLink)
+  const fullViewQs = new URLSearchParams();
+  for (const key of ["q", "year", "office", "status", "deleted", "pageSize"] as const) {
+    const v = params[key];
+    if (v) fullViewQs.set(key, v);
+  }
+  const fullViewHref = fullViewQs.toString()
+    ? `/records/full?${fullViewQs.toString()}`
+    : "/records/full";
 
   return (
     <div className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-        <Link
-          href="/records/full"
+        <FullViewLink
+          href={fullViewHref}
           className="inline-flex shrink-0 items-center rounded-xl border border-[var(--border-strong)] bg-[var(--card)] px-4 py-2 text-[14px] font-medium text-[var(--foreground)] shadow-sm transition hover:border-[var(--accent)]/30 hover:bg-[var(--accent-soft)]"
-        >
-          Full view →
-        </Link>
+        />
       </div>
 
         {/* Filters */}
         <form
           method="get"
+          data-records-filters
           className="app-filters grid grid-cols-2 gap-2.5 sm:flex sm:flex-wrap sm:items-end"
         >
           <div className="col-span-2 min-w-0 sm:min-w-[200px] sm:flex-1">
@@ -70,12 +97,12 @@ export default async function RecordsPage({
             </label>
             <select
               name="office"
-              defaultValue={params.office ?? ""}
+              defaultValue={params.office ? String(params.office) : ""}
               className="w-full rounded-md border border-[var(--border-strong)] bg-[var(--card)] text-[var(--foreground)] px-3 py-2 text-[13px]"
             >
               <option value="">All</option>
               {offices.map((o) => (
-                <option key={o.id} value={o.id}>{o.name}</option>
+                <option key={o.id} value={String(o.id)}>{o.name}</option>
               ))}
             </select>
           </div>

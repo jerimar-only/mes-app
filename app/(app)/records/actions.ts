@@ -124,23 +124,45 @@ export async function createRecord(formData: FormData) {
   redirect(`/records/${record.id}`);
 }
 
-export async function deleteRecord(formData: FormData) {
+/** Load the signed-in user from DB (authoritative role, not only JWT). */
+async function requireActiveUser() {
   const session = await getSession();
-  if (!session || !permissions.editSavedRecord(session.role as Role)) {
+  if (!session) return null;
+  const userId = Number(session.userId);
+  if (!Number.isFinite(userId) || userId <= 0) return null;
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user || !user.isActive) return null;
+  return user;
+}
+
+export async function deleteRecord(formData: FormData) {
+  const user = await requireActiveUser();
+  if (!user || !permissions.softDeleteRecord(user.role as Role)) {
     throw new Error("You don't have permission to delete records.");
   }
 
-  const id = parseInt(formData.get("id") as string, 10);
+  const id = parseInt(String(formData.get("id") || ""), 10);
+  if (!Number.isFinite(id) || id <= 0) {
+    throw new Error("Invalid record.");
+  }
+
+  const existing = await prisma.apprehensionRecord.findUnique({
+    where: { id },
+    select: { id: true, isDeleted: true },
+  });
+  if (!existing) throw new Error("Record not found.");
+  if (existing.isDeleted) throw new Error("Record is already deleted.");
 
   await prisma.apprehensionRecord.update({
     where: { id },
     data: { isDeleted: true },
   });
 
+  revalidatePath(`/records/${id}`);
   revalidatePath("/records");
   revalidatePath("/dashboard");
   revalidatePath("/reports");
-  redirect("/records");
+  redirect(`/records?deleted=only`);
 }
 
 // ─── Edit record (shared save logic) ───────────────────────────
@@ -293,12 +315,23 @@ export async function getRecordForEdit(id: number) {
 // ─── Restore / permanent delete ─────────────────────────────────
 
 export async function restoreRecord(formData: FormData) {
-  const session = await getSession();
-  if (!session || !permissions.editSavedRecord(session.role as Role)) {
+  const user = await requireActiveUser();
+  // Same roles that can soft-delete may restore
+  if (!user || !permissions.softDeleteRecord(user.role as Role)) {
     throw new Error("You don't have permission to restore records.");
   }
 
-  const id = parseInt(formData.get("id") as string, 10);
+  const id = parseInt(String(formData.get("id") || ""), 10);
+  if (!Number.isFinite(id) || id <= 0) {
+    throw new Error("Invalid record.");
+  }
+
+  const existing = await prisma.apprehensionRecord.findUnique({
+    where: { id },
+    select: { id: true, isDeleted: true },
+  });
+  if (!existing) throw new Error("Record not found.");
+  if (!existing.isDeleted) throw new Error("Record is not deleted.");
 
   await prisma.apprehensionRecord.update({
     where: { id },
@@ -314,35 +347,36 @@ export async function restoreRecord(formData: FormData) {
 export async function permanentlyDeleteRecord(
   formData: FormData
 ): Promise<{ ok: boolean; error?: string }> {
-  const session = await getSession();
-  if (!session || session.role !== "ADMINISTRATOR") {
-    return { ok: false, error: "Only administrators can permanently delete records." };
+  const user = await requireActiveUser();
+  if (!user || !permissions.permanentDeleteRecord(user.role as Role)) {
+    return {
+      ok: false,
+      error: "Only Super Admin can permanently delete records. Administrators can soft-delete only.",
+    };
   }
 
-  const id = parseInt(formData.get("id") as string, 10);
+  const id = parseInt(String(formData.get("id") || ""), 10);
+  if (!Number.isFinite(id) || id <= 0) {
+    return { ok: false, error: "Invalid record." };
+  }
+
   const password = (formData.get("password") as string) || "";
   if (!password) return { ok: false, error: "Please enter your password." };
-
-  // Find the logged-in admin (works whether your session stores userId, id, or email)
-  const s = session as any;
-  const userId = Number(s.userId ?? s.id);
-  const user = await prisma.user.findFirst({
-    where: Number.isFinite(userId) && userId > 0 ? { id: userId } : { email: s.email },
-  });
-  if (!user || !user.isActive) {
-    return { ok: false, error: "Could not verify your account." };
-  }
 
   const valid = await bcrypt.compare(password, user.passwordHash);
   if (!valid) return { ok: false, error: "Incorrect password." };
 
   const record = await prisma.apprehensionRecord.findUnique({
     where: { id },
-    select: { isDeleted: true },
+    select: { id: true, isDeleted: true },
   });
   if (!record) return { ok: false, error: "Record not found." };
+  // Must soft-delete first — avoids accidental hard-delete of active records
   if (!record.isDeleted) {
-    return { ok: false, error: "Delete the record first, then permanently delete it." };
+    return {
+      ok: false,
+      error: "Soft-delete the record first, then permanently delete it from the deleted list.",
+    };
   }
 
   await prisma.$transaction([

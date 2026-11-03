@@ -23,7 +23,7 @@ export async function searchRecordsForDelete(params: {
   status?: string;
 }): Promise<{ rows: BulkDeleteRow[]; error?: string }> {
   const session = await getSession();
-  if (!session || !permissions.editSavedRecord(session.role as Role)) {
+  if (!session || !permissions.softDeleteRecord(session.role as Role)) {
     return { rows: [], error: "You don't have permission to delete records." };
   }
 
@@ -80,7 +80,17 @@ export async function bulkDeleteRecords(
   ids: number[],
 ): Promise<{ deleted: number; failed: { id: number; message: string }[] }> {
   const session = await getSession();
-  if (!session || !permissions.editSavedRecord(session.role as Role)) {
+  if (!session) {
+    return { deleted: 0, failed: [{ id: 0, message: "You don't have permission to delete records." }] };
+  }
+  // Prefer DB role so JWT alone cannot escalate
+  const userId = Number(session.userId);
+  const user =
+    Number.isFinite(userId) && userId > 0
+      ? await prisma.user.findUnique({ where: { id: userId } })
+      : null;
+  const role = (user?.role ?? session.role) as Role;
+  if (!user?.isActive || !permissions.softDeleteRecord(role)) {
     return { deleted: 0, failed: [{ id: 0, message: "You don't have permission to delete records." }] };
   }
 
@@ -122,7 +132,7 @@ export async function bulkDeleteRecords(
 
 export async function getBulkDeleteFilters() {
   const session = await getSession();
-  if (!session || !permissions.editSavedRecord(session.role as Role)) {
+  if (!session || !permissions.softDeleteRecord(session.role as Role)) {
     return { offices: [] as { id: number; name: string }[], years: [] as number[] };
   }
 

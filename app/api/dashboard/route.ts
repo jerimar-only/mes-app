@@ -23,11 +23,31 @@ export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
   const year = sp.get("year") ? parseInt(sp.get("year")!, 10) || undefined : undefined;
   const office = sp.get("office") ? parseInt(sp.get("office")!, 10) || undefined : undefined;
+  const status = sp.get("status")?.trim() || undefined;
+  const q = sp.get("q")?.trim() || undefined;
+
+  const searchOr: Prisma.ApprehensionRecordWhereInput[] | undefined = q
+    ? [
+        { placeOfApprehension: { contains: q, mode: "insensitive" } },
+        { sourcePlace: { contains: q, mode: "insensitive" } },
+        { claimantRespondent: { contains: q, mode: "insensitive" } },
+        { apprehendingAgency: { contains: q, mode: "insensitive" } },
+        { circumstances: { contains: q, mode: "insensitive" } },
+        { docketNumber: { contains: q, mode: "insensitive" } },
+        { remarks: { contains: q, mode: "insensitive" } },
+        { otherRemarks: { contains: q, mode: "insensitive" } },
+        { caseStatus: { contains: q, mode: "insensitive" } },
+      ]
+    : undefined;
 
   const where: Prisma.ApprehensionRecordWhereInput = {
     isDeleted: false,
     ...(year ? { year } : {}),
     ...(office ? { cenroOfficeId: office } : {}),
+    ...(status
+      ? { status: status as import("@prisma/client").ApprehensionStatus }
+      : {}),
+    ...(searchOr ? { OR: searchOr } : {}),
   };
 
   const yearFilter = year ?? null;
@@ -49,13 +69,11 @@ export async function GET(req: NextRequest) {
       orderBy: { name: "asc" },
       select: { id: true, name: true },
     }),
-    // Exclude year filter so the chart always shows the full year breakdown
+    // Same filters as the rest of the dashboard (including year) so the chart
+    // matches Total records — e.g. year=2025 shows only 2025.
     prisma.apprehensionRecord.groupBy({
       by: ["year"],
-      where: {
-        isDeleted: false,
-        ...(office ? { cenroOfficeId: office } : {}),
-      },
+      where,
       _count: { _all: true },
       orderBy: { year: "asc" },
     }),

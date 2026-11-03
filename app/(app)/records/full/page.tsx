@@ -36,23 +36,31 @@ const peso = (n: number | null | undefined) => {
   })}`;
 };
 
+function paramOne(value: string | string[] | undefined): string | undefined {
+  if (value == null) return undefined;
+  const s = Array.isArray(value) ? value[0] : value;
+  const t = s?.trim();
+  return t ? t : undefined;
+}
+
 export default async function FullRecordsPage({
   searchParams,
 }: {
-  searchParams: Promise<{
-    q?: string;
-    year?: string;
-    office?: string;
-    status?: string;
-    deleted?: string;
-    acp?: string;
-    conv?: string;
-    resolved?: string;
-    page?: string;
-    pageSize?: string;
-  }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const params = await searchParams;
+  const raw = await searchParams;
+  const params = {
+    q: paramOne(raw.q),
+    year: paramOne(raw.year),
+    office: paramOne(raw.office),
+    status: paramOne(raw.status),
+    deleted: paramOne(raw.deleted),
+    acp: paramOne(raw.acp),
+    conv: paramOne(raw.conv),
+    resolved: paramOne(raw.resolved),
+    page: paramOne(raw.page),
+    pageSize: paramOne(raw.pageSize),
+  };
   const page = Math.max(1, parseInt(params.page ?? "1", 10) || 1);
 
   // Parse pageSize — allowed: 25, 50, 100, 500
@@ -130,7 +138,15 @@ export default async function FullRecordsPage({
             Export to Excel
           </a>
           <Link
-            href="/records"
+            href={(() => {
+              const back = new URLSearchParams();
+              for (const key of ["q", "year", "office", "status", "deleted", "pageSize"] as const) {
+                const v = params[key];
+                if (v) back.set(key, v);
+              }
+              const s = back.toString();
+              return s ? `/records?${s}` : "/records";
+            })()}
             className="inline-flex shrink-0 items-center rounded-md border border-[var(--border-strong)] bg-[var(--card)] px-4 py-2 text-[14px] font-medium text-[var(--foreground)] shadow-sm transition hover:bg-[var(--shell)]"
           >
             ← Back to summary
@@ -200,12 +216,12 @@ export default async function FullRecordsPage({
           </label>
           <select
             name="office"
-            defaultValue={params.office ?? ""}
+            defaultValue={params.office ? String(params.office) : ""}
             className="max-w-[160px] rounded-md border border-[var(--border-strong)] bg-[var(--card)] text-[var(--foreground)] px-3 py-2 text-[13px]"
           >
             <option value="">All</option>
             {offices.map((o) => (
-              <option key={o.id} value={o.id}>
+              <option key={o.id} value={String(o.id)}>
                 {o.name}
               </option>
             ))}
