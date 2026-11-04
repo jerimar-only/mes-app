@@ -219,7 +219,7 @@ export default function Sidebar({
                     collapsed={railCollapsed}
                     icon={<UsersIcon />}
                   >
-                    Manage Users
+                    Settings
                   </NavItem>
                 )}
                 <NavItem
