@@ -14,13 +14,18 @@ import {
 import { useToast } from "@/components/ui/Toast";
 
 const EDITABLE_COLUMNS: { key: BulkFieldKey; label: string; wide?: boolean }[] = [
+  { key: "penroOffice", label: "PENRO office" },
+  { key: "penroOfficer", label: "PENRO officer" },
   { key: "cenroOffice", label: "CENRO office" },
+  { key: "cenroOfficer", label: "CENRO officer" },
   { key: "dateOfApprehension", label: "Date" },
+  { key: "timeOfApprehension", label: "Time" },
   { key: "placeOfApprehension", label: "Place", wide: true },
-  { key: "sourcePlace", label: "Source", wide: true },
   { key: "gpsCoordinates", label: "GPS" },
+  { key: "sourcePlace", label: "Source", wide: true },
   { key: "landClassification", label: "Land class." },
-  { key: "apprehendingAgency", label: "Officers" },
+  { key: "apprehendingAgency", label: "Agency" },
+  { key: "apprehendingOfficer", label: "Officer" },
   { key: "claimantRespondent", label: "Claimant" },
   { key: "circumstances", label: "Circumstances", wide: true },
   { key: "custodianLocation", label: "Impounded" },
@@ -31,6 +36,8 @@ const EDITABLE_COLUMNS: { key: BulkFieldKey; label: string; wide?: boolean }[] =
   { key: "status", label: "Status" },
   { key: "docketNumber", label: "Docket #" },
   { key: "orderOfFinalityDate", label: "Finality date" },
+  { key: "dateOfPromulgation", label: "Promulgation date" },
+  { key: "promulgatedBy", label: "Promulgated by" },
   { key: "acpEndorsedToPenro", label: "ACP PENRO" },
   { key: "acpEndorsedToRo", label: "ACP RO" },
 ];

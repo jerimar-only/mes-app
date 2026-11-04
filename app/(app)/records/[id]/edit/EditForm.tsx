@@ -3,41 +3,150 @@
 import { useState } from "react";
 import Link from "next/link";
 import { updateRecord, updateRecordInline } from "../../actions";
-import { DateOfApprehensionField } from "@/components/ui/DateOfApprehensionField";
 import { useToast } from "@/components/ui/Toast";
 
 const inputCls =
   "w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-[14px] text-zinc-900 placeholder:text-zinc-400 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500";
 const labelCls =
   "mb-1 block text-[13px] font-medium text-zinc-700 dark:text-zinc-300";
+const selectCls = inputCls;
+
+const PRODUCT_TYPES = ["Logs", "Flitches", "Lumber", "Rattan", "Other"] as const;
+const PRODUCT_CONDITIONS = [
+  { value: "GOOD_CONDITION", label: "Good condition" },
+  { value: "DETERIORATING", label: "Deteriorating" },
+  { value: "DETERIORATED", label: "Deteriorated" },
+] as const;
+const SERVICE_STATUSES = [
+  { value: "SERVICEABLE", label: "Serviceable" },
+  { value: "UNSERVICEABLE", label: "Unserviceable" },
+] as const;
 
 let counter = 0;
 const nextKey = () => ++counter;
 
-type Item = { qty: string; species: string; forms: string; bdft: string; cum: string; value: string };
-type Pair = { type: string; qty: string; value: string };
+type Named = { id: number; name: string };
+type PenroOfficeItem = Named & { defaultOfficerName: string | null };
+type CenroOfficeItem = Named & {
+  penroOfficeId: number | null;
+  penroOfficeName: string | null;
+  defaultOfficerName: string | null;
+};
 
 type EditFormProps = {
   record: any;
-  // Provided by the modal. When absent (full edit page), the form
-  // submits to updateRecord, which redirects to the record page.
   onSaved?: () => void;
   onCancel?: () => void;
 };
 
+function YesNo({
+  name,
+  value,
+  onChange,
+  label,
+}: {
+  name: string;
+  value: "" | "yes" | "no";
+  onChange: (v: "" | "yes" | "no") => void;
+  label: string;
+}) {
+  return (
+    <div>
+      <label className={labelCls}>{label}</label>
+      <select
+        name={name}
+        value={value}
+        onChange={(e) => onChange(e.target.value as "" | "yes" | "no")}
+        className={selectCls}
+      >
+        <option value="">— Select —</option>
+        <option value="yes">Yes</option>
+        <option value="no">No</option>
+      </select>
+    </div>
+  );
+}
+
 export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
+  const lookups = record.lookups ?? {
+    penroOffices: [] as PenroOfficeItem[],
+    penroOfficers: [] as Named[],
+    cenroOfficers: [] as Named[],
+    cenroOffices: [] as CenroOfficeItem[],
+  };
+
   const [items, setItems] = useState<any[]>(() =>
-    record.items.map((i: Item) => ({ ...i, k: nextKey() }))
+    (record.items ?? []).map((i: any) => ({ ...i, k: nextKey() })),
   );
   const [convs, setConvs] = useState<any[]>(() =>
-    record.conveyances.map((c: Pair) => ({ ...c, k: nextKey() }))
+    (record.conveyances ?? []).map((c: any) => ({ ...c, k: nextKey() })),
   );
   const [equip, setEquip] = useState<any[]>(() =>
-    record.equipment.map((e: Pair) => ({ ...e, k: nextKey() }))
+    (record.equipment ?? []).map((e: any) => ({ ...e, k: nextKey() })),
   );
+
+  const [selectedPenro, setSelectedPenro] = useState(record.penroOffice ?? "");
+  const [selectedPenroOfficer, setSelectedPenroOfficer] = useState(
+    record.penroOfficer ?? "",
+  );
+  const [selectedCenroId, setSelectedCenroId] = useState(
+    record.cenroOfficeId != null ? String(record.cenroOfficeId) : "",
+  );
+  const [selectedCenroOfficer, setSelectedCenroOfficer] = useState(
+    record.cenroOfficer ?? "",
+  );
+
+  const [hasRespondent, setHasRespondent] = useState<"" | "yes" | "no">(
+    record.hasRespondent || "",
+  );
+  const [acpConducted, setAcpConducted] = useState<"" | "yes" | "no">(
+    record.acpConducted || "",
+  );
+  const [appraisalFp, setAppraisalFp] = useState<"" | "yes" | "no">(
+    record.appraisalForestProducts || "",
+  );
+  const [appraisalConv, setAppraisalConv] = useState<"" | "yes" | "no">(
+    record.appraisalConveyances || "",
+  );
+  const [appraisalEquip, setAppraisalEquip] = useState<"" | "yes" | "no">(
+    record.appraisalEquipment || "",
+  );
+  const [donationMade, setDonationMade] = useState<"" | "yes" | "no">(
+    record.donationMade || "",
+  );
+
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const { success, error: toastError, flash } = useToast();
+
+  const selectedPenroRow = (lookups.penroOffices as PenroOfficeItem[]).find(
+    (p) => p.name === selectedPenro,
+  );
+  const filteredCenro = selectedPenroRow
+    ? (lookups.cenroOffices as CenroOfficeItem[]).filter(
+        (o) =>
+          o.penroOfficeId === selectedPenroRow.id ||
+          String(o.id) === selectedCenroId,
+      )
+    : (lookups.cenroOffices as CenroOfficeItem[]);
+
+  function onPenroChange(name: string) {
+    setSelectedPenro(name);
+    const row = (lookups.penroOffices as PenroOfficeItem[]).find(
+      (p) => p.name === name,
+    );
+    if (row?.defaultOfficerName) setSelectedPenroOfficer(row.defaultOfficerName);
+    setSelectedCenroId("");
+    setSelectedCenroOfficer("");
+  }
+
+  function onCenroChange(idStr: string) {
+    setSelectedCenroId(idStr);
+    const row = (lookups.cenroOffices as CenroOfficeItem[]).find(
+      (o) => String(o.id) === idStr,
+    );
+    if (row?.defaultOfficerName) setSelectedCenroOfficer(row.defaultOfficerName);
+  }
 
   async function handleInlineSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -47,8 +156,9 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
       await updateRecordInline(new FormData(e.currentTarget));
       success("Record changes were saved.", "Saved");
       onSaved?.();
-    } catch {
-      const msg = "Could not save changes. Please try again.";
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : "Could not save changes. Please try again.";
       setError(msg);
       toastError(msg);
       setBusy(false);
@@ -60,50 +170,26 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
     setBusy(true);
     setError("");
     try {
-      flash("success", "Record changes were saved.", "Saved");
       await updateRecord(new FormData(e.currentTarget));
-    } catch {
-      const msg = "Could not save changes. Please try again.";
+      flash("success", "Record changes were saved.", "Saved");
+    } catch (err) {
+      if (
+        typeof err === "object" &&
+        err !== null &&
+        "digest" in err &&
+        String((err as { digest?: string }).digest || "").startsWith("NEXT_REDIRECT")
+      ) {
+        flash("success", "Record changes were saved.", "Saved");
+        return;
+      }
+      const msg =
+        err instanceof Error ? err.message : "Could not save changes. Please try again.";
       setError(msg);
       toastError(msg);
       setBusy(false);
     }
   }
 
-  const field = (name: string, title: string, multiline = false) => (
-    <div>
-      <label className={labelCls}>{title}</label>
-      {multiline ? (
-        <textarea name={name} defaultValue={record[name]} rows={3} className={inputCls} />
-      ) : (
-        <input type="text" name={name} defaultValue={record[name]} className={inputCls} />
-      )}
-    </div>
-  );
-
-  const dateField = (name: string, title: string) => (
-    <div>
-      <label className={labelCls}>{title}</label>
-      <input
-        type="date"
-        name={name}
-        defaultValue={record[name]}
-        onClick={(e) => {
-          try {
-            e.currentTarget.showPicker?.();
-          } catch {
-            /* showPicker not supported */
-          }
-        }}
-        className={
-          inputCls +
-          " cursor-pointer [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:scale-125"
-        }
-      />
-    </div>
-  );
-
-  // Modal and page mode both go through client handlers so toasts fire.
   const formProps = onSaved
     ? { onSubmit: handleInlineSubmit }
     : { onSubmit: handlePageSubmit };
@@ -112,88 +198,693 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
     <form {...formProps} className="space-y-6">
       <input type="hidden" name="id" value={record.id} />
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label className={labelCls}>Date of apprehension</label>
-          <DateOfApprehensionField
-            defaultValue={record.dateOfApprehension ?? ""}
-            className={inputCls}
-          />
+      {/* Office concerned */}
+      <section className="space-y-3">
+        <h2 className="text-[14px] font-semibold text-zinc-800 dark:text-zinc-100">
+          Office concerned
+        </h2>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className={labelCls}>PENR Office</label>
+            <select
+              name="penroOffice"
+              value={selectedPenro}
+              onChange={(e) => onPenroChange(e.target.value)}
+              className={selectCls}
+            >
+              <option value="">— Select —</option>
+              {(lookups.penroOffices as PenroOfficeItem[]).map((o) => (
+                <option key={o.id} value={o.name}>
+                  {o.name}
+                </option>
+              ))}
+              {selectedPenro &&
+                !(lookups.penroOffices as PenroOfficeItem[]).some(
+                  (o) => o.name === selectedPenro,
+                ) && <option value={selectedPenro}>{selectedPenro}</option>}
+            </select>
+          </div>
+          <div>
+            <label className={labelCls}>PENR Officer</label>
+            <select
+              name="penroOfficer"
+              value={selectedPenroOfficer}
+              onChange={(e) => setSelectedPenroOfficer(e.target.value)}
+              className={selectCls}
+            >
+              <option value="">— Select —</option>
+              {(lookups.penroOfficers as Named[]).map((o) => (
+                <option key={o.id} value={o.name}>
+                  {o.name}
+                </option>
+              ))}
+              {selectedPenroOfficer &&
+                !(lookups.penroOfficers as Named[]).some(
+                  (o) => o.name === selectedPenroOfficer,
+                ) && (
+                  <option value={selectedPenroOfficer}>{selectedPenroOfficer}</option>
+                )}
+            </select>
+          </div>
+          <div>
+            <label className={labelCls}>CENR Office</label>
+            <select
+              name="cenroOfficeId"
+              value={selectedCenroId}
+              onChange={(e) => onCenroChange(e.target.value)}
+              className={selectCls}
+            >
+              <option value="">— Select —</option>
+              {filteredCenro.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className={labelCls}>CENR Officer</label>
+            <select
+              name="cenroOfficer"
+              value={selectedCenroOfficer}
+              onChange={(e) => setSelectedCenroOfficer(e.target.value)}
+              className={selectCls}
+            >
+              <option value="">— Select —</option>
+              {(lookups.cenroOfficers as Named[]).map((o) => (
+                <option key={o.id} value={o.name}>
+                  {o.name}
+                </option>
+              ))}
+              {selectedCenroOfficer &&
+                !(lookups.cenroOfficers as Named[]).some(
+                  (o) => o.name === selectedCenroOfficer,
+                ) && (
+                  <option value={selectedCenroOfficer}>{selectedCenroOfficer}</option>
+                )}
+            </select>
+          </div>
         </div>
-        {field("placeOfApprehension", "Place of apprehension")}
-        {field("sourcePlace", "Place of the source of forest products")}
-        {field("gpsCoordinates", "GPS coordinates")}
-        {field("landClassification", "Land classification")}
-        {field("apprehendingAgency", "Apprehending officers")}
-        {field("claimantRespondent", "Name of claimant/owner")}
-        {field("custodianLocation", "Place impounded / custodian")}
-        {field("otherAgencies", "Other agencies involved")}
-      </div>
+      </section>
 
-      {field("circumstances", "Circumstances", true)}
+      {/* Incident */}
+      <section className="space-y-3">
+        <h2 className="text-[14px] font-semibold text-zinc-800 dark:text-zinc-100">
+          Incident information
+        </h2>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className={labelCls}>Date of apprehension</label>
+            <input
+              type="date"
+              name="dateOfApprehension"
+              defaultValue={record.dateOfApprehension ?? ""}
+              className={inputCls}
+            />
+          </div>
+          <div>
+            <label className={labelCls}>Time of apprehension</label>
+            <input
+              type="time"
+              name="timeOfApprehension"
+              defaultValue={record.timeOfApprehension ?? ""}
+              className={inputCls}
+            />
+          </div>
+          <div>
+            <label className={labelCls}>Place of apprehension</label>
+            <div className="space-y-2">
+              <input
+                name="placeSitioBrgy"
+                defaultValue={record.placeSitioBrgy ?? ""}
+                placeholder="Sitio / Barangay"
+                className={inputCls}
+              />
+              <input
+                name="placeMunicipality"
+                defaultValue={record.placeMunicipality ?? ""}
+                placeholder="Municipality / City"
+                className={inputCls}
+              />
+              <input
+                name="placeProvince"
+                defaultValue={record.placeProvince ?? ""}
+                placeholder="Province"
+                className={inputCls}
+              />
+            </div>
+          </div>
+          <div>
+            <label className={labelCls}>Coordinates (UTM)</label>
+            <div className="space-y-2">
+              <input
+                name="gpsNorthing"
+                defaultValue={record.gpsNorthing ?? ""}
+                placeholder="Northing"
+                className={inputCls}
+              />
+              <input
+                name="gpsEasting"
+                defaultValue={record.gpsEasting ?? ""}
+                placeholder="Easting"
+                className={inputCls}
+              />
+            </div>
+          </div>
+        </div>
+      </section>
 
-      <div>
-        <h2 className="mb-2 text-[13px] font-medium text-zinc-700 dark:text-zinc-300">Forest products</h2>
-        <div className="space-y-2">
-          {items.map((it) => (
-            <div key={it.k} className="grid grid-cols-7 gap-2">
-              <input name="itemQty" defaultValue={it.qty} placeholder="Qty" className={`${inputCls} col-span-2`} />
-              <input name="itemSpecies" defaultValue={it.species} placeholder="Species" className={inputCls} />
-              <input name="itemForms" defaultValue={it.forms} placeholder="Forms" className={inputCls} />
-              <input name="itemVolumeBdFt" defaultValue={it.bdft} placeholder="bd.ft." className={inputCls} />
-              <input name="itemVolumeCuM" defaultValue={it.cum} placeholder="cu.m." className={inputCls} />
-              <div className="flex gap-2">
-                <input name="itemValue" defaultValue={it.value} placeholder="Value (₱)" className={inputCls} />
+      {/* Apprehending */}
+      <section className="space-y-3">
+        <h2 className="text-[14px] font-semibold text-zinc-800 dark:text-zinc-100">
+          Apprehending officer
+        </h2>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className={labelCls}>Agency</label>
+            <input
+              name="apprehendingAgency"
+              defaultValue={record.apprehendingAgency ?? ""}
+              className={inputCls}
+            />
+          </div>
+          <div>
+            <label className={labelCls}>Officer name</label>
+            <input
+              name="apprehendingOfficer"
+              defaultValue={record.apprehendingOfficer ?? ""}
+              className={inputCls}
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Respondent */}
+      <section className="space-y-3">
+        <h2 className="text-[14px] font-semibold text-zinc-800 dark:text-zinc-100">
+          Respondent / claimant
+        </h2>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <YesNo
+            name="hasRespondent"
+            label="Has respondent?"
+            value={hasRespondent}
+            onChange={setHasRespondent}
+          />
+          {hasRespondent === "yes" && (
+            <>
+              <div>
+                <label className={labelCls}>Name</label>
+                <input
+                  name="claimantRespondent"
+                  defaultValue={
+                    record.claimantRespondent === "Abandoned"
+                      ? ""
+                      : record.claimantRespondent ?? ""
+                  }
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Address</label>
+                <input
+                  name="respondentAddress"
+                  defaultValue={record.respondentAddress ?? ""}
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Contact</label>
+                <input
+                  name="respondentContact"
+                  defaultValue={record.respondentContact ?? ""}
+                  className={inputCls}
+                />
+              </div>
+            </>
+          )}
+          {hasRespondent === "no" && (
+            <p className="text-[13px] text-zinc-500 sm:col-span-2">
+              Will be recorded as <strong>Abandoned</strong>.
+            </p>
+          )}
+        </div>
+      </section>
+
+      {/* Forest products */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-[14px] font-semibold text-zinc-800 dark:text-zinc-100">
+            Forest products
+          </h2>
+          <button
+            type="button"
+            onClick={() =>
+              setItems([
+                ...items,
+                {
+                  type: "",
+                  qty: "",
+                  bdft: "",
+                  cum: "",
+                  condition: "",
+                  value: "",
+                  k: nextKey(),
+                },
+              ])
+            }
+            className="text-[13px] font-medium text-emerald-700 hover:underline dark:text-emerald-400"
+          >
+            + Add product
+          </button>
+        </div>
+        {items.length === 0 ? (
+          <p className="text-[13px] text-zinc-500">No forest products.</p>
+        ) : (
+          <div className="space-y-3">
+            {items.map((it) => (
+              <div
+                key={it.k}
+                className="relative grid grid-cols-1 gap-2 rounded-lg border border-zinc-200 p-3 pt-10 dark:border-zinc-700 sm:grid-cols-2 lg:grid-cols-3"
+              >
                 <button
                   type="button"
                   onClick={() => setItems(items.filter((x) => x.k !== it.k))}
-                  className="text-red-600"
+                  className="absolute right-2 top-2 text-[12px] text-zinc-500 hover:text-red-600"
                 >
                   ✕
                 </button>
+                <div>
+                  <label className={labelCls}>Type</label>
+                  <select name="itemType" defaultValue={it.type || it.forms || ""} className={selectCls}>
+                    <option value="">— Type —</option>
+                    {PRODUCT_TYPES.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                    {it.type &&
+                      !PRODUCT_TYPES.includes(it.type) && (
+                        <option value={it.type}>{it.type}</option>
+                      )}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelCls}>Number of pieces</label>
+                  <input name="itemQty" defaultValue={it.qty} className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Volume (bd. ft.)</label>
+                  <input name="itemVolumeBdFt" defaultValue={it.bdft} className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Volume (cu. m.)</label>
+                  <input name="itemVolumeCuM" defaultValue={it.cum} className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Status</label>
+                  <select name="itemCondition" defaultValue={it.condition || ""} className={selectCls}>
+                    <option value="">— Status —</option>
+                    {PRODUCT_CONDITIONS.map((c) => (
+                      <option key={c.value} value={c.value}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelCls}>Estimated value (₱)</label>
+                  <input name="itemValue" defaultValue={it.value} className={inputCls} />
+                </div>
               </div>
-            </div>
-          ))}
-          {items.length === 0 && <p className="text-[13px] text-zinc-500 dark:text-zinc-400">No product items.</p>}
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Conveyances */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-[14px] font-semibold text-zinc-800 dark:text-zinc-100">
+            Conveyances
+          </h2>
+          <button
+            type="button"
+            onClick={() =>
+              setConvs([
+                ...convs,
+                { type: "", plateNo: "", status: "", qty: "1", value: "", k: nextKey() },
+              ])
+            }
+            className="text-[13px] font-medium text-emerald-700 hover:underline dark:text-emerald-400"
+          >
+            + Add conveyance
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() =>
-            setItems([...items, { qty: "", species: "", forms: "", bdft: "", cum: "", value: "", k: nextKey() }])
-          }
-          className="mt-2 rounded-md border border-zinc-300 px-3 py-1.5 text-[14px] font-medium text-emerald-700 hover:bg-zinc-50 dark:border-zinc-600 dark:text-emerald-400 dark:hover:bg-zinc-800"
-        >
-          + Add product
-        </button>
-      </div>
+        {convs.length === 0 ? (
+          <p className="text-[13px] text-zinc-500">No conveyances.</p>
+        ) : (
+          <div className="space-y-3">
+            {convs.map((c) => (
+              <div
+                key={c.k}
+                className="relative grid grid-cols-1 gap-2 rounded-lg border border-zinc-200 p-3 pt-10 dark:border-zinc-700 sm:grid-cols-3"
+              >
+                <button
+                  type="button"
+                  onClick={() => setConvs(convs.filter((x) => x.k !== c.k))}
+                  className="absolute right-2 top-2 text-[12px] text-zinc-500 hover:text-red-600"
+                >
+                  ✕
+                </button>
+                <div>
+                  <label className={labelCls}>Type</label>
+                  <input name="convType" defaultValue={c.type} className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Plate no.</label>
+                  <input name="convPlateNo" defaultValue={c.plateNo} className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Status</label>
+                  <select name="convStatus" defaultValue={c.status || ""} className={selectCls}>
+                    <option value="">— Status —</option>
+                    {SERVICE_STATUSES.map((s) => (
+                      <option key={s.value} value={s.value}>
+                        {s.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
-      <div className="grid gap-6 sm:grid-cols-2">
-        <PairRows
-          title="Conveyances"
-          typeName="convType"
-          qtyName="convQty"
-          valueName="convValue"
-          rows={convs}
-          setRows={setConvs}
+      {/* Equipment */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-[14px] font-semibold text-zinc-800 dark:text-zinc-100">
+            Equipment / implements
+          </h2>
+          <button
+            type="button"
+            onClick={() =>
+              setEquip([
+                ...equip,
+                {
+                  type: "",
+                  registered: "",
+                  status: "",
+                  qty: "1",
+                  value: "",
+                  k: nextKey(),
+                },
+              ])
+            }
+            className="text-[13px] font-medium text-emerald-700 hover:underline dark:text-emerald-400"
+          >
+            + Add equipment
+          </button>
+        </div>
+        {equip.length === 0 ? (
+          <p className="text-[13px] text-zinc-500">No equipment.</p>
+        ) : (
+          <div className="space-y-3">
+            {equip.map((e) => (
+              <div
+                key={e.k}
+                className="relative grid grid-cols-1 gap-2 rounded-lg border border-zinc-200 p-3 pt-10 dark:border-zinc-700 sm:grid-cols-3"
+              >
+                <button
+                  type="button"
+                  onClick={() => setEquip(equip.filter((x) => x.k !== e.k))}
+                  className="absolute right-2 top-2 text-[12px] text-zinc-500 hover:text-red-600"
+                >
+                  ✕
+                </button>
+                <div>
+                  <label className={labelCls}>Type</label>
+                  <input name="equipType" defaultValue={e.type} className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Registered</label>
+                  <select
+                    name="equipRegistered"
+                    defaultValue={e.registered || ""}
+                    className={selectCls}
+                  >
+                    <option value="">— Select —</option>
+                    <option value="yes">Yes</option>
+                    <option value="no">No</option>
+                  </select>
+                </div>
+                <div>
+                  <label className={labelCls}>Status</label>
+                  <select name="equipStatus" defaultValue={e.status || ""} className={selectCls}>
+                    <option value="">— Status —</option>
+                    {SERVICE_STATUSES.map((s) => (
+                      <option key={s.value} value={s.value}>
+                        {s.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* ACP */}
+      <section className="space-y-3">
+        <h2 className="text-[14px] font-semibold text-zinc-800 dark:text-zinc-100">
+          ACP conducted
+        </h2>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <YesNo
+            name="acpConducted"
+            label="ACP conducted?"
+            value={acpConducted}
+            onChange={setAcpConducted}
+          />
+          {acpConducted === "yes" && (
+            <>
+              <div>
+                <label className={labelCls}>ACP date</label>
+                <input type="date" name="acpDate" defaultValue={record.acpDate ?? ""} className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>Endorsed to PENRO</label>
+                <input
+                  type="date"
+                  name="acpEndorsedToPenro"
+                  defaultValue={record.acpEndorsedToPenro ?? ""}
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Endorsed to RO</label>
+                <input
+                  type="date"
+                  name="acpEndorsedToRo"
+                  defaultValue={record.acpEndorsedToRo ?? ""}
+                  className={inputCls}
+                />
+              </div>
+            </>
+          )}
+        </div>
+      </section>
+
+      {/* Promulgation */}
+      <section className="space-y-3">
+        <h2 className="text-[14px] font-semibold text-zinc-800 dark:text-zinc-100">
+          Promulgation &amp; docket
+        </h2>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div>
+            <label className={labelCls}>Date of promulgation</label>
+            <input
+              type="date"
+              name="dateOfPromulgation"
+              defaultValue={record.dateOfPromulgation ?? ""}
+              className={inputCls}
+            />
+          </div>
+          <div>
+            <label className={labelCls}>Promulgated by</label>
+            <input
+              name="promulgatedBy"
+              defaultValue={record.promulgatedBy ?? ""}
+              className={inputCls}
+            />
+          </div>
+          <div>
+            <label className={labelCls}>Docket no.</label>
+            <input
+              name="docketNumber"
+              defaultValue={record.docketNumber ?? ""}
+              className={inputCls}
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Appraisals */}
+      <section className="space-y-3">
+        <h2 className="text-[14px] font-semibold text-zinc-800 dark:text-zinc-100">
+          Appraisal conducted
+        </h2>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <YesNo
+            name="appraisalForestProducts"
+            label="Forest products"
+            value={appraisalFp}
+            onChange={setAppraisalFp}
+          />
+          {appraisalFp === "yes" && (
+            <div>
+              <label className={labelCls}>Date</label>
+              <input
+                type="date"
+                name="appraisalForestProductsDate"
+                defaultValue={record.appraisalForestProductsDate ?? ""}
+                className={inputCls}
+              />
+            </div>
+          )}
+          <YesNo
+            name="appraisalConveyances"
+            label="Conveyances"
+            value={appraisalConv}
+            onChange={setAppraisalConv}
+          />
+          {appraisalConv === "yes" && (
+            <div>
+              <label className={labelCls}>Date</label>
+              <input
+                type="date"
+                name="appraisalConveyancesDate"
+                defaultValue={record.appraisalConveyancesDate ?? ""}
+                className={inputCls}
+              />
+            </div>
+          )}
+          <YesNo
+            name="appraisalEquipment"
+            label="Equipment"
+            value={appraisalEquip}
+            onChange={setAppraisalEquip}
+          />
+          {appraisalEquip === "yes" && (
+            <div>
+              <label className={labelCls}>Date</label>
+              <input
+                type="date"
+                name="appraisalEquipmentDate"
+                defaultValue={record.appraisalEquipmentDate ?? ""}
+                className={inputCls}
+              />
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Donation */}
+      <section className="space-y-3">
+        <h2 className="text-[14px] font-semibold text-zinc-800 dark:text-zinc-100">
+          Donation made
+        </h2>
+        <YesNo
+          name="donationMade"
+          label="Donation made?"
+          value={donationMade}
+          onChange={setDonationMade}
         />
-        <PairRows
-          title="Equipment / tools"
-          typeName="equipType"
-          qtyName="equipQty"
-          valueName="equipValue"
-          rows={equip}
-          setRows={setEquip}
-        />
-      </div>
+        {donationMade === "yes" && (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className={labelCls}>FP date</label>
+              <input name="donationFpDate" defaultValue={record.donationFpDate ?? ""} className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>FP donor</label>
+              <input name="donationFpDonor" defaultValue={record.donationFpDonor ?? ""} className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>FP donee</label>
+              <input name="donationFpDonee" defaultValue={record.donationFpDonee ?? ""} className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>FP volume</label>
+              <input name="donationFpVolume" defaultValue={record.donationFpVolume ?? ""} className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>Conv. date</label>
+              <input name="donationConvDate" defaultValue={record.donationConvDate ?? ""} className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>Conv. donor</label>
+              <input name="donationConvDonor" defaultValue={record.donationConvDonor ?? ""} className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>Conv. donee</label>
+              <input name="donationConvDonee" defaultValue={record.donationConvDonee ?? ""} className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>Equip. date</label>
+              <input name="donationEquipDate" defaultValue={record.donationEquipDate ?? ""} className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>Equip. donor</label>
+              <input name="donationEquipDonor" defaultValue={record.donationEquipDonor ?? ""} className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>Equip. donee</label>
+              <input name="donationEquipDonee" defaultValue={record.donationEquipDonee ?? ""} className={inputCls} />
+            </div>
+          </div>
+        )}
+      </section>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        {dateField("acpEndorsedToPenro", "ACP endorsed to PENRO")}
-        {dateField("acpEndorsedToRo", "ACP endorsed to RO")}
-      </div>
-
-      {field("otherRemarks", "Other remarks (condition, status of criminal complaint)", true)}
-      {field("remarks", "Remarks", true)}
-      {field("caseStatus", "Case status (filed in court or prosecutor's office)", true)}
+      {/* Legacy / notes */}
+      <section className="space-y-3">
+        <h2 className="text-[14px] font-semibold text-zinc-800 dark:text-zinc-100">
+          Additional notes
+        </h2>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className={labelCls}>Source of forest products</label>
+            <input name="sourcePlace" defaultValue={record.sourcePlace ?? ""} className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Land classification</label>
+            <input name="landClassification" defaultValue={record.landClassification ?? ""} className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Place impounded / custodian</label>
+            <input name="custodianLocation" defaultValue={record.custodianLocation ?? ""} className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Other agencies</label>
+            <input name="otherAgencies" defaultValue={record.otherAgencies ?? ""} className={inputCls} />
+          </div>
+        </div>
+        <div>
+          <label className={labelCls}>Circumstances / remarks</label>
+          <textarea name="remarks" defaultValue={record.remarks ?? record.circumstances ?? ""} rows={3} className={inputCls} />
+        </div>
+        <div>
+          <label className={labelCls}>Other remarks</label>
+          <textarea name="otherRemarks" defaultValue={record.otherRemarks ?? ""} rows={2} className={inputCls} />
+        </div>
+        <div>
+          <label className={labelCls}>Case status</label>
+          <textarea name="caseStatus" defaultValue={record.caseStatus ?? ""} rows={2} className={inputCls} />
+        </div>
+      </section>
 
       {error && <p className="text-[13px] text-red-600">{error}</p>}
 
@@ -224,63 +915,5 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
         )}
       </div>
     </form>
-  );
-}
-
-function PairRows({
-  title,
-  typeName,
-  qtyName,
-  valueName,
-  rows,
-  setRows,
-}: {
-  title: string;
-  typeName: string;
-  qtyName: string;
-  valueName: string;
-  rows: any[];
-  setRows: (r: any[]) => void;
-}) {
-  return (
-    <div>
-      <h2 className="mb-2 text-[13px] font-medium text-zinc-700 dark:text-zinc-300">{title}</h2>
-      <div className="space-y-2">
-        {rows.map((r) => (
-          <div key={r.k} className="flex gap-2">
-            <input name={typeName} defaultValue={r.type} placeholder="Type" className={inputCls} />
-            <input
-              name={qtyName}
-              type="number"
-              min={1}
-              defaultValue={r.qty}
-              placeholder="Qty"
-              className={`${inputCls} w-20 shrink-0`}
-            />
-            <input
-              name={valueName}
-              defaultValue={r.value}
-              placeholder="Value (₱)"
-              className={`${inputCls} w-28 shrink-0`}
-            />
-            <button
-              type="button"
-              onClick={() => setRows(rows.filter((x) => x.k !== r.k))}
-              className="text-red-600"
-            >
-              ✕
-            </button>
-          </div>
-        ))}
-        {rows.length === 0 && <p className="text-[13px] text-zinc-500 dark:text-zinc-400">None</p>}
-      </div>
-      <button
-        type="button"
-        onClick={() => setRows([...rows, { type: "", qty: "1", value: "", k: nextKey() }])}
-        className="mt-2 rounded-md border border-zinc-300 px-3 py-1.5 text-[14px] font-medium text-emerald-700 hover:bg-zinc-50 dark:border-zinc-600 dark:text-emerald-400 dark:hover:bg-zinc-800"
-      >
-        + Add
-      </button>
-    </div>
   );
 }

@@ -1,11 +1,8 @@
-import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { permissions, type Role } from "@/lib/permissions";
+import { getRecordForEdit } from "../../actions";
 import { EditForm } from "./EditForm";
-
-// Date column → "YYYY-MM-DD" for <input type="date">
-const dateValue = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : "");
 
 export default async function EditRecordPage({
   params,
@@ -19,52 +16,12 @@ export default async function EditRecordPage({
     redirect(`/records/${id}`);
   }
 
-  const r = await prisma.apprehensionRecord.findUnique({
-    where: { id: parseInt(id, 10) },
-    include: { items: true, conveyances: true, equipment: true },
-  });
-  if (!r || r.isDeleted) notFound();
-
-  const record = {
-    id: r.id,
-    dateOfApprehension: r.dateOfApprehension ?? "",
-    placeOfApprehension: r.placeOfApprehension ?? "",
-    sourcePlace: r.sourcePlace ?? "",
-    gpsCoordinates: r.gpsCoordinates ?? "",
-    landClassification: r.landClassification ?? "",
-    apprehendingAgency: r.apprehendingAgency ?? "",
-    claimantRespondent: r.claimantRespondent ?? "",
-    circumstances: r.circumstances ?? "",
-    custodianLocation: r.custodianLocation ?? "",
-    otherAgencies: r.otherAgencies ?? "",
-    otherRemarks: r.otherRemarks ?? "",
-    remarks: r.remarks ?? "",
-    acpEndorsedToPenro: dateValue(r.acpEndorsedToPenro),
-    acpEndorsedToRo: dateValue(r.acpEndorsedToRo),
-    caseStatus: r.caseStatus ?? "",
-    items: r.items.map((i) => ({
-      qty: i.quantity ?? "",
-      species: i.species ?? "",
-      forms: i.forms ?? i.description ?? "",
-      bdft: i.volumeBdFt != null ? String(i.volumeBdFt) : "",
-      cum: i.volumeCuM != null ? String(i.volumeCuM) : "",
-      value: i.estimatedValue != null ? String(i.estimatedValue) : "",
-    })),
-    conveyances: r.conveyances.map((c) => ({
-      type: c.type ?? "",
-      qty: String(c.quantity),
-      value: c.estimatedValue != null ? String(c.estimatedValue) : "",
-    })),
-    equipment: r.equipment.map((e) => ({
-      type: e.type ?? "",
-      qty: String(e.quantity),
-      value: e.estimatedValue != null ? String(e.estimatedValue) : "",
-    })),
-  };
+  const record = await getRecordForEdit(parseInt(id, 10));
+  if (!record) notFound();
 
   return (
     <div className="space-y-6">
-      <p className="text-[14px] text-[var(--muted)]">Record #{r.id}</p>
+      <p className="text-[14px] text-[var(--muted)]">Record #{record.id}</p>
       <EditForm record={record} />
     </div>
   );

@@ -172,11 +172,11 @@ export default function NewRecordForm({
     const formData = new FormData(form);
     startTransition(async () => {
       try {
-        flash("success", "New apprehension record was created.", "Saved");
         await action(formData);
+        // Only reached if the server action does not redirect
+        flash("success", "New apprehension record was created.", "Saved");
       } catch (err) {
-        const message =
-          err instanceof Error ? err.message : "Could not save the record.";
+        // Next.js redirect() throws; treat as success
         if (
           typeof err === "object" &&
           err !== null &&
@@ -185,8 +185,11 @@ export default function NewRecordForm({
             "NEXT_REDIRECT",
           )
         ) {
+          flash("success", "New apprehension record was created.", "Saved");
           return;
         }
+        const message =
+          err instanceof Error ? err.message : "Could not save the record.";
         error(message);
       }
     });
@@ -772,11 +775,10 @@ export default function NewRecordForm({
           <Field label="Promulgated by">
             <input type="text" name="promulgatedBy" className={inputClass} />
           </Field>
-          <Field label="Docket no. *">
+          <Field label="Docket no.">
             <input
               type="text"
               name="docketNumber"
-              required
               placeholder="Docket number"
               className={inputClass}
             />

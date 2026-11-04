@@ -8,12 +8,18 @@ import { revalidatePath } from "next/cache";
 
 /** Editable scalar fields for bulk update (matches full-view export headers). */
 export type BulkFieldKey =
+  | "penroOffice"
+  | "penroOfficer"
+  | "cenroOffice"
+  | "cenroOfficer"
   | "dateOfApprehension"
+  | "timeOfApprehension"
   | "placeOfApprehension"
-  | "sourcePlace"
   | "gpsCoordinates"
+  | "sourcePlace"
   | "landClassification"
   | "apprehendingAgency"
+  | "apprehendingOfficer"
   | "claimantRespondent"
   | "circumstances"
   | "custodianLocation"
@@ -26,7 +32,8 @@ export type BulkFieldKey =
   | "orderOfFinalityDate"
   | "acpEndorsedToPenro"
   | "acpEndorsedToRo"
-  | "cenroOffice";
+  | "dateOfPromulgation"
+  | "promulgatedBy";
 
 export type BulkRow = {
   id: number;
@@ -40,14 +47,25 @@ export type BulkRow = {
 };
 
 const HEADER_MAP: Record<string, BulkFieldKey> = {
+  "penro office": "penroOffice",
+  "penr office": "penroOffice",
+  "penro officer": "penroOfficer",
+  "penr officer": "penroOfficer",
   "cenro office": "cenroOffice",
+  "cenr office": "cenroOffice",
+  "cenro officer": "cenroOfficer",
+  "cenr officer": "cenroOfficer",
   "date of apprehension": "dateOfApprehension",
+  "time of apprehension": "timeOfApprehension",
   "place of apprehension": "placeOfApprehension",
   "source of forest products": "sourcePlace",
   "gps coordinates": "gpsCoordinates",
   "land classification": "landClassification",
   "apprehending officers": "apprehendingAgency",
+  "apprehending agency": "apprehendingAgency",
+  "apprehending officer": "apprehendingOfficer",
   "claimant/owner": "claimantRespondent",
+  claimant: "claimantRespondent",
   circumstances: "circumstances",
   "place impounded": "custodianLocation",
   "other agencies": "otherAgencies",
@@ -63,6 +81,8 @@ const HEADER_MAP: Record<string, BulkFieldKey> = {
   "acp to penro": "acpEndorsedToPenro",
   "acp endorsed to ro": "acpEndorsedToRo",
   "acp to ro": "acpEndorsedToRo",
+  "date of promulgation": "dateOfPromulgation",
+  "promulgated by": "promulgatedBy",
 };
 
 const STATUS_FROM_LABEL: Record<string, string> = {
@@ -119,12 +139,17 @@ function parseStatus(v: string): string {
 }
 
 function recordToCurrent(r: {
+  penroOffice: string | null;
+  penroOfficer: string | null;
+  cenroOfficer: string | null;
   dateOfApprehension: string | null;
+  timeOfApprehension: string | null;
   placeOfApprehension: string | null;
   sourcePlace: string | null;
   gpsCoordinates: string | null;
   landClassification: string | null;
   apprehendingAgency: string | null;
+  apprehendingOfficer: string | null;
   claimantRespondent: string | null;
   circumstances: string | null;
   custodianLocation: string | null;
@@ -135,19 +160,26 @@ function recordToCurrent(r: {
   status: string;
   docketNumber: string | null;
   orderOfFinalityDate: string | null;
+  dateOfPromulgation: string | null;
+  promulgatedBy: string | null;
   acpEndorsedToPenro: Date | null;
   acpEndorsedToRo: Date | null;
   cenroOffice: { name: string };
 }): Partial<Record<BulkFieldKey, string>> {
   const iso = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : "");
   return {
+    penroOffice: r.penroOffice ?? "",
+    penroOfficer: r.penroOfficer ?? "",
     cenroOffice: r.cenroOffice.name,
+    cenroOfficer: r.cenroOfficer ?? "",
     dateOfApprehension: r.dateOfApprehension ?? "",
+    timeOfApprehension: r.timeOfApprehension ?? "",
     placeOfApprehension: r.placeOfApprehension ?? "",
     sourcePlace: r.sourcePlace ?? "",
     gpsCoordinates: r.gpsCoordinates ?? "",
     landClassification: r.landClassification ?? "",
     apprehendingAgency: r.apprehendingAgency ?? "",
+    apprehendingOfficer: r.apprehendingOfficer ?? "",
     claimantRespondent: r.claimantRespondent ?? "",
     circumstances: r.circumstances ?? "",
     custodianLocation: r.custodianLocation ?? "",
@@ -158,6 +190,8 @@ function recordToCurrent(r: {
     status: STATUS_TO_LABEL[r.status] ?? r.status,
     docketNumber: r.docketNumber ?? "",
     orderOfFinalityDate: r.orderOfFinalityDate ?? "",
+    dateOfPromulgation: r.dateOfPromulgation ?? "",
+    promulgatedBy: r.promulgatedBy ?? "",
     acpEndorsedToPenro: iso(r.acpEndorsedToPenro),
     acpEndorsedToRo: iso(r.acpEndorsedToRo),
   };
@@ -389,12 +423,17 @@ export async function applyBulkUpdate(payload: ApplyPayload): Promise<{
           data[k] = v === "" ? null : v;
         };
 
+        str("penroOffice");
+        str("penroOfficer");
+        str("cenroOfficer");
         str("dateOfApprehension");
+        str("timeOfApprehension");
         str("placeOfApprehension");
         str("sourcePlace");
         str("gpsCoordinates");
         str("landClassification");
         str("apprehendingAgency");
+        str("apprehendingOfficer");
         str("claimantRespondent");
         str("circumstances");
         str("custodianLocation");
@@ -404,6 +443,8 @@ export async function applyBulkUpdate(payload: ApplyPayload): Promise<{
         str("caseStatus");
         str("docketNumber");
         str("orderOfFinalityDate");
+        str("dateOfPromulgation");
+        str("promulgatedBy");
 
         if ("status" in f && f.status != null) {
           data.status = parseStatus(f.status) || "UNKNOWN";

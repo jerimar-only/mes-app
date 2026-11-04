@@ -55,10 +55,41 @@ export async function createRecord(formData: FormData) {
     return v ? new Date(v) : null;
   };
 
-  const year = parseInt(formData.get("year") as string, 10);
-  const month = formData.get("month")
-    ? parseInt(formData.get("month") as string, 10)
+  // Year / month derived from date of apprehension (form no longer posts year/month)
+  const dateOfApprehensionRaw = str("dateOfApprehension");
+  let year = parseInt(String(formData.get("year") ?? ""), 10);
+  let month = formData.get("month")
+    ? parseInt(String(formData.get("month")), 10)
     : null;
+  if (dateOfApprehensionRaw) {
+    const d = new Date(dateOfApprehensionRaw);
+    if (!Number.isNaN(d.getTime())) {
+      if (!Number.isFinite(year) || year <= 0) year = d.getUTCFullYear();
+      if (month == null || !Number.isFinite(month)) month = d.getUTCMonth() + 1;
+    }
+  }
+  if (!Number.isFinite(year) || year <= 0) {
+    throw new Error("Date of apprehension is required (could not determine year).");
+  }
+
+  // Place: combine sitio / municipality / province from the form
+  const placeParts = [
+    str("placeSitioBrgy"),
+    str("placeMunicipality"),
+    str("placeProvince"),
+  ].filter(Boolean);
+  const placeOfApprehension =
+    placeParts.length > 0
+      ? placeParts.join(", ")
+      : str("placeOfApprehension");
+
+  // GPS: combine northing / easting if provided
+  const gpsNorthing = str("gpsNorthing");
+  const gpsEasting = str("gpsEasting");
+  const gpsCoordinates =
+    gpsNorthing || gpsEasting
+      ? [gpsNorthing, gpsEasting].filter(Boolean).join(" / ")
+      : str("gpsCoordinates");
 
   // 9. Respondent — NO → "Abandoned"
   const hasRespondent = yesNo("hasRespondent");
@@ -150,10 +181,10 @@ export async function createRecord(formData: FormData) {
       // 3–4
       year,
       month,
-      dateOfApprehension: str("dateOfApprehension"),
+      dateOfApprehension: dateOfApprehensionRaw,
       timeOfApprehension: str("timeOfApprehension"),
-      placeOfApprehension: str("placeOfApprehension"),
-      gpsCoordinates: str("gpsCoordinates"),
+      placeOfApprehension,
+      gpsCoordinates,
       // 8
       apprehendingAgency: str("apprehendingAgency"),
       apprehendingOfficer: str("apprehendingOfficer"),
@@ -273,6 +304,7 @@ async function saveRecord(formData: FormData) {
     throw new Error("You don't have permission to edit saved records.");
   }
 
+  const scope = await getOfficeScope();
   const id = parseInt(formData.get("id") as string, 10);
   const str = (k: string) => ((formData.get(k) as string) || "").trim() || null;
   const num = (v: string | undefined) => {
@@ -280,66 +312,233 @@ async function saveRecord(formData: FormData) {
     const n = parseFloat(v.replace(/,/g, ""));
     return Number.isNaN(n) ? null : n;
   };
+  const yesNo = (k: string): boolean | null => {
+    const v = (formData.get(k) as string) || "";
+    if (v === "yes") return true;
+    if (v === "no") return false;
+    return null;
+  };
   const dateField = (k: string) => {
     const v = formData.get(k) as string;
     return v ? new Date(v) : null;
   };
 
+  // CENRO accounts may only keep their own office
+  let cenroOfficeId = parseInt(String(formData.get("cenroOfficeId") ?? ""), 10);
+  if (scope?.isCenro && scope.officeId) {
+    cenroOfficeId = scope.officeId;
+  }
+
+  // Year / month from date of apprehension
+  const dateOfApprehensionRaw = str("dateOfApprehension");
+  let year = parseInt(String(formData.get("year") ?? ""), 10);
+  let month = formData.get("month")
+    ? parseInt(String(formData.get("month")), 10)
+    : null;
+  if (dateOfApprehensionRaw) {
+    const d = new Date(dateOfApprehensionRaw);
+    if (!Number.isNaN(d.getTime())) {
+      if (!Number.isFinite(year) || year <= 0) year = d.getUTCFullYear();
+      if (month == null || !Number.isFinite(month)) month = d.getUTCMonth() + 1;
+    }
+  }
+
+  // Place: combine split fields or fall back to single field
+  const placeParts = [
+    str("placeSitioBrgy"),
+    str("placeMunicipality"),
+    str("placeProvince"),
+  ].filter(Boolean);
+  const placeOfApprehension =
+    placeParts.length > 0
+      ? placeParts.join(", ")
+      : str("placeOfApprehension");
+
+  const gpsNorthing = str("gpsNorthing");
+  const gpsEasting = str("gpsEasting");
+  const gpsCoordinates =
+    gpsNorthing || gpsEasting
+      ? [gpsNorthing, gpsEasting].filter(Boolean).join(" / ")
+      : str("gpsCoordinates");
+
+  const hasRespondent = yesNo("hasRespondent");
+  const claimantRespondent =
+    hasRespondent === false
+      ? "Abandoned"
+      : str("claimantRespondent");
+
+  // Forest products (aligned with New Record form)
+  const itemType = formData.getAll("itemType") as string[];
   const itemQty = formData.getAll("itemQty") as string[];
-  const itemSpecies = formData.getAll("itemSpecies") as string[];
-  const itemForms = formData.getAll("itemForms") as string[];
   const itemVolumeBdFt = formData.getAll("itemVolumeBdFt") as string[];
   const itemVolumeCuM = formData.getAll("itemVolumeCuM") as string[];
+  const itemCondition = formData.getAll("itemCondition") as string[];
   const itemValue = formData.getAll("itemValue") as string[];
+  // Legacy field names still accepted
+  const itemSpecies = formData.getAll("itemSpecies") as string[];
+  const itemForms = formData.getAll("itemForms") as string[];
 
-  const items = itemQty
-    .map((qty, i) => ({
-      quantity: qty.trim() || null,
-      species: itemSpecies[i]?.trim() || null,
-      forms: itemForms[i]?.trim() || null,
-      volumeBdFt: num(itemVolumeBdFt[i]),
-      volumeCuM: num(itemVolumeCuM[i]),
-      estimatedValue: num(itemValue[i]),
+  const items = (
+    itemType.length
+      ? itemType.map((type, i) => ({
+          type: type || null,
+          forms: type || itemForms[i]?.trim() || null,
+          quantity: itemQty[i]?.trim() || null,
+          species: itemSpecies[i]?.trim() || null,
+          volumeBdFt: num(itemVolumeBdFt[i]),
+          volumeCuM: num(itemVolumeCuM[i]),
+          conditionStatus: (itemCondition[i] || null) as
+            | "GOOD_CONDITION"
+            | "DETERIORATING"
+            | "DETERIORATED"
+            | null,
+          estimatedValue: num(itemValue[i]),
+        }))
+      : itemQty.map((qty, i) => ({
+          type: itemForms[i]?.trim() || null,
+          forms: itemForms[i]?.trim() || null,
+          quantity: qty.trim() || null,
+          species: itemSpecies[i]?.trim() || null,
+          volumeBdFt: num(itemVolumeBdFt[i]),
+          volumeCuM: num(itemVolumeCuM[i]),
+          conditionStatus: null as null,
+          estimatedValue: num(itemValue[i]),
+        }))
+  ).filter(
+    (x) =>
+      x.type ||
+      x.quantity ||
+      x.species ||
+      x.forms ||
+      x.volumeBdFt ||
+      x.volumeCuM ||
+      x.estimatedValue,
+  );
+
+  // Conveyances
+  const convType = formData.getAll("convType") as string[];
+  const convPlateNo = formData.getAll("convPlateNo") as string[];
+  const convStatus = formData.getAll("convStatus") as string[];
+  const convQty = formData.getAll("convQty") as string[];
+  const convValue = formData.getAll("convValue") as string[];
+  const conveyances = convType
+    .map((type, i) => ({
+      type: type.trim() || null,
+      plateNo: convPlateNo[i]?.trim() || null,
+      serviceStatus: (convStatus[i] || null) as
+        | "SERVICEABLE"
+        | "UNSERVICEABLE"
+        | null,
+      quantity: parseInt(convQty[i] || "1", 10) || 1,
+      estimatedValue: num(convValue[i]),
     }))
-    .filter(
-      (x) => x.quantity || x.species || x.forms || x.volumeBdFt || x.volumeCuM || x.estimatedValue
-    );
+    .filter((c) => c.type || c.plateNo);
 
-  const pairs = (typeKey: string, qtyKey: string, valueKey: string) => {
-    const types = formData.getAll(typeKey) as string[];
-    const qtys = formData.getAll(qtyKey) as string[];
-    const values = formData.getAll(valueKey) as string[];
-    return types
-      .map((type, i) => ({
-        type: type.trim() || null,
-        quantity: parseInt(qtys[i] || "1", 10) || 1,
-        estimatedValue: num(values[i]),
-      }))
-      .filter((r) => r.type);
+  // Equipment
+  const equipType = formData.getAll("equipType") as string[];
+  const equipRegistered = formData.getAll("equipRegistered") as string[];
+  const equipStatus = formData.getAll("equipStatus") as string[];
+  const equipQty = formData.getAll("equipQty") as string[];
+  const equipValue = formData.getAll("equipValue") as string[];
+  const equipment = equipType
+    .map((type, i) => ({
+      type: type.trim() || null,
+      registered:
+        equipRegistered[i] === "yes"
+          ? true
+          : equipRegistered[i] === "no"
+            ? false
+            : null,
+      serviceStatus: (equipStatus[i] || null) as
+        | "SERVICEABLE"
+        | "UNSERVICEABLE"
+        | null,
+      quantity: parseInt(equipQty[i] || "1", 10) || 1,
+      estimatedValue: num(equipValue[i]),
+    }))
+    .filter((e) => e.type);
+
+  const acpConducted = yesNo("acpConducted");
+  const donationMade = yesNo("donationMade");
+  const appraisalFp = yesNo("appraisalForestProducts");
+  const appraisalConv = yesNo("appraisalConveyances");
+  const appraisalEquip = yesNo("appraisalEquipment");
+
+  const data: Record<string, unknown> = {
+    penroOffice: str("penroOffice"),
+    penroOfficer: str("penroOfficer"),
+    cenroOfficer: str("cenroOfficer"),
+    dateOfApprehension: dateOfApprehensionRaw,
+    timeOfApprehension: str("timeOfApprehension"),
+    placeOfApprehension,
+    gpsCoordinates,
+    apprehendingAgency: str("apprehendingAgency"),
+    apprehendingOfficer: str("apprehendingOfficer"),
+    hasRespondent,
+    claimantRespondent,
+    respondentAddress:
+      hasRespondent === true ? str("respondentAddress") : null,
+    respondentContact:
+      hasRespondent === true ? str("respondentContact") : null,
+    acpConducted,
+    acpDate: acpConducted === true ? dateField("acpDate") : null,
+    acpEndorsedToPenro:
+      acpConducted === true
+        ? dateField("acpEndorsedToPenro")
+        : dateField("acpEndorsedToPenro"),
+    acpEndorsedToRo:
+      acpConducted === true
+        ? dateField("acpEndorsedToRo")
+        : dateField("acpEndorsedToRo"),
+    dateOfPromulgation: str("dateOfPromulgation"),
+    promulgatedBy: str("promulgatedBy"),
+    docketNumber: str("docketNumber"),
+    appraisalForestProducts: appraisalFp,
+    appraisalForestProductsDate:
+      appraisalFp === true ? dateField("appraisalForestProductsDate") : null,
+    appraisalConveyances: appraisalConv,
+    appraisalConveyancesDate:
+      appraisalConv === true ? dateField("appraisalConveyancesDate") : null,
+    appraisalEquipment: appraisalEquip,
+    appraisalEquipmentDate:
+      appraisalEquip === true ? dateField("appraisalEquipmentDate") : null,
+    donationMade,
+    donationFpDate: donationMade === true ? str("donationFpDate") : null,
+    donationFpDonor: donationMade === true ? str("donationFpDonor") : null,
+    donationFpDonee: donationMade === true ? str("donationFpDonee") : null,
+    donationFpVolume: donationMade === true ? str("donationFpVolume") : null,
+    donationConvDate: donationMade === true ? str("donationConvDate") : null,
+    donationConvDonor: donationMade === true ? str("donationConvDonor") : null,
+    donationConvDonee: donationMade === true ? str("donationConvDonee") : null,
+    donationEquipDate: donationMade === true ? str("donationEquipDate") : null,
+    donationEquipDonor:
+      donationMade === true ? str("donationEquipDonor") : null,
+    donationEquipDonee:
+      donationMade === true ? str("donationEquipDonee") : null,
+    remarks: str("remarks"),
+    sourcePlace: str("sourcePlace"),
+    landClassification: str("landClassification"),
+    circumstances: str("circumstances"),
+    custodianLocation: str("custodianLocation"),
+    otherAgencies: str("otherAgencies"),
+    otherRemarks: str("otherRemarks"),
+    caseStatus: str("caseStatus"),
+    items: { deleteMany: {}, create: items },
+    conveyances: { deleteMany: {}, create: conveyances },
+    equipment: { deleteMany: {}, create: equipment },
   };
+
+  if (Number.isFinite(cenroOfficeId) && cenroOfficeId > 0) {
+    data.cenroOfficeId = cenroOfficeId;
+  }
+  if (Number.isFinite(year) && year > 0) {
+    data.year = year;
+    data.month = month;
+  }
 
   await prisma.apprehensionRecord.update({
     where: { id },
-    data: {
-      dateOfApprehension: str("dateOfApprehension"),
-      placeOfApprehension: str("placeOfApprehension"),
-      apprehendingAgency: str("apprehendingAgency"),
-      claimantRespondent: str("claimantRespondent"),
-      circumstances: str("circumstances"),
-      custodianLocation: str("custodianLocation"),
-      otherAgencies: str("otherAgencies"),
-      remarks: str("remarks"),
-      sourcePlace: str("sourcePlace"),
-      gpsCoordinates: str("gpsCoordinates"),
-      landClassification: str("landClassification"),
-      otherRemarks: str("otherRemarks"),
-      caseStatus: str("caseStatus"),
-      acpEndorsedToPenro: dateField("acpEndorsedToPenro"),
-      acpEndorsedToRo: dateField("acpEndorsedToRo"),     
-      items: { deleteMany: {}, create: items },
-      conveyances: { deleteMany: {}, create: pairs("convType", "convQty", "convValue") },
-      equipment: { deleteMany: {}, create: pairs("equipType", "equipQty", "equipValue") },
-    },
+    data,
   });
 
   revalidatePath(`/records/${id}`);
@@ -361,7 +560,7 @@ export async function updateRecordInline(formData: FormData) {
   await saveRecord(formData);
 }
 
-// Used by the modal to load one record's data
+// Used by the modal to load one record's data (+ office lookup lists for cascading)
 export async function getRecordForEdit(id: number) {
   const session = await getSession();
   if (!session || !permissions.editSavedRecord(session.role as Role)) {
@@ -370,45 +569,151 @@ export async function getRecordForEdit(id: number) {
 
   const r = await prisma.apprehensionRecord.findUnique({
     where: { id },
-    include: { items: true, conveyances: true, equipment: true },
+    include: {
+      items: true,
+      conveyances: true,
+      equipment: true,
+      cenroOffice: {
+        select: {
+          id: true,
+          name: true,
+          penroOfficeId: true,
+          penroOffice: { select: { id: true, name: true } },
+          defaultOfficer: { select: { name: true } },
+        },
+      },
+    },
   });
   if (!r || r.isDeleted) return null;
 
+  const iso = (d: Date | null | undefined) =>
+    d ? d.toISOString().slice(0, 10) : "";
+
+  const yn = (v: boolean | null | undefined) =>
+    v === true ? "yes" : v === false ? "no" : "";
+
+  // Split place / GPS for the form (best-effort)
+  const placeParts = (r.placeOfApprehension ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const gpsParts = (r.gpsCoordinates ?? "")
+    .split(/\s*\/\s*/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const [penroOfficesRaw, penroOfficers, cenroOfficers, allCenro] =
+    await Promise.all([
+      prisma.penroOffice.findMany({
+        orderBy: { name: "asc" },
+        include: { defaultOfficer: { select: { name: true } } },
+      }),
+      prisma.penroOfficer.findMany({ orderBy: { name: "asc" } }),
+      prisma.cenroOfficer.findMany({ orderBy: { name: "asc" } }),
+      prisma.cenroOffice.findMany({
+        orderBy: { name: "asc" },
+        include: {
+          penroOffice: { select: { id: true, name: true } },
+          defaultOfficer: { select: { name: true } },
+        },
+      }),
+    ]);
+
   return {
     id: r.id,
+    penroOffice: r.penroOffice ?? "",
+    penroOfficer: r.penroOfficer ?? "",
+    cenroOfficeId: r.cenroOfficeId,
+    cenroOfficer: r.cenroOfficer ?? "",
     dateOfApprehension: r.dateOfApprehension ?? "",
+    timeOfApprehension: r.timeOfApprehension ?? "",
+    placeSitioBrgy: placeParts[0] ?? "",
+    placeMunicipality: placeParts[1] ?? "",
+    placeProvince: placeParts[2] ?? placeParts.slice(2).join(", "),
     placeOfApprehension: r.placeOfApprehension ?? "",
+    gpsNorthing: gpsParts[0] ?? "",
+    gpsEasting: gpsParts[1] ?? "",
+    gpsCoordinates: r.gpsCoordinates ?? "",
     apprehendingAgency: r.apprehendingAgency ?? "",
+    apprehendingOfficer: r.apprehendingOfficer ?? "",
+    hasRespondent: yn(r.hasRespondent),
     claimantRespondent: r.claimantRespondent ?? "",
+    respondentAddress: r.respondentAddress ?? "",
+    respondentContact: r.respondentContact ?? "",
+    acpConducted: yn(r.acpConducted),
+    acpDate: iso(r.acpDate),
+    acpEndorsedToPenro: iso(r.acpEndorsedToPenro),
+    acpEndorsedToRo: iso(r.acpEndorsedToRo),
+    dateOfPromulgation: r.dateOfPromulgation ?? "",
+    promulgatedBy: r.promulgatedBy ?? "",
+    docketNumber: r.docketNumber ?? "",
+    appraisalForestProducts: yn(r.appraisalForestProducts),
+    appraisalForestProductsDate: iso(r.appraisalForestProductsDate),
+    appraisalConveyances: yn(r.appraisalConveyances),
+    appraisalConveyancesDate: iso(r.appraisalConveyancesDate),
+    appraisalEquipment: yn(r.appraisalEquipment),
+    appraisalEquipmentDate: iso(r.appraisalEquipmentDate),
+    donationMade: yn(r.donationMade),
+    donationFpDate: r.donationFpDate ?? "",
+    donationFpDonor: r.donationFpDonor ?? "",
+    donationFpDonee: r.donationFpDonee ?? "",
+    donationFpVolume: r.donationFpVolume ?? "",
+    donationConvDate: r.donationConvDate ?? "",
+    donationConvDonor: r.donationConvDonor ?? "",
+    donationConvDonee: r.donationConvDonee ?? "",
+    donationEquipDate: r.donationEquipDate ?? "",
+    donationEquipDonor: r.donationEquipDonor ?? "",
+    donationEquipDonee: r.donationEquipDonee ?? "",
+    remarks: r.remarks ?? "",
+    sourcePlace: r.sourcePlace ?? "",
+    landClassification: r.landClassification ?? "",
     circumstances: r.circumstances ?? "",
     custodianLocation: r.custodianLocation ?? "",
     otherAgencies: r.otherAgencies ?? "",
-    remarks: r.remarks ?? "",
-    sourcePlace: r.sourcePlace ?? "",
-    gpsCoordinates: r.gpsCoordinates ?? "",
-    landClassification: r.landClassification ?? "",
     otherRemarks: r.otherRemarks ?? "",
     caseStatus: r.caseStatus ?? "",
-    acpEndorsedToPenro: r.acpEndorsedToPenro ? r.acpEndorsedToPenro.toISOString().slice(0, 10) : "",
-    acpEndorsedToRo: r.acpEndorsedToRo ? r.acpEndorsedToRo.toISOString().slice(0, 10) : "",    
     items: r.items.map((i) => ({
+      type: i.type ?? i.forms ?? "",
       qty: i.quantity ?? "",
       species: i.species ?? "",
       forms: i.forms ?? i.description ?? "",
       bdft: i.volumeBdFt != null ? String(i.volumeBdFt) : "",
       cum: i.volumeCuM != null ? String(i.volumeCuM) : "",
+      condition: i.conditionStatus ?? "",
       value: i.estimatedValue != null ? String(i.estimatedValue) : "",
     })),
     conveyances: r.conveyances.map((c) => ({
       type: c.type ?? "",
+      plateNo: c.plateNo ?? "",
+      status: c.serviceStatus ?? "",
       qty: String(c.quantity),
       value: c.estimatedValue != null ? String(c.estimatedValue) : "",
     })),
     equipment: r.equipment.map((e) => ({
       type: e.type ?? "",
+      registered:
+        e.registered === true ? "yes" : e.registered === false ? "no" : "",
+      status: e.serviceStatus ?? "",
       qty: String(e.quantity),
       value: e.estimatedValue != null ? String(e.estimatedValue) : "",
     })),
+    // Lookups for cascading dropdowns
+    lookups: {
+      penroOffices: penroOfficesRaw.map((p) => ({
+        id: p.id,
+        name: p.name,
+        defaultOfficerName: p.defaultOfficer?.name ?? null,
+      })),
+      penroOfficers: penroOfficers.map((o) => ({ id: o.id, name: o.name })),
+      cenroOfficers: cenroOfficers.map((o) => ({ id: o.id, name: o.name })),
+      cenroOffices: allCenro.map((o) => ({
+        id: o.id,
+        name: o.name,
+        penroOfficeId: o.penroOfficeId,
+        penroOfficeName: o.penroOffice?.name ?? null,
+        defaultOfficerName: o.defaultOfficer?.name ?? null,
+      })),
+    },
   };
 }
 
