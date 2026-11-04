@@ -39,10 +39,10 @@ model LoginAttempt {
   email     String?
   success   Boolean  @default(false)
   createdAt DateTime @default(now())
-  country String?
-  region  String?
-  city    String?
-  userId  Int?
+  country   String?
+  region    String?
+  city      String?
+  userId    Int?
 
   @@index([ip, createdAt])
   @@index([email, createdAt])
@@ -59,39 +59,148 @@ enum ApprehensionStatus {
   UNKNOWN
 }
 
+/// Condition of seized forest products (System Requirements §5)
+enum ProductCondition {
+  GOOD_CONDITION
+  DETERIORATING
+  DETERIORATED
+}
+
+/// Serviceability of conveyances / equipment (System Requirements §6–7)
+enum AssetServiceStatus {
+  SERVICEABLE
+  UNSERVICEABLE
+}
+
+/// CENRO office — belongs to one PENRO (AOR) and has an optional default officer
 model CenroOffice {
-  id      Int                  @id @default(autoincrement())
-  name    String               @unique
-  records ApprehensionRecord[]
-  users   User[]
+  id               Int                  @id @default(autoincrement())
+  name             String               @unique
+  /// Parent PENRO office (Area of Responsibility)
+  penroOfficeId    Int?
+  /// Default CENRO officer auto-filled on New Record when this office is selected
+  defaultOfficerId Int?
+  records          ApprehensionRecord[]
+  users            User[]
+
+  penroOffice    PenroOffice?  @relation(fields: [penroOfficeId], references: [id], onDelete: SetNull)
+  defaultOfficer CenroOfficer? @relation(fields: [defaultOfficerId], references: [id], onDelete: SetNull)
+
+  @@index([penroOfficeId])
+  @@index([defaultOfficerId])
+}
+
+/// Managed in Super Admin portal — powers New Record PENRO Office dropdown
+model PenroOffice {
+  id               Int           @id @default(autoincrement())
+  name             String        @unique
+  /// Default PENRO officer auto-filled on New Record when this office is selected
+  defaultOfficerId Int?
+  cenroOffices     CenroOffice[]
+
+  defaultOfficer PenroOfficer? @relation(fields: [defaultOfficerId], references: [id], onDelete: SetNull)
+
+  @@index([defaultOfficerId])
+}
+
+/// Managed in Super Admin portal — powers New Record PENRO Officer dropdown
+model PenroOfficer {
+  id           Int          @id @default(autoincrement())
+  name         String       @unique
+  penroOffices PenroOffice[]
+}
+
+/// Managed in Super Admin portal — powers New Record CENRO Officer dropdown
+model CenroOfficer {
+  id           Int          @id @default(autoincrement())
+  name         String       @unique
+  cenroOffices CenroOffice[]
 }
 
 model ApprehensionRecord {
-  id                    Int                @id @default(autoincrement())
-  cenroOfficeId         Int
-  year                  Int
-  month                 Int?               // 1–12, derived from dateOfApprehension when parseable
-  dateOfApprehension    String?
-  placeOfApprehension   String?
-  sourcePlace           String?            // NEW: place of the source of apprehended forest products
-  gpsCoordinates        String?            // NEW
-  landClassification    String?            // NEW
-  circumstances         String?
-  apprehendingAgency    String?            // Excel: "Apprehending officers"
-  claimantRespondent    String?            // Excel: "Name of claimant/owner"
-  custodianLocation     String?            // Excel: "Place impounded"
-  otherAgencies         String?
-  otherRemarks          String?            @db.Text // NEW: condition / status of criminal complaint
-  remarks               String?            @db.Text
-  acpEndorsedToPenro    DateTime?          @db.Date // NEW
-  acpEndorsedToRo       DateTime?          @db.Date // NEW
-  caseStatus            String?            @db.Text // NEW: filed in court or prosecutor's office
-  status                ApprehensionStatus @default(UNKNOWN)
-  docketNumber          String?
-  orderOfFinalityDate   String?
-  isDeleted             Boolean            @default(false)
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
+  id     Int @id @default(autoincrement())
+
+  // 1. PENRO *
+  penroOffice  String? // Batanes | Cagayan | Isabela | Quirino | Nueva Vizcaya
+  penroOfficer String?
+
+  // 2. CENRO *
+  cenroOfficeId Int
+  cenroOfficer  String?
+
+  // 3. Date + time of apprehension
+  year               Int
+  month              Int? // 1–12, derived from dateOfApprehension when parseable
+  dateOfApprehension String?
+  timeOfApprehension String?
+
+  // 4. Place + coordinates
+  placeOfApprehension String?
+  gpsCoordinates      String?
+
+  // Legacy / supporting fields (kept for existing reports & imports)
+  sourcePlace        String?
+  landClassification String?
+  circumstances      String?
+  custodianLocation  String?
+  otherAgencies      String?
+  otherRemarks       String? @db.Text
+  remarks            String? @db.Text
+  caseStatus         String? @db.Text
+
+  // 8. Apprehending officer *
+  apprehendingAgency  String? // agency: PNP, LGU, DENR, etc.
+  apprehendingOfficer String? // officer name (optional detail)
+
+  // 9. Respondent / claimant * — YES → details; NO → stored as "Abandoned"
+  hasRespondent       Boolean?
+  claimantRespondent  String? // name when hasRespondent = true; "Abandoned" when false
+  respondentAddress   String?
+  respondentContact   String?
+
+  // 10. ACP conducted * — YES shows dates
+  acpConducted       Boolean?
+  acpDate            DateTime? @db.Date
+  acpEndorsedToPenro DateTime? @db.Date
+  acpEndorsedToRo    DateTime? @db.Date
+
+  // 11–13. Promulgation + docket
+  dateOfPromulgation String?
+  promulgatedBy      String?
+  docketNumber       String?
+  orderOfFinalityDate String?
+
+  // 14–16. Appraisals *
+  appraisalForestProducts     Boolean?
+  appraisalForestProductsDate DateTime? @db.Date
+  appraisalConveyances        Boolean?
+  appraisalConveyancesDate    DateTime? @db.Date
+  appraisalEquipment          Boolean?
+  appraisalEquipmentDate      DateTime? @db.Date
+
+  // 17. Mode of disposition — donation made *
+  donationMade Boolean?
+
+  // Donation — forest products
+  donationFpDate   String?
+  donationFpDonor  String?
+  donationFpDonee  String?
+  donationFpVolume String?
+
+  // Donation / bid — conveyances
+  donationConvDate  String?
+  donationConvDonor String?
+  donationConvDonee String?
+
+  // Donation — equipment / implements
+  donationEquipDate  String?
+  donationEquipDonor String?
+  donationEquipDonee String?
+
+  status    ApprehensionStatus @default(UNKNOWN)
+  isDeleted Boolean            @default(false)
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
 
   cenroOffice CenroOffice         @relation(fields: [cenroOfficeId], references: [id])
   items       ForestProductItem[]
@@ -103,18 +212,32 @@ model ApprehensionRecord {
   @@index([year])
   @@index([month])
   @@index([status])
+  @@index([penroOffice])
 }
 
 model ForestProductItem {
-  id                   Int      @id @default(autoincrement())
+  id                   Int @id @default(autoincrement())
   apprehensionRecordId Int
-  quantity              String?  // e.g. "7 & 1" (kept as text — source data mixes counts)
-  species                String?  // e.g. "Gmelina", "Mahogany"
-  forms                 String?  // e.g. "Lumber & Round logs", "Bed & TV Rack"
-  description            String?  // free-text fallback / combined description
-  volumeCuM              Float?
-  volumeBdFt             Float?
-  estimatedValue          Float?
+
+  /// TYPE — logs, flitches, lumber, rattan, etc. (was: forms)
+  type           String?
+  /// NUMBER OF PIECES
+  quantity       String?
+  /// Species (optional supporting field)
+  species        String?
+  /// Free-text description fallback
+  description    String?
+  /// VOLUME — board feet
+  volumeBdFt     Float?
+  /// VOLUME — cubic meters
+  volumeCuM      Float?
+  /// STATUS — good / deteriorating / deteriorated
+  conditionStatus ProductCondition?
+  /// ESTIMATED VALUE (Php)
+  estimatedValue Float?
+
+  /// @deprecated use `type` — kept for older rows
+  forms String?
 
   apprehensionRecord ApprehensionRecord @relation(fields: [apprehensionRecordId], references: [id])
 
@@ -122,12 +245,17 @@ model ForestProductItem {
 }
 
 model Conveyance {
-  id                   Int    @id @default(autoincrement())
+  id                   Int @id @default(autoincrement())
   apprehensionRecordId Int
-  type                  String? // e.g. "Utility vehicle"
-  quantity               Int     @default(1)
-  estimatedValue         Float?
 
+  /// TYPE — motorcycle, kulong-kulong, etc.
+  type           String?
+  /// PLATE NO. *
+  plateNo        String?
+  /// STATUS — serviceable / unserviceable
+  serviceStatus  AssetServiceStatus?
+  quantity       Int                 @default(1)
+  estimatedValue Float?
 
   apprehensionRecord ApprehensionRecord @relation(fields: [apprehensionRecordId], references: [id])
 
@@ -135,11 +263,17 @@ model Conveyance {
 }
 
 model Equipment {
-  id                   Int    @id @default(autoincrement())
+  id                   Int @id @default(autoincrement())
   apprehensionRecordId Int
-  type                  String? // e.g. "Chainsaw with defaced serial number"
-  quantity               Int     @default(1)
-  estimatedValue         Float?
+
+  /// TYPE — chainsaw, etc.
+  type           String?
+  /// REGISTERED * YES / NO
+  registered     Boolean?
+  /// STATUS — serviceable / unserviceable
+  serviceStatus  AssetServiceStatus?
+  quantity       Int                 @default(1)
+  estimatedValue Float?
 
   apprehensionRecord ApprehensionRecord @relation(fields: [apprehensionRecordId], references: [id])
 
@@ -164,10 +298,10 @@ model FieldDefinition {
 }
 
 model FieldValue {
-  id                   Int      @id @default(autoincrement())
+  id                   Int     @id @default(autoincrement())
   apprehensionRecordId Int
   fieldDefinitionId    Int
-  textValue            String?  @db.Text
+  textValue            String? @db.Text
   numberValue          Float?
 
   apprehensionRecord ApprehensionRecord @relation(fields: [apprehensionRecordId], references: [id])
@@ -176,4 +310,3 @@ model FieldValue {
   @@unique([apprehensionRecordId, fieldDefinitionId])
   @@index([fieldDefinitionId])
 }
-

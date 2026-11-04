@@ -42,81 +42,175 @@ export async function createRecord(formData: FormData) {
   if (scope?.isCenro && scope.officeId) {
     cenroOfficeId = scope.officeId;
   }
-  const year = parseInt(formData.get("year") as string, 10);
-  const month = formData.get("month") ? parseInt(formData.get("month") as string, 10) : null;
-  const dateOfApprehension = (formData.get("dateOfApprehension") as string) || null;
-  const placeOfApprehension = (formData.get("placeOfApprehension") as string) || null;
-  const circumstances = (formData.get("circumstances") as string) || null;
-  const apprehendingAgency = (formData.get("apprehendingAgency") as string) || null;
-  const claimantRespondent = (formData.get("claimantRespondent") as string) || null;
-  const custodianLocation = (formData.get("custodianLocation") as string) || null;
-  const otherAgencies = (formData.get("otherAgencies") as string) || null;
-  const remarks = (formData.get("remarks") as string) || null;
+
   const str = (k: string) => ((formData.get(k) as string) || "").trim() || null;
+  const yesNo = (k: string): boolean | null => {
+    const v = (formData.get(k) as string) || "";
+    if (v === "yes") return true;
+    if (v === "no") return false;
+    return null;
+  };
   const dateField = (k: string) => {
     const v = formData.get(k) as string;
     return v ? new Date(v) : null;
   };
+
+  const year = parseInt(formData.get("year") as string, 10);
+  const month = formData.get("month")
+    ? parseInt(formData.get("month") as string, 10)
+    : null;
+
+  // 9. Respondent — NO → "Abandoned"
+  const hasRespondent = yesNo("hasRespondent");
+  const claimantRespondent =
+    hasRespondent === false
+      ? "Abandoned"
+      : str("claimantRespondent");
+
+  // Forest products (§5)
+  const itemType = formData.getAll("itemType") as string[];
   const itemQty = formData.getAll("itemQty") as string[];
-  const itemSpecies = formData.getAll("itemSpecies") as string[];
-  const itemForms = formData.getAll("itemForms") as string[];
   const itemVolumeBdFt = formData.getAll("itemVolumeBdFt") as string[];
   const itemVolumeCuM = formData.getAll("itemVolumeCuM") as string[];
+  const itemCondition = formData.getAll("itemCondition") as string[];
   const itemValue = formData.getAll("itemValue") as string[];
-
-  const items = itemSpecies
-    .map((species, i) => ({
+  const items = itemType
+    .map((type, i) => ({
+      type: type || null,
+      forms: type || null, // keep legacy column populated
       quantity: itemQty[i] || null,
-      species: species || null,
-      forms: itemForms[i] || null,
       volumeBdFt: itemVolumeBdFt[i] ? parseFloat(itemVolumeBdFt[i]) : null,
       volumeCuM: itemVolumeCuM[i] ? parseFloat(itemVolumeCuM[i]) : null,
+      conditionStatus: (itemCondition[i] || null) as
+        | "GOOD_CONDITION"
+        | "DETERIORATING"
+        | "DETERIORATED"
+        | null,
       estimatedValue: itemValue[i] ? parseFloat(itemValue[i]) : null,
     }))
-    .filter((item) => item.species || item.forms || item.volumeBdFt || item.volumeCuM || item.estimatedValue);
+    .filter(
+      (item) =>
+        item.type ||
+        item.quantity ||
+        item.volumeBdFt ||
+        item.volumeCuM ||
+        item.estimatedValue,
+    );
 
+  // Conveyances (§6)
   const convType = formData.getAll("convType") as string[];
-  const convQty = formData.getAll("convQty") as string[];
-  const convValue = formData.getAll("convValue") as string[];
+  const convPlateNo = formData.getAll("convPlateNo") as string[];
+  const convStatus = formData.getAll("convStatus") as string[];
   const conveyances = convType
     .map((type, i) => ({
       type: type || null,
-      quantity: parseInt(convQty[i] || "1", 10) || 1,
-      estimatedValue: convValue[i] ? parseFloat(convValue[i]) : null,
+      plateNo: convPlateNo[i]?.trim() || null,
+      serviceStatus: (convStatus[i] || null) as
+        | "SERVICEABLE"
+        | "UNSERVICEABLE"
+        | null,
+      quantity: 1,
     }))
-    .filter((c) => c.type);
+    .filter((c) => c.type || c.plateNo);
 
+  // Equipment (§7)
   const equipType = formData.getAll("equipType") as string[];
-  const equipQty = formData.getAll("equipQty") as string[];
-  const equipValue = formData.getAll("equipValue") as string[];
+  const equipRegistered = formData.getAll("equipRegistered") as string[];
+  const equipStatus = formData.getAll("equipStatus") as string[];
   const equipment = equipType
     .map((type, i) => ({
       type: type || null,
-      quantity: parseInt(equipQty[i] || "1", 10) || 1,
-      estimatedValue: equipValue[i] ? parseFloat(equipValue[i]) : null,
+      registered:
+        equipRegistered[i] === "yes"
+          ? true
+          : equipRegistered[i] === "no"
+            ? false
+            : null,
+      serviceStatus: (equipStatus[i] || null) as
+        | "SERVICEABLE"
+        | "UNSERVICEABLE"
+        | null,
+      quantity: 1,
     }))
     .filter((e) => e.type);
 
+  const acpConducted = yesNo("acpConducted");
+  const donationMade = yesNo("donationMade");
+  const appraisalFp = yesNo("appraisalForestProducts");
+  const appraisalConv = yesNo("appraisalConveyances");
+  const appraisalEquip = yesNo("appraisalEquipment");
+
   const record = await prisma.apprehensionRecord.create({
     data: {
+      // 1–2
+      penroOffice: str("penroOffice"),
+      penroOfficer: str("penroOfficer"),
       cenroOfficeId,
+      cenroOfficer: str("cenroOfficer"),
+      // 3–4
       year,
       month,
-      dateOfApprehension,
-      placeOfApprehension,
-      circumstances,
-      apprehendingAgency,
-      claimantRespondent,
-      custodianLocation,
-      otherAgencies,
-      remarks,
-      sourcePlace: str("sourcePlace"),
+      dateOfApprehension: str("dateOfApprehension"),
+      timeOfApprehension: str("timeOfApprehension"),
+      placeOfApprehension: str("placeOfApprehension"),
       gpsCoordinates: str("gpsCoordinates"),
-      landClassification: str("landClassification"),
-      otherRemarks: str("otherRemarks"),
-      caseStatus: str("caseStatus"),
-      acpEndorsedToPenro: dateField("acpEndorsedToPenro"),
-      acpEndorsedToRo: dateField("acpEndorsedToRo"),
+      // 8
+      apprehendingAgency: str("apprehendingAgency"),
+      apprehendingOfficer: str("apprehendingOfficer"),
+      // 9
+      hasRespondent,
+      claimantRespondent,
+      respondentAddress:
+        hasRespondent === true ? str("respondentAddress") : null,
+      respondentContact:
+        hasRespondent === true ? str("respondentContact") : null,
+      // 10
+      acpConducted,
+      acpDate: acpConducted === true ? dateField("acpDate") : null,
+      acpEndorsedToPenro:
+        acpConducted === true ? dateField("acpEndorsedToPenro") : null,
+      acpEndorsedToRo:
+        acpConducted === true ? dateField("acpEndorsedToRo") : null,
+      // 11–13
+      dateOfPromulgation: str("dateOfPromulgation"),
+      promulgatedBy: str("promulgatedBy"),
+      docketNumber: str("docketNumber"),
+      // 14–16
+      appraisalForestProducts: appraisalFp,
+      appraisalForestProductsDate:
+        appraisalFp === true
+          ? dateField("appraisalForestProductsDate")
+          : null,
+      appraisalConveyances: appraisalConv,
+      appraisalConveyancesDate:
+        appraisalConv === true
+          ? dateField("appraisalConveyancesDate")
+          : null,
+      appraisalEquipment: appraisalEquip,
+      appraisalEquipmentDate:
+        appraisalEquip === true
+          ? dateField("appraisalEquipmentDate")
+          : null,
+      // 17
+      donationMade,
+      donationFpDate: donationMade === true ? str("donationFpDate") : null,
+      donationFpDonor: donationMade === true ? str("donationFpDonor") : null,
+      donationFpDonee: donationMade === true ? str("donationFpDonee") : null,
+      donationFpVolume:
+        donationMade === true ? str("donationFpVolume") : null,
+      donationConvDate:
+        donationMade === true ? str("donationConvDate") : null,
+      donationConvDonor:
+        donationMade === true ? str("donationConvDonor") : null,
+      donationConvDonee:
+        donationMade === true ? str("donationConvDonee") : null,
+      donationEquipDate:
+        donationMade === true ? str("donationEquipDate") : null,
+      donationEquipDonor:
+        donationMade === true ? str("donationEquipDonor") : null,
+      donationEquipDonee:
+        donationMade === true ? str("donationEquipDonee") : null,
+      remarks: str("remarks"),
       status: "UNKNOWN",
       items: items.length ? { create: items } : undefined,
       conveyances: conveyances.length ? { create: conveyances } : undefined,

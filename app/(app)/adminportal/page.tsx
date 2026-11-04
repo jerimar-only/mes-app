@@ -5,6 +5,18 @@ import { createUser } from "@/app/(app)/users/actions";
 import { getLockedUntil } from "@/app/(auth)/login/actions";
 import UserActions from "@/app/(app)/users/UserActions";
 import Link from "next/link";
+import {
+  createPenroOffice,
+  deletePenroOffice,
+  createPenroOfficer,
+  deletePenroOfficer,
+  createCenroOffice,
+  deleteCenroOffice,
+  createCenroOfficer,
+  deleteCenroOfficer,
+} from "./officeActions";
+import LookupPanel from "./LookupPanel";
+import OfficeMappingPanel from "./OfficeMappingPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +40,25 @@ export default async function AdminPortalPage() {
     },
   });
 
-  const offices = await prisma.cenroOffice.findMany({ orderBy: { name: "asc" } });
+  const offices = await prisma.cenroOffice.findMany({
+    orderBy: { name: "asc" },
+    include: {
+      penroOffice: { select: { id: true, name: true } },
+      defaultOfficer: { select: { id: true, name: true } },
+    },
+  });
+  const penroOffices = await prisma.penroOffice.findMany({
+    orderBy: { name: "asc" },
+    include: {
+      defaultOfficer: { select: { id: true, name: true } },
+    },
+  });
+  const penroOfficers = await prisma.penroOfficer.findMany({
+    orderBy: { name: "asc" },
+  });
+  const cenroOfficers = await prisma.cenroOfficer.findMany({
+    orderBy: { name: "asc" },
+  });
   const cenroCount = users.filter((u) => u.role === "CENRO").length;
 
   // Account-level login locks (5+ failed attempts in 15 min for that username)
@@ -97,6 +127,56 @@ export default async function AdminPortalPage() {
           </ul>
         </div>
       )}
+
+      {/* Dynamic office / officer lookups */}
+      <section className="space-y-4">
+        <h2 className="text-[15px] font-semibold text-[var(--foreground)]">
+          Offices &amp; officers
+        </h2>
+        <p className="text-[13px] text-[var(--muted)]">
+          These lists power the New Apprehension form dropdowns. Add or remove entries here.
+        </p>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <LookupPanel
+            title="PENRO offices"
+            items={penroOffices}
+            createAction={createPenroOffice}
+            deleteAction={deletePenroOffice}
+            placeholder="e.g. Cagayan"
+          />
+          <LookupPanel
+            title="PENRO officers"
+            items={penroOfficers}
+            createAction={createPenroOfficer}
+            deleteAction={deletePenroOfficer}
+            placeholder="e.g. Dionicio C. Deundo"
+          />
+          <LookupPanel
+            title="CENRO offices"
+            items={offices}
+            createAction={createCenroOffice}
+            deleteAction={deleteCenroOffice}
+            placeholder="e.g. CENRO Aparri"
+          />
+          <LookupPanel
+            title="CENRO officers"
+            items={cenroOfficers}
+            createAction={createCenroOfficer}
+            deleteAction={deleteCenroOfficer}
+            placeholder="e.g. Marina Galzote"
+          />
+        </div>
+      </section>
+
+      {/* Cascading mappings used by New Apprehension form */}
+      <section>
+        <OfficeMappingPanel
+          penroOffices={penroOffices}
+          penroOfficers={penroOfficers}
+          cenroOffices={offices}
+          cenroOfficers={cenroOfficers}
+        />
+      </section>
 
       {/* Create user */}
       <section className="dash-panel p-4 sm:p-6">
