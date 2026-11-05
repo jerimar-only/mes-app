@@ -206,6 +206,7 @@ export async function createRecord(formData: FormData) {
       dateOfPromulgation: str("dateOfPromulgation"),
       promulgatedBy: str("promulgatedBy"),
       docketNumber: str("docketNumber"),
+      orderOfFinalityDate: str("orderOfFinalityDate"),
       // 14–16
       appraisalForestProducts: appraisalFp,
       appraisalForestProductsDate:

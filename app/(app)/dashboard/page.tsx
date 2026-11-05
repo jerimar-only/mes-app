@@ -7,12 +7,12 @@ import Link from "next/link";
 import DashboardFilters from "./DashboardFilters";
 
 const STATUS_LABEL: Record<string, string> = {
-  FOR_RESOLUTION: "For resolution",
-  UNDER_ADJUDICATION: "Under adjudication",
-  CONFISCATED: "Confiscated",
+  FOR_RESOLUTION: "For Donation",
+  UNDER_ADJUDICATION: "For Appraisal",
+  CONFISCATED: "Donated",
   DONATED: "Donated",
-  RELEASED: "Released",
-  UNKNOWN: "Needs review",
+  RELEASED: "Donated",
+  UNKNOWN: "For Appraisal",
 };
 
 type DashboardData = {
@@ -279,7 +279,7 @@ export default function DashboardPage() {
                 variant="value"
               />
               <StatCard
-                label="Needs review"
+                label="For Appraisal"
                 value={data.needsReview.toLocaleString()}
                 variant="review"
               />

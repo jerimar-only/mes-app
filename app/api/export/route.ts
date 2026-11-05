@@ -5,11 +5,11 @@ import { permissions, type Role } from "@/lib/permissions";
 import ExcelJS from "exceljs";
 
 const STATUS_LABEL: Record<string, string> = {
-  FOR_RESOLUTION: "For resolution",
+  FOR_RESOLUTION: "For Donation",
   UNDER_ADJUDICATION: "Under administrative adjudication",
   CONFISCATED: "Confiscated in favor of the government",
   DONATED: "Donated",
-  RELEASED: "Released",
+  RELEASED: "Donated",
   UNKNOWN: "For review",
 };
 

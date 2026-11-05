@@ -132,6 +132,8 @@ export default function NewRecordForm({
   const [selectedCenroId, setSelectedCenroId] = useState(initialCenroId);
   const [selectedCenroOfficer, setSelectedCenroOfficer] =
     useState(initialCenroOfficer);
+  /** Historical record: bypass auto officers so user can type former names */
+  const [historicalOfficers, setHistoricalOfficers] = useState(false);
 
   const selectedPenroRow = penroOffices.find((p) => p.name === selectedPenro);
   const filteredCenroOffices = selectedPenroRow
@@ -146,21 +148,53 @@ export default function NewRecordForm({
       ? offices.filter((o) => o.id === lockedOfficeId)
       : offices;
 
+  const mappedCenroOfficer =
+    selectedCenroId
+      ? offices.find((o) => String(o.id) === selectedCenroId)?.defaultOfficerName
+      : null;
+  const penroOfficerLocked =
+    !historicalOfficers &&
+    Boolean(
+      selectedPenroRow?.defaultOfficerName ||
+        (penroOfficers.length === 1 && selectedPenro),
+    );
+  const cenroOfficerLocked =
+    !historicalOfficers && Boolean(selectedCenroId && mappedCenroOfficer);
+
   function onPenroChange(name: string) {
     setSelectedPenro(name);
     const row = penroOffices.find((p) => p.name === name);
-    setSelectedPenroOfficer(row?.defaultOfficerName ?? "");
+    if (!historicalOfficers) {
+      setSelectedPenroOfficer(row?.defaultOfficerName ?? "");
+    }
     // Reset CENRO when PENRO changes (unless locked)
     if (!lockedOfficeId) {
       setSelectedCenroId("");
-      setSelectedCenroOfficer("");
+      if (!historicalOfficers) setSelectedCenroOfficer("");
     }
   }
 
   function onCenroChange(idStr: string) {
     setSelectedCenroId(idStr);
-    const row = offices.find((o) => String(o.id) === idStr);
-    setSelectedCenroOfficer(row?.defaultOfficerName ?? "");
+    if (!historicalOfficers) {
+      const row = offices.find((o) => String(o.id) === idStr);
+      setSelectedCenroOfficer(row?.defaultOfficerName ?? "");
+    }
+  }
+
+  function onHistoricalToggle(checked: boolean) {
+    setHistoricalOfficers(checked);
+    if (!checked) {
+      // Restore mapped defaults when leaving historical mode
+      const penroRow = penroOffices.find((p) => p.name === selectedPenro);
+      setSelectedPenroOfficer(penroRow?.defaultOfficerName ?? "");
+      const cenroRow = offices.find((o) => String(o.id) === selectedCenroId);
+      setSelectedCenroOfficer(cenroRow?.defaultOfficerName ?? "");
+    } else {
+      // Clear so user types the historical names
+      setSelectedPenroOfficer("");
+      setSelectedCenroOfficer("");
+    }
   }
 
   const [pending, startTransition] = useTransition();
@@ -199,6 +233,60 @@ export default function NewRecordForm({
     <form onSubmit={handleSubmit} className="mx-auto max-w-4xl space-y-8">
       {/* 1–2. PENRO + CENRO — cascading from Admin Settings mappings */}
       <Section title="OFFICE CONCERNED">
+        {/* Historical officers bypass — visual toggle switch */}
+        <div className="mb-4 flex items-center justify-between gap-4 rounded-xl border border-[var(--border)] bg-[var(--background)]/50 px-4 py-3 shadow-sm">
+          <div className="min-w-0 flex-1 text-[13px] leading-snug text-[var(--foreground)]">
+            <p className="font-semibold">Historical record</p>
+            <p className="mt-0.5 text-[12px] text-[var(--muted)]">
+              Turn on if the PENRO / CENRO officers at the time of apprehension
+              differ from the current mapped officers (e.g. 2023 cases). You can
+              type their names manually.
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <span
+              className={
+                "text-[11px] font-semibold uppercase tracking-wide " +
+                (historicalOfficers
+                  ? "text-[var(--muted)]"
+                  : "text-zinc-700 dark:text-zinc-200")
+              }
+            >
+              Off
+            </span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={historicalOfficers}
+              aria-label="Historical record"
+              onClick={() => onHistoricalToggle(!historicalOfficers)}
+              className={
+                "relative inline-flex h-7 w-12 items-center rounded-full border transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 " +
+                (historicalOfficers
+                  ? "border-emerald-600 bg-emerald-500"
+                  : "border-zinc-400 bg-zinc-300 dark:border-zinc-500 dark:bg-zinc-600")
+              }
+            >
+              <span
+                className={
+                  "inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-1 ring-black/5 transition-transform duration-200 " +
+                  (historicalOfficers ? "translate-x-6" : "translate-x-1")
+                }
+              />
+            </button>
+            <span
+              className={
+                "text-[11px] font-semibold uppercase tracking-wide " +
+                (historicalOfficers
+                  ? "text-emerald-600 dark:text-emerald-400"
+                  : "text-[var(--muted)]")
+              }
+            >
+              On
+            </span>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {/* PENRO Office */}
           <Field label="PENR Office *">
@@ -234,50 +322,64 @@ export default function NewRecordForm({
             )}
           </Field>
 
-          {/* PENRO Officer — auto from mapping */}
+          {/* PENRO Officer — auto from mapping, or free text if historical */}
           <Field label="PENR Officer *">
-            <select
-              name="penroOfficer"
-              required
-              value={selectedPenroOfficer}
-              onChange={(e) => setSelectedPenroOfficer(e.target.value)}
-              disabled={Boolean(
-                selectedPenroRow?.defaultOfficerName ||
-                  (penroOfficers.length === 1 && selectedPenro),
-              )}
-              className={
-                selectClass +
-                (selectedPenroRow?.defaultOfficerName ? " opacity-80" : "")
-              }
-            >
-              {!selectedPenroOfficer && (
-                <option value="" disabled>
-                  — Please Select One —
-                </option>
-              )}
-              {/* Prefer mapped default; still list all so Super Admin can override if not locked */}
-              {penroOfficers.map((o) => (
-                <option key={o.id} value={o.name}>
-                  {o.name}
-                </option>
-              ))}
-            </select>
-            {selectedPenroRow?.defaultOfficerName && (
+            {historicalOfficers ? (
               <>
                 <input
-                  type="hidden"
+                  type="text"
                   name="penroOfficer"
-                  value={selectedPenroRow.defaultOfficerName}
+                  required
+                  value={selectedPenroOfficer}
+                  onChange={(e) => setSelectedPenroOfficer(e.target.value)}
+                  placeholder="Type historical PENRO officer name"
+                  className={inputClass}
                 />
                 <p className="mt-1 text-[12px] text-[var(--muted)]">
-                  Automatically set from PENRO mapping.
+                  Manual entry (historical record).
                 </p>
               </>
-            )}
-            {penroOfficers.length === 0 && (
-              <p className="mt-1 text-[12px] text-[var(--muted)]">
-                No PENRO officers configured. Ask Super Admin to add them.
-              </p>
+            ) : (
+              <>
+                <select
+                  name="penroOfficer"
+                  required
+                  value={selectedPenroOfficer}
+                  onChange={(e) => setSelectedPenroOfficer(e.target.value)}
+                  disabled={penroOfficerLocked}
+                  className={
+                    selectClass + (penroOfficerLocked ? " opacity-80" : "")
+                  }
+                >
+                  {!selectedPenroOfficer && (
+                    <option value="" disabled>
+                      — Please Select One —
+                    </option>
+                  )}
+                  {penroOfficers.map((o) => (
+                    <option key={o.id} value={o.name}>
+                      {o.name}
+                    </option>
+                  ))}
+                </select>
+                {penroOfficerLocked && selectedPenroRow?.defaultOfficerName && (
+                  <>
+                    <input
+                      type="hidden"
+                      name="penroOfficer"
+                      value={selectedPenroRow.defaultOfficerName}
+                    />
+                    <p className="mt-1 text-[12px] text-[var(--muted)]">
+                      Automatically set from PENRO mapping.
+                    </p>
+                  </>
+                )}
+                {penroOfficers.length === 0 && (
+                  <p className="mt-1 text-[12px] text-[var(--muted)]">
+                    No PENRO officers configured. Ask Super Admin to add them.
+                  </p>
+                )}
+              </>
             )}
           </Field>
 
@@ -327,59 +429,64 @@ export default function NewRecordForm({
             )}
           </Field>
 
-          {/* CENRO Officer — auto from mapping */}
+          {/* CENRO Officer — auto from mapping, or free text if historical */}
           <Field label="CENR Officer *">
-            <select
-              name="cenroOfficer"
-              required
-              value={selectedCenroOfficer}
-              onChange={(e) => setSelectedCenroOfficer(e.target.value)}
-              disabled={Boolean(
-                selectedCenroId &&
-                  offices.find((o) => String(o.id) === selectedCenroId)
-                    ?.defaultOfficerName,
-              )}
-              className={
-                selectClass +
-                (selectedCenroId &&
-                offices.find((o) => String(o.id) === selectedCenroId)
-                  ?.defaultOfficerName
-                  ? " opacity-80"
-                  : "")
-              }
-            >
-              {!selectedCenroOfficer && (
-                <option value="" disabled>
-                  — Please Select One —
-                </option>
-              )}
-              {cenroOfficers.map((o) => (
-                <option key={o.id} value={o.name}>
-                  {o.name}
-                </option>
-              ))}
-            </select>
-            {selectedCenroId &&
-              offices.find((o) => String(o.id) === selectedCenroId)
-                ?.defaultOfficerName && (
-                <>
-                  <input
-                    type="hidden"
-                    name="cenroOfficer"
-                    value={
-                      offices.find((o) => String(o.id) === selectedCenroId)!
-                        .defaultOfficerName!
-                    }
-                  />
+            {historicalOfficers ? (
+              <>
+                <input
+                  type="text"
+                  name="cenroOfficer"
+                  required
+                  value={selectedCenroOfficer}
+                  onChange={(e) => setSelectedCenroOfficer(e.target.value)}
+                  placeholder="Type historical CENRO officer name"
+                  className={inputClass}
+                />
+                <p className="mt-1 text-[12px] text-[var(--muted)]">
+                  Manual entry (historical record).
+                </p>
+              </>
+            ) : (
+              <>
+                <select
+                  name="cenroOfficer"
+                  required
+                  value={selectedCenroOfficer}
+                  onChange={(e) => setSelectedCenroOfficer(e.target.value)}
+                  disabled={cenroOfficerLocked}
+                  className={
+                    selectClass + (cenroOfficerLocked ? " opacity-80" : "")
+                  }
+                >
+                  {!selectedCenroOfficer && (
+                    <option value="" disabled>
+                      — Please Select One —
+                    </option>
+                  )}
+                  {cenroOfficers.map((o) => (
+                    <option key={o.id} value={o.name}>
+                      {o.name}
+                    </option>
+                  ))}
+                </select>
+                {cenroOfficerLocked && mappedCenroOfficer && (
+                  <>
+                    <input
+                      type="hidden"
+                      name="cenroOfficer"
+                      value={mappedCenroOfficer}
+                    />
+                    <p className="mt-1 text-[12px] text-[var(--muted)]">
+                      Automatically set from CENRO mapping.
+                    </p>
+                  </>
+                )}
+                {cenroOfficers.length === 0 && (
                   <p className="mt-1 text-[12px] text-[var(--muted)]">
-                    Automatically set from CENRO mapping.
+                    No CENRO officers configured. Ask Super Admin to add them.
                   </p>
-                </>
-              )}
-            {cenroOfficers.length === 0 && (
-              <p className="mt-1 text-[12px] text-[var(--muted)]">
-                No CENRO officers configured. Ask Super Admin to add them.
-              </p>
+                )}
+              </>
             )}
           </Field>
         </div>
@@ -399,44 +506,91 @@ export default function NewRecordForm({
           <Field label="Time of apprehension">
             <input type="time" name="timeOfApprehension" className={inputClass} />
           </Field>
-          <Field label="Place of apprehension">
-            <div className="space-y-2">
-              <input
-                type="text"
-                name="placeSitioBrgy"
-                placeholder="Sitio / Barangay (e.g. Sitio Baguio Point, Lapi)"
-                className={inputClass}
-              />
-              <input
-                type="text"
-                name="placeMunicipality"
-                placeholder="Municipality / City (e.g. Peñablanca)"
-                className={inputClass}
-              />
-              <input
-                type="text"
-                name="placeProvince"
-                placeholder="Province (e.g. Cagayan)"
-                className={inputClass}
-              />
-            </div>
-          </Field>
-          <Field label="Coordinates (UTM)">
-            <div className="space-y-2">
-              <input
-                type="text"
-                name="gpsNorthing"
-                placeholder="Northing (e.g. 18.2512, 121.6334)"
-                className={inputClass}
-              />
-              <input
-                type="text"
-                name="gpsEasting"
-                placeholder="Easting (e.g. 18.2512, 121.6334)"
-                className={inputClass}
-              />
-            </div>
-          </Field>
+          <div className="sm:col-span-2 grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <Field label="Place of apprehension">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div>
+                  <label
+                    htmlFor="placeSitioBrgy"
+                    className="mb-1 block text-[12px] font-medium text-[var(--muted)]"
+                  >
+                    Sitio / Barangay
+                  </label>
+                  <input
+                    id="placeSitioBrgy"
+                    type="text"
+                    name="placeSitioBrgy"
+                    placeholder="e.g. Sitio Baguio Point, Lapi"
+                    className={inputClass}
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="placeMunicipality"
+                    className="mb-1 block text-[12px] font-medium text-[var(--muted)]"
+                  >
+                    Municipality / City
+                  </label>
+                  <input
+                    id="placeMunicipality"
+                    type="text"
+                    name="placeMunicipality"
+                    placeholder="e.g. Peñablanca"
+                    className={inputClass}
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="placeProvince"
+                    className="mb-1 block text-[12px] font-medium text-[var(--muted)]"
+                  >
+                    Province
+                  </label>
+                  <input
+                    id="placeProvince"
+                    type="text"
+                    name="placeProvince"
+                    placeholder="e.g. Cagayan"
+                    className={inputClass}
+                  />
+                </div>
+              </div>
+            </Field>
+            <Field label="Coordinates (UTM)">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label
+                    htmlFor="gpsNorthing"
+                    className="mb-1 block text-[12px] font-medium text-[var(--muted)]"
+                  >
+                    Northing
+                  </label>
+                  <input
+                    id="gpsNorthing"
+                    type="text"
+                    name="gpsNorthing"
+                    placeholder="e.g. 1954321.50"
+                    className={inputClass}
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="gpsEasting"
+                    className="mb-1 block text-[12px] font-medium text-[var(--muted)]"
+                  >
+                    Easting
+                  </label>
+                  <input
+                    id="gpsEasting"
+                    type="text"
+                    name="gpsEasting"
+                    placeholder="e.g. 345678.20"
+                    className={inputClass}
+                  />
+                </div>
+              </div>
+            </Field>
+          </div>
         </div>
         <p className="mt-2 text-[12px] text-[var(--muted)]">
           Year and month are taken automatically from the date of apprehension.
@@ -766,20 +920,36 @@ export default function NewRecordForm({
         )}
       </Section>
 
-      {/* 11–13. Promulgation + docket */}
-      <Section title="Promulgation & Docket Number">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      {/* 11–13. Promulgation + docket + finality */}
+      <Section title="Promulgation, Docket & Finality">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Field label="Date of promulgation">
-            <input type="date" name="dateOfPromulgation" className={inputClass} />
+            <input
+              type="date"
+              name="dateOfPromulgation"
+              className={inputClass}
+            />
           </Field>
           <Field label="Promulgated by">
-            <input type="text" name="promulgatedBy" className={inputClass} />
+            <input
+              type="text"
+              name="promulgatedBy"
+              placeholder="Name of official who promulgated"
+              className={inputClass}
+            />
           </Field>
           <Field label="Docket no.">
             <input
               type="text"
               name="docketNumber"
               placeholder="Docket number"
+              className={inputClass}
+            />
+          </Field>
+          <Field label="Order of finality date">
+            <input
+              type="date"
+              name="orderOfFinalityDate"
               className={inputClass}
             />
           </Field>

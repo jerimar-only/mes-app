@@ -7,12 +7,9 @@ import { useRouter } from "next/navigation";
 type Office = { id: number; name: string };
 
 const STATUS_OPTIONS: { value: string; label: string }[] = [
-  { value: "UNKNOWN", label: "Needs review" },
-  { value: "FOR_RESOLUTION", label: "For resolution" },
-  { value: "UNDER_ADJUDICATION", label: "Under adjudication" },
-  { value: "CONFISCATED", label: "Confiscated" },
+  { value: "FOR_RESOLUTION", label: "For Donation" },
+  { value: "UNDER_ADJUDICATION", label: "For Appraisal" },
   { value: "DONATED", label: "Donated" },
-  { value: "RELEASED", label: "Released" },
 ];
 
 const selectClass =

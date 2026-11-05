@@ -11,12 +11,12 @@ import {
 } from "./actions";
 
 const STATUS_LABEL: Record<string, string> = {
-  FOR_RESOLUTION: "For resolution",
-  UNDER_ADJUDICATION: "Under adjudication",
-  CONFISCATED: "Confiscated",
+  FOR_RESOLUTION: "For Donation",
+  UNDER_ADJUDICATION: "For Appraisal",
+  CONFISCATED: "Donated",
   DONATED: "Donated",
-  RELEASED: "Released",
-  UNKNOWN: "Needs review",
+  RELEASED: "Donated",
+  UNKNOWN: "For Appraisal",
 };
 
 const inputClass =

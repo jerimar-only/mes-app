@@ -5,12 +5,9 @@ import { updateRecordStatus } from "../actions";
 import { useToast } from "@/components/ui/Toast";
 
 const STATUS_OPTIONS = [
-  ["FOR_RESOLUTION", "For resolution"],
-  ["UNDER_ADJUDICATION", "Under adjudication"],
-  ["CONFISCATED", "Confiscated"],
+  ["FOR_RESOLUTION", "For Donation"],
+  ["UNDER_ADJUDICATION", "For Appraisal"],
   ["DONATED", "Donated"],
-  ["RELEASED", "Released"],
-  ["UNKNOWN", "Needs review"],
 ] as const;
 
 const statusLabel = (v: string) => STATUS_OPTIONS.find(([k]) => k === v)?.[1] ?? v;
@@ -125,11 +122,10 @@ export function StatusForm({
         <div>
           <label className={label}>Order of finality date</label>
           <input
-            type="text"
+            type="date"
             name="orderOfFinalityDate"
             value={values.orderOfFinalityDate}
             onChange={(e) => setValues({ ...values, orderOfFinalityDate: e.target.value })}
-            placeholder="e.g. Sept. 04, 2024"
             className={field}
           />
         </div>

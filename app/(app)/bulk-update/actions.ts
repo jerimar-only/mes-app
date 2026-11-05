@@ -86,7 +86,9 @@ const HEADER_MAP: Record<string, BulkFieldKey> = {
 };
 
 const STATUS_FROM_LABEL: Record<string, string> = {
+  "for donation": "FOR_RESOLUTION",
   "for resolution": "FOR_RESOLUTION",
+  "for appraisal": "UNDER_ADJUDICATION",
   "under adjudication": "UNDER_ADJUDICATION",
   confiscated: "CONFISCATED",
   donated: "DONATED",
@@ -98,12 +100,12 @@ const STATUS_FROM_LABEL: Record<string, string> = {
 };
 
 const STATUS_TO_LABEL: Record<string, string> = {
-  FOR_RESOLUTION: "For resolution",
-  UNDER_ADJUDICATION: "Under adjudication",
-  CONFISCATED: "Confiscated",
+  FOR_RESOLUTION: "For Donation",
+  UNDER_ADJUDICATION: "For Appraisal",
+  CONFISCATED: "Donated",
   DONATED: "Donated",
-  RELEASED: "Released",
-  UNKNOWN: "Needs review",
+  RELEASED: "Donated",
+  UNKNOWN: "For Appraisal",
 };
 
 function normHeader(h: unknown): string {
