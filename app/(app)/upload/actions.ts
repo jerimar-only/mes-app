@@ -69,12 +69,49 @@ const toQty = (v: unknown) => {
   return Number.isNaN(n) || n < 1 ? 1 : n;
 };
 
-// Excel date → plain calendar date (the +12h shift avoids timezone off-by-one)
+// Excel Date, "November 6, 2026", "11/06/2026", or "2026-11-06" → UTC calendar date
 function asDate(v: unknown): Date | null {
   if (v instanceof Date && !isNaN(v.getTime())) {
     const s = new Date(v.getTime() + 12 * 3600 * 1000);
-    return new Date(Date.UTC(s.getUTCFullYear(), s.getUTCMonth(), s.getUTCDate()));
+    return new Date(
+      Date.UTC(s.getUTCFullYear(), s.getUTCMonth(), s.getUTCDate()),
+    );
   }
+  if (typeof v !== "string") return null;
+  const s = v.trim();
+  if (!s) return null;
+
+  // YYYY-MM-DD
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) {
+    return new Date(
+      Date.UTC(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3])),
+    );
+  }
+
+  // mm/dd/yyyy
+  const numeric = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (numeric) {
+    return new Date(
+      Date.UTC(
+        Number(numeric[3]),
+        Number(numeric[1]) - 1,
+        Number(numeric[2]),
+      ),
+    );
+  }
+
+  // "November 6, 2026" / "Nov. 6, 2026"
+  const long = s.match(/^([A-Za-z]+)\.?\s+(\d{1,2}),?\s+(\d{4})$/);
+  if (long) {
+    const idx = MONTHS.findIndex((m) =>
+      m.startsWith(long[1].toLowerCase().slice(0, 3)),
+    );
+    if (idx >= 0) {
+      return new Date(Date.UTC(Number(long[3]), idx, Number(long[2])));
+    }
+  }
+
   return null;
 }
 

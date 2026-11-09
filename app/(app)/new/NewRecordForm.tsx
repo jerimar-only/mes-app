@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import Section from "@/components/ui/Section";
 import Field from "@/components/ui/Field";
 import { useToast } from "@/components/ui/Toast";
+import { LongDateField } from "@/components/ui/DateOfApprehensionField";
 
 type Office = { id: number; name: string };
 
@@ -496,11 +497,12 @@ export default function NewRecordForm({
       <Section title="INCIDENT INFORMATION">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Date of apprehension *">
-            <input
-              type="date"
+            <LongDateField
               name="dateOfApprehension"
               required
-              className={inputClass}
+              submitFormat="text"
+              numericName="dateOfApprehensionNumeric"
+              syncYearMonth
             />
           </Field>
           <Field label="Time of apprehension">
@@ -903,13 +905,13 @@ export default function NewRecordForm({
         {acpConducted === "yes" && (
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
             <Field label="Date of ACP">
-              <input type="date" name="acpDate" className={inputClass} />
+              <LongDateField name="acpDate" submitFormat="iso" />
             </Field>
             <Field label="Endorsed to PENRO">
-              <input type="date" name="acpEndorsedToPenro" className={inputClass} />
+              <LongDateField name="acpEndorsedToPenro" submitFormat="iso" />
             </Field>
             <Field label="Endorsed to R.O.">
-              <input type="date" name="acpEndorsedToRo" className={inputClass} />
+              <LongDateField name="acpEndorsedToRo" submitFormat="iso" />
             </Field>
           </div>
         )}
@@ -924,10 +926,10 @@ export default function NewRecordForm({
       <Section title="Promulgation, Docket & Finality">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Field label="Date of promulgation">
-            <input
-              type="date"
+            <LongDateField
               name="dateOfPromulgation"
-              className={inputClass}
+              submitFormat="text"
+              numericName="dateOfPromulgationNumeric"
             />
           </Field>
           <Field label="Promulgated by">
@@ -947,10 +949,10 @@ export default function NewRecordForm({
             />
           </Field>
           <Field label="Order of finality date">
-            <input
-              type="date"
+            <LongDateField
               name="orderOfFinalityDate"
-              className={inputClass}
+              submitFormat="text"
+              numericName="orderOfFinalityDateNumeric"
             />
           </Field>
         </div>
@@ -969,10 +971,9 @@ export default function NewRecordForm({
             />
             {appraisalFp === "yes" && (
               <Field label="Date of appraisal (forest products)">
-                <input
-                  type="date"
+                <LongDateField
                   name="appraisalForestProductsDate"
-                  className={inputClass}
+                  submitFormat="iso"
                 />
               </Field>
             )}
@@ -987,10 +988,9 @@ export default function NewRecordForm({
             />
             {appraisalConv === "yes" && (
               <Field label="Date of appraisal (conveyances)">
-                <input
-                  type="date"
+                <LongDateField
                   name="appraisalConveyancesDate"
-                  className={inputClass}
+                  submitFormat="iso"
                 />
               </Field>
             )}
@@ -1005,10 +1005,9 @@ export default function NewRecordForm({
             />
             {appraisalEquip === "yes" && (
               <Field label="Date of appraisal (equipment)">
-                <input
-                  type="date"
+                <LongDateField
                   name="appraisalEquipmentDate"
-                  className={inputClass}
+                  submitFormat="iso"
                 />
               </Field>
             )}
@@ -1035,7 +1034,11 @@ export default function NewRecordForm({
               </h3>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Field label="Date of donation">
-                  <input type="date" name="donationFpDate" className={inputClass} />
+                  <LongDateField
+                    name="donationFpDate"
+                    submitFormat="text"
+                    numericName="donationFpDateNumeric"
+                  />
                 </Field>
                 <Field label="Volume">
                   <input type="text" name="donationFpVolume" className={inputClass} />
@@ -1055,7 +1058,11 @@ export default function NewRecordForm({
               </h3>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Field label="Date of donation / bid">
-                  <input type="date" name="donationConvDate" className={inputClass} />
+                  <LongDateField
+                    name="donationConvDate"
+                    submitFormat="text"
+                    numericName="donationConvDateNumeric"
+                  />
                 </Field>
                 <Field label="Donor / office">
                   <input type="text" name="donationConvDonor" className={inputClass} />
@@ -1072,7 +1079,11 @@ export default function NewRecordForm({
               </h3>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Field label="Date of donation">
-                  <input type="date" name="donationEquipDate" className={inputClass} />
+                  <LongDateField
+                    name="donationEquipDate"
+                    submitFormat="text"
+                    numericName="donationEquipDateNumeric"
+                  />
                 </Field>
                 <Field label="Donor">
                   <input type="text" name="donationEquipDonor" className={inputClass} />

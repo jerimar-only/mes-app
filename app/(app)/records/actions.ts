@@ -50,26 +50,110 @@ export async function createRecord(formData: FormData) {
     if (v === "no") return false;
     return null;
   };
-  const dateField = (k: string) => {
-    const v = formData.get(k) as string;
-    return v ? new Date(v) : null;
+
+  // Parse "November 6, 2026", "2026-11-06", or "11/06/2026" → Date (UTC noon)
+  const parseFlexibleDate = (raw: string | null | undefined): Date | null => {
+    if (!raw) return null;
+    const v = raw.trim();
+    if (!v) return null;
+
+    // ISO YYYY-MM-DD
+    const iso = v.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (iso) {
+      return new Date(
+        Date.UTC(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]), 12),
+      );
+    }
+
+    // mm/dd/yyyy or m/d/yyyy
+    const numeric = v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (numeric) {
+      return new Date(
+        Date.UTC(
+          Number(numeric[3]),
+          Number(numeric[1]) - 1,
+          Number(numeric[2]),
+          12,
+        ),
+      );
+    }
+
+    // "November 6, 2026" / "Nov 6, 2026"
+    const MONTHS = [
+      "january",
+      "february",
+      "march",
+      "april",
+      "may",
+      "june",
+      "july",
+      "august",
+      "september",
+      "october",
+      "november",
+      "december",
+    ];
+    const long = v.match(/^([A-Za-z]+)\.?\s+(\d{1,2}),?\s+(\d{4})$/);
+    if (long) {
+      const idx = MONTHS.findIndex((m) =>
+        m.startsWith(long[1].toLowerCase().slice(0, 3)),
+      );
+      if (idx >= 0) {
+        return new Date(
+          Date.UTC(Number(long[3]), idx, Number(long[2]), 12),
+        );
+      }
+    }
+
+    const fallback = new Date(v);
+    return Number.isNaN(fallback.getTime()) ? null : fallback;
   };
 
-  // Year / month derived from date of apprehension (form no longer posts year/month)
-  const dateOfApprehensionRaw = str("dateOfApprehension");
+  const dateField = (k: string) => {
+    const v = (formData.get(k) as string) || "";
+    return parseFlexibleDate(v);
+  };
+
+  const MONTH_LABELS = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+
+  /** Normalize any accepted date string to "November 6, 2026" (or null) */
+  const toLongDateString = (raw: string | null | undefined): string | null => {
+    const d = parseFlexibleDate(raw);
+    if (!d) return raw?.trim() || null;
+    return `${MONTH_LABELS[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()}`;
+  };
+
+  // Prefer long text ("November 6, 2026"); fall back to mm/dd/yyyy companion
+  const dateOfApprehensionRaw =
+    str("dateOfApprehension") || str("dateOfApprehensionNumeric");
   let year = parseInt(String(formData.get("year") ?? ""), 10);
   let month = formData.get("month")
     ? parseInt(String(formData.get("month")), 10)
     : null;
   if (dateOfApprehensionRaw) {
-    const d = new Date(dateOfApprehensionRaw);
-    if (!Number.isNaN(d.getTime())) {
+    const d = parseFlexibleDate(dateOfApprehensionRaw);
+    if (d) {
       if (!Number.isFinite(year) || year <= 0) year = d.getUTCFullYear();
       if (month == null || !Number.isFinite(month)) month = d.getUTCMonth() + 1;
     }
   }
   if (!Number.isFinite(year) || year <= 0) {
-    throw new Error("Date of apprehension is required (could not determine year).");
+    throw new Error(
+      "Date of apprehension is required (could not determine year).",
+    );
   }
 
   // Place: combine sitio / municipality / province from the form
@@ -181,7 +265,8 @@ export async function createRecord(formData: FormData) {
       // 3–4
       year,
       month,
-      dateOfApprehension: dateOfApprehensionRaw,
+      // Always store long form: "November 6, 2026"
+      dateOfApprehension: toLongDateString(dateOfApprehensionRaw),
       timeOfApprehension: str("timeOfApprehension"),
       placeOfApprehension,
       gpsCoordinates,
@@ -202,11 +287,15 @@ export async function createRecord(formData: FormData) {
         acpConducted === true ? dateField("acpEndorsedToPenro") : null,
       acpEndorsedToRo:
         acpConducted === true ? dateField("acpEndorsedToRo") : null,
-      // 11–13
-      dateOfPromulgation: str("dateOfPromulgation"),
+      // 11–13 — string dates stored as "November 6, 2026"
+      dateOfPromulgation: toLongDateString(
+        str("dateOfPromulgation") || str("dateOfPromulgationNumeric"),
+      ),
       promulgatedBy: str("promulgatedBy"),
       docketNumber: str("docketNumber"),
-      orderOfFinalityDate: str("orderOfFinalityDate"),
+      orderOfFinalityDate: toLongDateString(
+        str("orderOfFinalityDate") || str("orderOfFinalityDateNumeric"),
+      ),
       // 14–16
       appraisalForestProducts: appraisalFp,
       appraisalForestProductsDate:
@@ -225,19 +314,32 @@ export async function createRecord(formData: FormData) {
           : null,
       // 17
       donationMade,
-      donationFpDate: donationMade === true ? str("donationFpDate") : null,
+      donationFpDate:
+        donationMade === true
+          ? toLongDateString(
+              str("donationFpDate") || str("donationFpDateNumeric"),
+            )
+          : null,
       donationFpDonor: donationMade === true ? str("donationFpDonor") : null,
       donationFpDonee: donationMade === true ? str("donationFpDonee") : null,
       donationFpVolume:
         donationMade === true ? str("donationFpVolume") : null,
       donationConvDate:
-        donationMade === true ? str("donationConvDate") : null,
+        donationMade === true
+          ? toLongDateString(
+              str("donationConvDate") || str("donationConvDateNumeric"),
+            )
+          : null,
       donationConvDonor:
         donationMade === true ? str("donationConvDonor") : null,
       donationConvDonee:
         donationMade === true ? str("donationConvDonee") : null,
       donationEquipDate:
-        donationMade === true ? str("donationEquipDate") : null,
+        donationMade === true
+          ? toLongDateString(
+              str("donationEquipDate") || str("donationEquipDateNumeric"),
+            )
+          : null,
       donationEquipDonor:
         donationMade === true ? str("donationEquipDonor") : null,
       donationEquipDonee:
