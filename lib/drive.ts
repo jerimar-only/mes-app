@@ -123,7 +123,7 @@ export async function uploadBuffer(
         "Content-Range": `bytes ${offset}-${end - 1}/${total}`,
         "Content-Length": String(chunk.byteLength),
       },
-      body: chunk,
+      body: new Uint8Array(chunk),
     });
 
     if (res.status === 200 || res.status === 201) {
