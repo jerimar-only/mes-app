@@ -24,6 +24,9 @@ const PAGE_SIZE_OPTIONS = [25, 50, 100, 500] as const;
 const dash = (v: string | number | null | undefined) =>
   v === null || v === undefined || v === "" ? "—" : String(v);
 
+const yn = (v: boolean | null | undefined) =>
+  v === true ? "Yes" : v === false ? "No" : "—";
+
 const fmtDate = (d: Date | null) =>
   d
     ? d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", timeZone: "UTC" })
@@ -294,34 +297,49 @@ export default async function FullRecordsPage({
       {/* Table */}
       {/* max-height only on large screens so mobile uses normal page scroll */}
       <div className="app-table-shell relative lg:max-h-[70vh] lg:overflow-auto">
-        <table className="w-full border-collapse text-left text-[12.5px]" style={{ minWidth: "2600px" }}>
+        <table className="w-full border-collapse text-left text-[12.5px]" style={{ minWidth: "4200px" }}>
           <thead className="sticky top-0 z-20 bg-[var(--accent)]">
             <tr className="border-b border-[var(--border)] bg-[var(--accent)] text-[11px] font-semibold uppercase tracking-wide text-white">
               {/* bg on every th so sticky header stays opaque in light + dark */}
               <th className="sticky left-0 z-30 whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white shadow-[2px_0_4px_-2px_rgba(0,0,0,0.08)]">
                 ID
               </th>
+              <th className="whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">PENRO office</th>
+              <th className="whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">PENRO officer</th>
               <th className="whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">CENRO office</th>
+              <th className="whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">CENRO officer</th>
               <th className="whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Year</th>
               <th className="whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Month</th>
               <th className="whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Date</th>
+              <th className="whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Time</th>
               <th className="min-w-[140px] bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Place</th>
               <th className="min-w-[140px] bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Source of products</th>
               <th className="min-w-[120px] bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">GPS</th>
               <th className="min-w-[110px] bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Land class.</th>
-              <th className="min-w-[120px] bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Apprehending officers</th>
+              <th className="min-w-[120px] bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Apprehending agency</th>
+              <th className="min-w-[120px] bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Apprehending officer</th>
+              <th className="whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Respondent present?</th>
               <th className="min-w-[120px] bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Claimant/owner</th>
+              <th className="min-w-[110px] bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Respondent contact</th>
+              <th className="min-w-[140px] bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Respondent address</th>
               <th className="min-w-[180px] bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Circumstances</th>
               <th className="min-w-[110px] bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Place impounded</th>
               <th className="min-w-[110px] bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Other agencies</th>
-              <th className="min-w-[160px] bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Other remarks</th>
-              <th className="min-w-[160px] bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Remarks</th>
+              <th className="whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">ACP conducted?</th>
+              <th className="whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">ACP date</th>
               <th className="whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">ACP to PENRO</th>
               <th className="whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">ACP to RO</th>
-              <th className="min-w-[220px] bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Case status</th>
-              <th className="whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Status</th>
+              <th className="whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Promulgation date</th>
+              <th className="min-w-[120px] bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Promulgated by</th>
               <th className="whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Docket #</th>
               <th className="whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Finality date</th>
+              <th className="whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Appraisal FP?</th>
+              <th className="whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Appraisal FP date</th>
+              <th className="whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Appraisal conv.?</th>
+              <th className="whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Appraisal conv. date</th>
+              <th className="whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Appraisal equip.?</th>
+              <th className="whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Appraisal equip. date</th>
+              <th className="whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Donation made?</th>
               <th className="min-w-[150px] bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Forest products</th>
               <th className="whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white text-right">Products value</th>
               <th className="min-w-[130px] bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Conveyances</th>
@@ -329,6 +347,10 @@ export default async function FullRecordsPage({
               <th className="min-w-[130px] bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Equipment</th>
               <th className="whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white text-right">Equipment value</th>
               <th className="whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white text-right">Total est. value</th>
+              <th className="min-w-[160px] bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Other remarks</th>
+              <th className="min-w-[160px] bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Remarks</th>
+              <th className="min-w-[220px] bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Case status</th>
+              <th className="whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">Status</th>
               {fieldDefs.map((fd) => (
                 <th key={fd.id} className="min-w-[120px] whitespace-nowrap bg-[var(--accent)] px-3 py-2.5 font-semibold text-white">
                   {fd.name}
@@ -343,13 +365,28 @@ export default async function FullRecordsPage({
               const fvById = new Map(r.fieldValues.map((fv) => [fv.fieldDefinitionId, fv]));
 
               const productsText = r.items
-                .map((it) => it.species || it.forms || it.description || "item")
+                .map((it) => {
+                  const label = it.type || it.species || it.forms || it.description || "item";
+                  const qty = it.quantity ? ` ×${it.quantity}` : "";
+                  return `${label}${qty}`;
+                })
                 .join(", ");
               const conveyancesText = r.conveyances
-                .map((c) => `${c.type} ×${c.quantity}`)
+                .map((c) => {
+                  const plate = c.plateNo ? ` (${c.plateNo})` : "";
+                  return `${c.type || "—"}${plate}`;
+                })
                 .join(", ");
               const equipmentText = r.equipment
-                .map((e) => `${e.type} ×${e.quantity}`)
+                .map((e) => {
+                  const reg =
+                    e.registered === true
+                      ? " (reg.)"
+                      : e.registered === false
+                        ? " (unreg.)"
+                        : "";
+                  return `${e.type || "—"}${reg}`;
+                })
                 .join(", ");
 
               const productsValue = r.items.reduce(
@@ -381,10 +418,14 @@ export default async function FullRecordsPage({
                     </Link>
                   </td>
 
+                  <td className="whitespace-nowrap px-3 py-2">{dash(r.penroOffice)}</td>
+                  <td className="whitespace-nowrap px-3 py-2">{dash(r.penroOfficer)}</td>
                   <td className="whitespace-nowrap px-3 py-2">{dash(r.cenroOffice.name)}</td>
+                  <td className="whitespace-nowrap px-3 py-2">{dash(r.cenroOfficer)}</td>
                   <td className="whitespace-nowrap px-3 py-2">{dash(r.year)}</td>
                   <td className="whitespace-nowrap px-3 py-2">{dash(r.month)}</td>
                   <td className="whitespace-nowrap px-3 py-2">{dash(r.dateOfApprehension)}</td>
+                  <td className="whitespace-nowrap px-3 py-2">{dash(r.timeOfApprehension)}</td>
 
                   {/* Wrapping cells */}
                   <td className="max-w-[180px] px-3 py-2 break-words leading-snug">{dash(r.placeOfApprehension)}</td>
@@ -392,19 +433,29 @@ export default async function FullRecordsPage({
                   <td className="max-w-[140px] px-3 py-2 break-words leading-snug">{dash(r.gpsCoordinates)}</td>
                   <td className="max-w-[130px] px-3 py-2 break-words leading-snug">{dash(r.landClassification)}</td>
                   <td className="max-w-[140px] px-3 py-2 break-words leading-snug">{dash(r.apprehendingAgency)}</td>
+                  <td className="max-w-[140px] px-3 py-2 break-words leading-snug">{dash(r.apprehendingOfficer)}</td>
+                  <td className="whitespace-nowrap px-3 py-2">{yn(r.hasRespondent)}</td>
                   <td className="max-w-[140px] px-3 py-2 break-words leading-snug">{dash(r.claimantRespondent)}</td>
+                  <td className="max-w-[130px] px-3 py-2 break-words leading-snug">{dash(r.respondentContact)}</td>
+                  <td className="max-w-[160px] px-3 py-2 break-words leading-snug">{dash(r.respondentAddress)}</td>
                   <td className="max-w-[220px] px-3 py-2 break-words leading-snug">{dash(r.circumstances)}</td>
                   <td className="max-w-[130px] px-3 py-2 break-words leading-snug">{dash(r.custodianLocation)}</td>
                   <td className="max-w-[130px] px-3 py-2 break-words leading-snug">{dash(r.otherAgencies)}</td>
-                  <td className="max-w-[200px] px-3 py-2 break-words leading-snug">{dash(r.otherRemarks)}</td>
-                  <td className="max-w-[200px] px-3 py-2 break-words leading-snug">{dash(r.remarks)}</td>
+                  <td className="whitespace-nowrap px-3 py-2">{yn(r.acpConducted)}</td>
+                  <td className="whitespace-nowrap px-3 py-2">{dash(fmtDate(r.acpDate))}</td>
                   <td className="whitespace-nowrap px-3 py-2">{dash(fmtDate(r.acpEndorsedToPenro))}</td>
                   <td className="whitespace-nowrap px-3 py-2">{dash(fmtDate(r.acpEndorsedToRo))}</td>
-                  <td className="max-w-[260px] px-3 py-2 break-words leading-snug">{dash(r.caseStatus)}</td>
-
-                  <td className="whitespace-nowrap px-3 py-2">{STATUS_LABEL[r.status] ?? r.status}</td>
+                  <td className="whitespace-nowrap px-3 py-2">{dash(r.dateOfPromulgation)}</td>
+                  <td className="max-w-[140px] px-3 py-2 break-words leading-snug">{dash(r.promulgatedBy)}</td>
                   <td className="whitespace-nowrap px-3 py-2">{dash(r.docketNumber)}</td>
                   <td className="whitespace-nowrap px-3 py-2">{dash(r.orderOfFinalityDate)}</td>
+                  <td className="whitespace-nowrap px-3 py-2">{yn(r.appraisalForestProducts)}</td>
+                  <td className="whitespace-nowrap px-3 py-2">{dash(fmtDate(r.appraisalForestProductsDate))}</td>
+                  <td className="whitespace-nowrap px-3 py-2">{yn(r.appraisalConveyances)}</td>
+                  <td className="whitespace-nowrap px-3 py-2">{dash(fmtDate(r.appraisalConveyancesDate))}</td>
+                  <td className="whitespace-nowrap px-3 py-2">{yn(r.appraisalEquipment)}</td>
+                  <td className="whitespace-nowrap px-3 py-2">{dash(fmtDate(r.appraisalEquipmentDate))}</td>
+                  <td className="whitespace-nowrap px-3 py-2">{yn(r.donationMade)}</td>
 
                   <td className="max-w-[180px] px-3 py-2 break-words leading-snug">{dash(productsText)}</td>
                   <td className="whitespace-nowrap px-3 py-2 text-right tabular-nums">
@@ -421,6 +472,11 @@ export default async function FullRecordsPage({
                   <td className="whitespace-nowrap px-3 py-2 text-right tabular-nums font-medium">
                     {peso(totalEstimatedValue)}
                   </td>
+
+                  <td className="max-w-[200px] px-3 py-2 break-words leading-snug">{dash(r.otherRemarks)}</td>
+                  <td className="max-w-[200px] px-3 py-2 break-words leading-snug">{dash(r.remarks)}</td>
+                  <td className="max-w-[260px] px-3 py-2 break-words leading-snug">{dash(r.caseStatus)}</td>
+                  <td className="whitespace-nowrap px-3 py-2">{STATUS_LABEL[r.status] ?? r.status}</td>
 
                   {fieldDefs.map((fd) => {
                     const fv = fvById.get(fd.id);

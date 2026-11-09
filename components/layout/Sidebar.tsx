@@ -197,6 +197,14 @@ export default function Sidebar({
             <NavItem href="/reports" active={isActive("/reports")} collapsed={railCollapsed} icon={<ChartIcon />}>
               Reports
             </NavItem>
+            <NavItem
+              href="/receipt"
+              active={isActive("/receipt")}
+              collapsed={railCollapsed}
+              icon={<PrintIcon />}
+            >
+              Apprehension receipt
+            </NavItem>
             {!isCenro && (
               <NavItem
                 href="/export"
@@ -219,9 +227,17 @@ export default function Sidebar({
                     collapsed={railCollapsed}
                     icon={<GearIcon />}
                   >
-                    Settings
+                    Admin portal
                   </NavItem>
                 )}
+                <NavItem
+                  href="/settings"
+                  active={isActive("/settings")}
+                  collapsed={railCollapsed}
+                  icon={<CloudIcon />}
+                >
+                  Google Drive
+                </NavItem>
                 <NavItem
                   href="/field-values"
                   active={isActive("/field-values")}
@@ -418,6 +434,15 @@ function DownloadIcon() {
     </svg>
   );
 }
+function PrintIcon() {
+  return (
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 9V2h12v7" />
+      <path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2" />
+      <path d="M6 14h12v8H6z" />
+    </svg>
+  );
+}
 function GearIcon() {
   return (
     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
@@ -430,6 +455,13 @@ function SlidersIcon() {
   return (
     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
       <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6" />
+    </svg>
+  );
+}
+function CloudIcon() {
+  return (
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z" />
     </svg>
   );
 }

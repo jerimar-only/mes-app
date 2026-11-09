@@ -48,6 +48,20 @@ const peso = (v: number | null | undefined) =>
     ? "—"
     : `₱${v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
+const yn = (v: boolean | null | undefined) =>
+  v === true ? "Yes" : v === false ? "No" : null;
+
+const CONDITION_LABEL: Record<string, string> = {
+  GOOD_CONDITION: "Good condition",
+  DETERIORATING: "Deteriorating",
+  DETERIORATED: "Deteriorated",
+};
+
+const SERVICE_LABEL: Record<string, string> = {
+  SERVICEABLE: "Serviceable",
+  UNSERVICEABLE: "Unserviceable",
+};
+
 export default async function RecordDetailPage({
   params,
 }: {
@@ -108,6 +122,29 @@ export default async function RecordDetailPage({
         {record.docketNumber && (
           <p className="text-[13px] text-[var(--muted)]">Docket no. {record.docketNumber}</p>
         )}
+        {!record.isDeleted && (
+          <p className="pt-1">
+            <a
+              href={`/receipt/${record.id}`}
+              className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[var(--accent)] hover:underline"
+            >
+              <svg
+                className="h-3.5 w-3.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M6 9V2h12v7" />
+                <path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2" />
+                <path d="M6 14h12v8H6z" />
+              </svg>
+              Print apprehension receipt
+            </a>
+          </p>
+        )}
       </header>
 
       <div className="grid gap-6 lg:grid-cols-3 lg:items-start">
@@ -121,9 +158,19 @@ export default async function RecordDetailPage({
             <Stat label="Products value" value={peso(totalValue || null)} />
           </div>
 
+          <Card title="Office concerned">
+            <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
+              <Field label="PENRO office" value={record.penroOffice} />
+              <Field label="PENRO officer" value={record.penroOfficer} />
+              <Field label="CENRO office" value={record.cenroOffice?.name} />
+              <Field label="CENRO officer" value={record.cenroOfficer} />
+            </div>
+          </Card>
+
           <Card title="Incident details">
             <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
               <Field label="Date of apprehension" value={record.dateOfApprehension} />
+              <Field label="Time of apprehension" value={record.timeOfApprehension} />
               <Field label="Place of apprehension" value={record.placeOfApprehension} />
               <Field label="Place of the source of forest products" value={record.sourcePlace} />
               <Field label="GPS coordinates" value={record.gpsCoordinates} />
@@ -137,8 +184,12 @@ export default async function RecordDetailPage({
 
           <Card title="Parties involved">
             <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
-              <Field label="Apprehending officers" value={record.apprehendingAgency} />
-              <Field label="Name of claimant/owner" value={record.claimantRespondent} />
+              <Field label="Apprehending agency" value={record.apprehendingAgency} />
+              <Field label="Apprehending officer" value={record.apprehendingOfficer} />
+              <Field label="Respondent / claimant present?" value={yn(record.hasRespondent)} />
+              <Field label="Name of claimant / respondent" value={record.claimantRespondent} />
+              <Field label="Respondent contact" value={record.respondentContact} />
+              <Field label="Respondent address" value={record.respondentAddress} />
               <Field label="Other agencies involved" value={record.otherAgencies} />
             </div>
           </Card>
@@ -153,9 +204,9 @@ export default async function RecordDetailPage({
                   <table className="w-full text-left text-[14px]">
                     <thead className="border-b border-[var(--border)] bg-[var(--accent)] text-[13px] font-semibold text-white">
                       <tr>
+                        <th className="px-4 py-2 font-medium">Type</th>
                         <th className="px-4 py-2 font-medium">Qty</th>
-                        <th className="px-4 py-2 font-medium">Species</th>
-                        <th className="px-4 py-2 font-medium">Forms</th>
+                        <th className="px-4 py-2 font-medium">Status</th>
                         <th className="px-4 py-2 text-right font-medium">bd.ft.</th>
                         <th className="px-4 py-2 text-right font-medium">cu.m.</th>
                         <th className="px-4 py-2 text-right font-medium">Value</th>
@@ -164,9 +215,11 @@ export default async function RecordDetailPage({
                     <tbody>
                       {record.items.map((item) => (
                         <tr key={item.id} className="border-b border-zinc-100 text-zinc-900 last:border-0 dark:border-zinc-800 dark:text-zinc-100">
+                          <td className="px-4 py-2">{item.type || item.forms || item.species || "—"}</td>
                           <td className="px-4 py-2">{item.quantity || "—"}</td>
-                          <td className="px-4 py-2">{item.species || "—"}</td>
-                          <td className="px-4 py-2">{item.forms || item.description || "—"}</td>
+                          <td className="px-4 py-2">
+                            {CONDITION_LABEL[item.conditionStatus ?? ""] || item.conditionStatus || "—"}
+                          </td>
                           <td className="px-4 py-2 text-right tabular-nums">{num(item.volumeBdFt)}</td>
                           <td className="px-4 py-2 text-right tabular-nums">{num(item.volumeCuM)}</td>
                           <td className="px-4 py-2 text-right tabular-nums">{peso(item.estimatedValue)}</td>
@@ -194,7 +247,7 @@ export default async function RecordDetailPage({
                     <div key={item.id} className="rounded-lg border border-[var(--border)] p-3">
                       <div className="flex items-start justify-between gap-3">
                         <p className="break-words font-medium">
-                          {item.species || item.forms || item.description || "Item"}
+                          {item.type || item.species || item.forms || item.description || "Item"}
                         </p>
                         {item.quantity && (
                           <span className="shrink-0 rounded-full bg-[var(--shell)] px-2 py-0.5 text-[12px] text-[var(--muted)]">
@@ -202,9 +255,9 @@ export default async function RecordDetailPage({
                           </span>
                         )}
                       </div>
-                      {item.species && (item.forms || item.description) && (
+                      {(item.conditionStatus || item.forms || item.description) && (
                         <p className="mt-0.5 text-[13px] text-[var(--muted)]">
-                          {item.forms || item.description}
+                          {CONDITION_LABEL[item.conditionStatus ?? ""] || item.conditionStatus || item.forms || item.description}
                         </p>
                       )}
                       <dl className="mt-2 grid grid-cols-3 gap-2 text-[13px]">
@@ -231,31 +284,140 @@ export default async function RecordDetailPage({
 
           <div className="grid gap-6 md:grid-cols-2">
             <Card title="Conveyances">
-              <PairList rows={record.conveyances} />
+              {record.conveyances.length === 0 ? (
+                <p className="text-[14px] text-[var(--muted)]">None</p>
+              ) : (
+                <ul className="divide-y divide-[var(--shell)] rounded-lg border border-[var(--border)]">
+                  {record.conveyances.map((c) => (
+                    <li key={c.id} className="space-y-1 px-4 py-2.5 text-[14px]">
+                      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
+                        <span className="min-w-0 break-words font-medium text-[var(--foreground)]">
+                          {c.type || "—"}
+                        </span>
+                        <span className="shrink-0 text-[13px] text-[var(--muted)]">
+                          {SERVICE_LABEL[c.serviceStatus ?? ""] || c.serviceStatus || "—"}
+                        </span>
+                      </div>
+                      {c.plateNo && (
+                        <p className="text-[13px] text-[var(--muted)]">Plate no. {c.plateNo}</p>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </Card>
-            <Card title="Equipment / tools">
-              <PairList rows={record.equipment} />
+            <Card title="Equipment / implements">
+              {record.equipment.length === 0 ? (
+                <p className="text-[14px] text-[var(--muted)]">None</p>
+              ) : (
+                <ul className="divide-y divide-[var(--shell)] rounded-lg border border-[var(--border)]">
+                  {record.equipment.map((e) => (
+                    <li key={e.id} className="space-y-1 px-4 py-2.5 text-[14px]">
+                      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
+                        <span className="min-w-0 break-words font-medium text-[var(--foreground)]">
+                          {e.type || "—"}
+                        </span>
+                        <span className="shrink-0 text-[13px] text-[var(--muted)]">
+                          {SERVICE_LABEL[e.serviceStatus ?? ""] || e.serviceStatus || "—"}
+                        </span>
+                      </div>
+                      <p className="text-[13px] text-[var(--muted)]">
+                        Registered:{" "}
+                        {e.registered === true ? "Yes" : e.registered === false ? "No" : "—"}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </Card>
           </div>
 
-          <Card title="Endorsement and case status">
+          <Card title="Administrative Confiscation Proceeding">
             <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
+              <Field label="ACP conducted?" value={yn(record.acpConducted)} />
+              <Field label="Date of ACP" value={fmtDate(record.acpDate)} />
               <Field label="ACP endorsed to PENRO" value={fmtDate(record.acpEndorsedToPenro)} />
               <Field label="ACP endorsed to RO" value={fmtDate(record.acpEndorsedToRo)} />
+            </div>
+          </Card>
+
+          <Card title="Promulgation, docket & finality">
+            <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
+              <Field label="Date of promulgation" value={record.dateOfPromulgation} />
+              <Field label="Promulgated by" value={record.promulgatedBy} />
+              <Field label="Docket no." value={record.docketNumber} />
               <Field label="Order of finality date" value={record.orderOfFinalityDate} />
             </div>
-            <div className="mt-4 space-y-4">
+          </Card>
+
+          <Card title="Appraisal conducted">
+            <div className="space-y-4">
+              <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
+                <Field label="Forest products" value={yn(record.appraisalForestProducts)} />
+                <Field
+                  label="Date of appraisal (forest products)"
+                  value={fmtDate(record.appraisalForestProductsDate)}
+                />
+                <Field label="Conveyances" value={yn(record.appraisalConveyances)} />
+                <Field
+                  label="Date of appraisal (conveyances)"
+                  value={fmtDate(record.appraisalConveyancesDate)}
+                />
+                <Field label="Equipment / implements" value={yn(record.appraisalEquipment)} />
+                <Field
+                  label="Date of appraisal (equipment)"
+                  value={fmtDate(record.appraisalEquipmentDate)}
+                />
+              </div>
+            </div>
+          </Card>
+
+          <Card title="Donation">
+            <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
+              <Field label="Donation made?" value={yn(record.donationMade)} />
+              <Field label="Forest products — date" value={record.donationFpDate} />
+              <Field label="Forest products — donor" value={record.donationFpDonor} />
+              <Field label="Forest products — donee" value={record.donationFpDonee} />
+              <Field label="Forest products — volume" value={record.donationFpVolume} />
+              <Field label="Conveyances — date" value={record.donationConvDate} />
+              <Field label="Conveyances — donor" value={record.donationConvDonor} />
+              <Field label="Conveyances — donee" value={record.donationConvDonee} />
+              <Field label="Equipment — date" value={record.donationEquipDate} />
+              <Field label="Equipment — donor" value={record.donationEquipDonor} />
+              <Field label="Equipment — donee" value={record.donationEquipDonee} />
+            </div>
+          </Card>
+
+          <Card title="Notes & case status">
+            <div className="space-y-4">
               <Field
                 label="Other remarks (condition, status of criminal complaint)"
                 value={record.otherRemarks}
                 multiline
               />
-              <Field label="Remarks" value={record.remarks} multiline />
+              <Field label="Remarks / additional notes" value={record.remarks} multiline />
               <Field
                 label="Case status (filed in court or prosecutor's office)"
                 value={record.caseStatus}
                 multiline
               />
+              <div>
+                <p className="mb-1 text-[12.5px] font-medium uppercase tracking-wide text-[var(--muted)]">
+                  Case documents (Google Drive)
+                </p>
+                {record.caseDocumentsUrl ? (
+                  <a
+                    href={record.caseDocumentsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[14px] font-medium text-[var(--accent)] underline-offset-2 hover:underline"
+                  >
+                    Open in Google Drive
+                  </a>
+                ) : (
+                  <p className="text-[14px] text-[var(--muted)]">—</p>
+                )}
+              </div>
             </div>
           </Card>
         </div>
@@ -303,12 +465,27 @@ export default async function RecordDetailPage({
                 className="block w-full rounded-md border border-zinc-300 bg-white px-4 py-2 text-center text-[14px] font-medium text-zinc-900 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
               />
 
+              <a
+                href={`/receipt/${record.id}`}
+                className="block w-full rounded-md border border-zinc-300 bg-white px-4 py-2 text-center text-[14px] font-medium text-zinc-900 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+              >
+                Print apprehension receipt
+              </a>
+
               {/* Soft delete: Administrator + Super Admin. Permanent delete is only on deleted records. */}
               {canSoftDelete && <DeleteButton recordId={record.id} />}
             </div>
           ) : (
-            <div className="dash-panel p-4 text-[14px] text-[var(--muted)]">
-              Only administrators can edit saved records.
+            <div className="space-y-4">
+              <a
+                href={`/receipt/${record.id}`}
+                className="block w-full rounded-md border border-zinc-300 bg-white px-4 py-2 text-center text-[14px] font-medium text-zinc-900 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+              >
+                Print apprehension receipt
+              </a>
+              <div className="dash-panel p-4 text-[14px] text-[var(--muted)]">
+                Only administrators can edit saved records.
+              </div>
             </div>
           )}
         </aside>

@@ -345,6 +345,7 @@ export async function createRecord(formData: FormData) {
       donationEquipDonee:
         donationMade === true ? str("donationEquipDonee") : null,
       remarks: str("remarks"),
+      caseDocumentsUrl: str("caseDocumentsUrl"),
       status: "UNKNOWN",
       items: items.length ? { create: items } : undefined,
       conveyances: conveyances.length ? { create: conveyances } : undefined,
@@ -619,6 +620,7 @@ async function saveRecord(formData: FormData) {
     donationEquipDonee:
       donationMade === true ? str("donationEquipDonee") : null,
     remarks: str("remarks"),
+    caseDocumentsUrl: str("caseDocumentsUrl"),
     sourcePlace: str("sourcePlace"),
     landClassification: str("landClassification"),
     circumstances: str("circumstances"),

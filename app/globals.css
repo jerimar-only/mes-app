@@ -1067,3 +1067,83 @@ body {
 }
 
 /* Native browser scrollbars only — no custom scrollbar styling */
+
+/* ── Print: receipt only (hide app chrome) ── */
+@media print {
+  /* Hide navigation chrome */
+  aside,
+  header,
+  footer,
+  .print\:hidden,
+  [data-print-hide],
+  nav {
+    display: none !important;
+  }
+
+  /* Reset shell so content fills the page */
+  html,
+  body {
+    background: #fff !important;
+    color: #111 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .app-shell,
+  [class*="app-shell"] {
+    margin-left: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    min-height: 0 !important;
+  }
+
+  .app-main,
+  main {
+    max-width: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Avoid cutting boxes across pages */
+  article,
+  section,
+  table,
+  tr,
+  thead,
+  tbody {
+    break-inside: avoid;
+  }
+
+  a {
+    color: inherit !important;
+    text-decoration: none !important;
+  }
+
+  /* Force light background on receipt body even in dark mode */
+  article {
+    background: #fff !important;
+    color: #111 !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+}
+
+/* Explicit hide helper (works even if Tailwind print: variant is off) */
+.print-hide {
+  /* no-op on screen */
+}
+@media print {
+  .print-hide {
+    display: none !important;
+  }
+
+  .receipt-document {
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+  }
+}

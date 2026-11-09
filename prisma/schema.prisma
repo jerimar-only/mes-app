@@ -18,15 +18,15 @@ enum UserRole {
 }
 
 model User {
-  id            Int          @id @default(autoincrement())
-  email         String       @unique // used as the login username
+  id            Int      @id @default(autoincrement())
+  email         String   @unique // used as the login username
   passwordHash  String
   fullName      String
-  role          UserRole     @default(ENCODER)
+  role          UserRole @default(ENCODER)
   /// Required when role = CENRO; null for Super Admin / Administrator / Encoder
   cenroOfficeId Int?
-  isActive      Boolean      @default(true)
-  createdAt     DateTime     @default(now())
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
 
   cenroOffice CenroOffice? @relation(fields: [cenroOfficeId], references: [id])
 
@@ -74,14 +74,15 @@ enum AssetServiceStatus {
 
 /// CENRO office — belongs to one PENRO (AOR) and has an optional default officer
 model CenroOffice {
-  id               Int                  @id @default(autoincrement())
-  name             String               @unique
+  id               Int    @id @default(autoincrement())
+  name             String @unique
   /// Parent PENRO office (Area of Responsibility)
   penroOfficeId    Int?
   /// Default CENRO officer auto-filled on New Record when this office is selected
   defaultOfficerId Int?
-  records          ApprehensionRecord[]
-  users            User[]
+
+  records ApprehensionRecord[]
+  users   User[]
 
   penroOffice    PenroOffice?  @relation(fields: [penroOfficeId], references: [id], onDelete: SetNull)
   defaultOfficer CenroOfficer? @relation(fields: [defaultOfficerId], references: [id], onDelete: SetNull)
@@ -92,11 +93,12 @@ model CenroOffice {
 
 /// Managed in Super Admin portal — powers New Record PENRO Office dropdown
 model PenroOffice {
-  id               Int           @id @default(autoincrement())
-  name             String        @unique
+  id               Int    @id @default(autoincrement())
+  name             String @unique
   /// Default PENRO officer auto-filled on New Record when this office is selected
   defaultOfficerId Int?
-  cenroOffices     CenroOffice[]
+
+  cenroOffices CenroOffice[]
 
   defaultOfficer PenroOfficer? @relation(fields: [defaultOfficerId], references: [id], onDelete: SetNull)
 
@@ -105,20 +107,22 @@ model PenroOffice {
 
 /// Managed in Super Admin portal — powers New Record PENRO Officer dropdown
 model PenroOfficer {
-  id           Int          @id @default(autoincrement())
-  name         String       @unique
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
   penroOffices PenroOffice[]
 }
 
 /// Managed in Super Admin portal — powers New Record CENRO Officer dropdown
 model CenroOfficer {
-  id           Int          @id @default(autoincrement())
-  name         String       @unique
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
   cenroOffices CenroOffice[]
 }
 
 model ApprehensionRecord {
-  id     Int @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
   // 1. PENRO *
   penroOffice  String? // Batanes | Cagayan | Isabela | Quirino | Nueva Vizcaya
@@ -148,15 +152,18 @@ model ApprehensionRecord {
   remarks            String? @db.Text
   caseStatus         String? @db.Text
 
+  /// Google Drive link for case scans / PDFs (uploaded from the app)
+  caseDocumentsUrl String?
+
   // 8. Apprehending officer *
   apprehendingAgency  String? // agency: PNP, LGU, DENR, etc.
   apprehendingOfficer String? // officer name (optional detail)
 
   // 9. Respondent / claimant * — YES → details; NO → stored as "Abandoned"
-  hasRespondent       Boolean?
-  claimantRespondent  String? // name when hasRespondent = true; "Abandoned" when false
-  respondentAddress   String?
-  respondentContact   String?
+  hasRespondent      Boolean?
+  claimantRespondent String? // name when hasRespondent = true; "Abandoned" when false
+  respondentAddress  String?
+  respondentContact  String?
 
   // 10. ACP conducted * — YES shows dates
   acpConducted       Boolean?
@@ -165,9 +172,9 @@ model ApprehensionRecord {
   acpEndorsedToRo    DateTime? @db.Date
 
   // 11–13. Promulgation + docket
-  dateOfPromulgation String?
-  promulgatedBy      String?
-  docketNumber       String?
+  dateOfPromulgation  String?
+  promulgatedBy       String?
+  docketNumber        String?
   orderOfFinalityDate String?
 
   // 14–16. Appraisals *
@@ -220,22 +227,21 @@ model ForestProductItem {
   apprehensionRecordId Int
 
   /// TYPE — logs, flitches, lumber, rattan, etc. (was: forms)
-  type           String?
+  type String?
   /// NUMBER OF PIECES
-  quantity       String?
+  quantity String?
   /// Species (optional supporting field)
-  species        String?
+  species String?
   /// Free-text description fallback
-  description    String?
+  description String?
   /// VOLUME — board feet
-  volumeBdFt     Float?
+  volumeBdFt Float?
   /// VOLUME — cubic meters
-  volumeCuM      Float?
+  volumeCuM Float?
   /// STATUS — good / deteriorating / deteriorated
   conditionStatus ProductCondition?
   /// ESTIMATED VALUE (Php)
   estimatedValue Float?
-
   /// @deprecated use `type` — kept for older rows
   forms String?
 
@@ -249,9 +255,9 @@ model Conveyance {
   apprehensionRecordId Int
 
   /// TYPE — motorcycle, kulong-kulong, etc.
-  type           String?
+  type String?
   /// PLATE NO. *
-  plateNo        String?
+  plateNo String?
   /// STATUS — serviceable / unserviceable
   serviceStatus  AssetServiceStatus?
   quantity       Int                 @default(1)
@@ -267,9 +273,9 @@ model Equipment {
   apprehensionRecordId Int
 
   /// TYPE — chainsaw, etc.
-  type           String?
+  type String?
   /// REGISTERED * YES / NO
-  registered     Boolean?
+  registered Boolean?
   /// STATUS — serviceable / unserviceable
   serviceStatus  AssetServiceStatus?
   quantity       Int                 @default(1)
@@ -288,13 +294,14 @@ enum FieldType {
 }
 
 model FieldDefinition {
-  id        Int          @id @default(autoincrement())
-  name      String       @unique
-  type      FieldType    @default(TEXT)
-  order     Int          @default(0)
-  disabled  Boolean      @default(false)
-  createdAt DateTime     @default(now())
-  values    FieldValue[]
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  type      FieldType @default(TEXT)
+  order     Int       @default(0)
+  disabled  Boolean   @default(false)
+  createdAt DateTime  @default(now())
+
+  values FieldValue[]
 }
 
 model FieldValue {
@@ -309,4 +316,11 @@ model FieldValue {
 
   @@unique([apprehensionRecordId, fieldDefinitionId])
   @@index([fieldDefinitionId])
+}
+
+// ─── App settings (Google Drive tokens, parent folder, etc.) ───
+
+model Setting {
+  key   String @id
+  value String
 }

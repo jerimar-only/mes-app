@@ -5,6 +5,7 @@ import Section from "@/components/ui/Section";
 import Field from "@/components/ui/Field";
 import { useToast } from "@/components/ui/Toast";
 import { LongDateField } from "@/components/ui/DateOfApprehensionField";
+import CaseDocumentsUpload from "@/components/ui/CaseDocumentsUpload";
 
 type Office = { id: number; name: string };
 
@@ -100,6 +101,7 @@ export default function NewRecordForm({
   // YES/NO gates (System Requirements process rule)
   const [hasRespondent, setHasRespondent] = useState<"" | "yes" | "no">("");
   const [acpConducted, setAcpConducted] = useState<"" | "yes" | "no">("");
+  const [appraisalConducted, setAppraisalConducted] = useState<"" | "yes" | "no">("");
   const [appraisalFp, setAppraisalFp] = useState<"" | "yes" | "no">("");
   const [appraisalConv, setAppraisalConv] = useState<"" | "yes" | "no">("");
   const [appraisalEquip, setAppraisalEquip] = useState<"" | "yes" | "no">("");
@@ -960,59 +962,232 @@ export default function NewRecordForm({
 
       {/* 14–16. Appraisals */}
       <Section title="Appraisal conducted? *">
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <YesNoField
-              name="appraisalForestProducts"
-              label="Forest products *"
-              value={appraisalFp}
-              onChange={setAppraisalFp}
-              required
-            />
-            {appraisalFp === "yes" && (
-              <Field label="Date of appraisal (forest products)">
-                <LongDateField
-                  name="appraisalForestProductsDate"
-                  submitFormat="iso"
-                />
-              </Field>
-            )}
-          </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <YesNoField
-              name="appraisalConveyances"
-              label="Conveyances *"
-              value={appraisalConv}
-              onChange={setAppraisalConv}
-              required
-            />
-            {appraisalConv === "yes" && (
-              <Field label="Date of appraisal (conveyances)">
-                <LongDateField
-                  name="appraisalConveyancesDate"
-                  submitFormat="iso"
-                />
-              </Field>
-            )}
-          </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <YesNoField
-              name="appraisalEquipment"
-              label="Equipment / implements *"
-              value={appraisalEquip}
-              onChange={setAppraisalEquip}
-              required
-            />
-            {appraisalEquip === "yes" && (
-              <Field label="Date of appraisal (equipment)">
-                <LongDateField
-                  name="appraisalEquipmentDate"
-                  submitFormat="iso"
-                />
-              </Field>
-            )}
-          </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <YesNoField
+            name="appraisalConducted"
+            value={appraisalConducted}
+            onChange={(v) => {
+              setAppraisalConducted(v);
+              if (v === "no") {
+                setAppraisalFp("no");
+                setAppraisalConv("no");
+                setAppraisalEquip("no");
+              }
+            }}
+            required
+          />
         </div>
+
+        {appraisalConducted === "yes" && (
+          <div className="mt-4 space-y-6">
+            {/* Forest products */}
+            <div className="space-y-3">
+              <YesNoField
+                name="appraisalForestProducts"
+                label="Forest products *"
+                value={appraisalFp}
+                onChange={setAppraisalFp}
+                required
+              />
+              {appraisalFp === "yes" && (
+                <div className="space-y-3 rounded-lg border border-[var(--border)] bg-[var(--background)]/40 p-3">
+                  <Field label="Date of appraisal (forest products)">
+                    <LongDateField
+                      name="appraisalForestProductsDate"
+                      submitFormat="iso"
+                    />
+                  </Field>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    <Field label="Type">
+                      <select
+                        name="appraisalFpType"
+                        className={selectClass}
+                        defaultValue=""
+                      >
+                        <option value="">— Type —</option>
+                        {PRODUCT_TYPES.map((t) => (
+                          <option key={t} value={t}>
+                            {t}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                    <Field label="Number of pieces">
+                      <input
+                        type="text"
+                        name="appraisalFpQty"
+                        placeholder="e.g. 12"
+                        className={inputClass}
+                      />
+                    </Field>
+                    <Field label="Volume (bd. ft.)">
+                      <input
+                        type="number"
+                        step="any"
+                        name="appraisalFpVolumeBdFt"
+                        placeholder="Board feet"
+                        className={inputClass}
+                      />
+                    </Field>
+                    <Field label="Volume (cu. m.)">
+                      <input
+                        type="number"
+                        step="any"
+                        name="appraisalFpVolumeCuM"
+                        placeholder="Cubic meters"
+                        className={inputClass}
+                      />
+                    </Field>
+                    <Field label="Status">
+                      <select
+                        name="appraisalFpCondition"
+                        className={selectClass}
+                        defaultValue=""
+                      >
+                        <option value="">— Status —</option>
+                        {PRODUCT_CONDITIONS.map((c) => (
+                          <option key={c.value} value={c.value}>
+                            {c.label}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                    <Field label="Estimated value (₱)">
+                      <input
+                        type="number"
+                        step="0.01"
+                        min={0}
+                        name="appraisalFpValue"
+                        placeholder="0.00"
+                        className={inputClass}
+                      />
+                    </Field>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Conveyances */}
+            <div className="space-y-3">
+              <YesNoField
+                name="appraisalConveyances"
+                label="Conveyances *"
+                value={appraisalConv}
+                onChange={setAppraisalConv}
+                required
+              />
+              {appraisalConv === "yes" && (
+                <div className="space-y-3 rounded-lg border border-[var(--border)] bg-[var(--background)]/40 p-3">
+                  <Field label="Date of appraisal (conveyances)">
+                    <LongDateField
+                      name="appraisalConveyancesDate"
+                      submitFormat="iso"
+                    />
+                  </Field>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                    <Field label="Type">
+                      <input
+                        type="text"
+                        name="appraisalConvType"
+                        placeholder="e.g. Motorcycle, kulong-kulong"
+                        className={inputClass}
+                      />
+                    </Field>
+                    <Field label="Plate no.">
+                      <input
+                        type="text"
+                        name="appraisalConvPlateNo"
+                        placeholder="Plate number"
+                        className={inputClass}
+                      />
+                    </Field>
+                    <Field label="Status">
+                      <select
+                        name="appraisalConvStatus"
+                        className={selectClass}
+                        defaultValue=""
+                      >
+                        <option value="">— Status —</option>
+                        {SERVICE_STATUSES.map((s) => (
+                          <option key={s.value} value={s.value}>
+                            {s.label}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Equipment / implements */}
+            <div className="space-y-3">
+              <YesNoField
+                name="appraisalEquipment"
+                label="Equipment / implements *"
+                value={appraisalEquip}
+                onChange={setAppraisalEquip}
+                required
+              />
+              {appraisalEquip === "yes" && (
+                <div className="space-y-3 rounded-lg border border-[var(--border)] bg-[var(--background)]/40 p-3">
+                  <Field label="Date of appraisal (equipment)">
+                    <LongDateField
+                      name="appraisalEquipmentDate"
+                      submitFormat="iso"
+                    />
+                  </Field>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                    <Field label="Type">
+                      <input
+                        type="text"
+                        name="appraisalEquipType"
+                        placeholder="e.g. Chainsaw"
+                        className={inputClass}
+                      />
+                    </Field>
+                    <Field label="Registered">
+                      <select
+                        name="appraisalEquipRegistered"
+                        className={selectClass}
+                        defaultValue=""
+                      >
+                        <option value="">— Select —</option>
+                        <option value="yes">Yes</option>
+                        <option value="no">No</option>
+                      </select>
+                    </Field>
+                    <Field label="Status">
+                      <select
+                        name="appraisalEquipStatus"
+                        className={selectClass}
+                        defaultValue=""
+                      >
+                        <option value="">— Status —</option>
+                        {SERVICE_STATUSES.map((s) => (
+                          <option key={s.value} value={s.value}>
+                            {s.label}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {appraisalConducted === "no" && (
+          <>
+            <input type="hidden" name="appraisalForestProducts" value="no" />
+            <input type="hidden" name="appraisalConveyances" value="no" />
+            <input type="hidden" name="appraisalEquipment" value="no" />
+            <p className="mt-3 text-[13px] text-[var(--muted)]">
+              Will be recorded as <strong>None</strong>.
+            </p>
+          </>
+        )}
       </Section>
 
       {/* 17. Mode of disposition */}
@@ -1107,6 +1282,16 @@ export default function NewRecordForm({
         <Field label="Circumstances / remarks">
           <textarea name="remarks" rows={3} className={inputClass} />
         </Field>
+      </Section>
+
+      <Section title="Case documents (Google Drive)">
+        <Field label="Upload scan / PDF to Drive">
+          <CaseDocumentsUpload name="caseDocumentsUrl" />
+        </Field>
+        <p className="mt-2 text-[12.5px] text-[var(--muted)]">
+          Requires Google Drive to be connected in Settings. The file is stored
+          in Drive; only the link is saved on this record.
+        </p>
       </Section>
 
       <div className="flex justify-end gap-3 pb-8">
