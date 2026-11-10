@@ -205,6 +205,7 @@ export default async function RecordDetailPage({
                     <thead className="border-b border-[var(--border)] bg-[var(--accent)] text-[13px] font-semibold text-white">
                       <tr>
                         <th className="px-4 py-2 font-medium">Type</th>
+                        <th className="px-4 py-2 font-medium">Species</th>
                         <th className="px-4 py-2 font-medium">Qty</th>
                         <th className="px-4 py-2 font-medium">Status</th>
                         <th className="px-4 py-2 text-right font-medium">bd.ft.</th>
@@ -215,7 +216,8 @@ export default async function RecordDetailPage({
                     <tbody>
                       {record.items.map((item) => (
                         <tr key={item.id} className="border-b border-zinc-100 text-zinc-900 last:border-0 dark:border-zinc-800 dark:text-zinc-100">
-                          <td className="px-4 py-2">{item.type || item.forms || item.species || "—"}</td>
+                          <td className="px-4 py-2">{item.type || item.forms || "—"}</td>
+                          <td className="px-4 py-2">{item.species || "—"}</td>
                           <td className="px-4 py-2">{item.quantity || "—"}</td>
                           <td className="px-4 py-2">
                             {CONDITION_LABEL[item.conditionStatus ?? ""] || item.conditionStatus || "—"}
@@ -229,7 +231,7 @@ export default async function RecordDetailPage({
                     {record.items.length > 1 && (
                       <tfoot className="border-t border-zinc-200 bg-zinc-50 font-semibold text-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100">
                         <tr>
-                          <td className="px-4 py-2" colSpan={3}>
+                          <td className="px-4 py-2" colSpan={4}>
                             Total
                           </td>
                           <td className="px-4 py-2 text-right tabular-nums">{num(totalBdFt)}</td>
@@ -247,7 +249,8 @@ export default async function RecordDetailPage({
                     <div key={item.id} className="rounded-lg border border-[var(--border)] p-3">
                       <div className="flex items-start justify-between gap-3">
                         <p className="break-words font-medium">
-                          {item.type || item.species || item.forms || item.description || "Item"}
+                          {item.type || item.forms || item.description || "Item"}
+                          {item.species ? ` — ${item.species}` : ""}
                         </p>
                         {item.quantity && (
                           <span className="shrink-0 rounded-full bg-[var(--shell)] px-2 py-0.5 text-[12px] text-[var(--muted)]">

@@ -6,26 +6,33 @@ import Field from "@/components/ui/Field";
 import { useToast } from "@/components/ui/Toast";
 import { LongDateField } from "@/components/ui/DateOfApprehensionField";
 import CaseDocumentsUpload from "@/components/ui/CaseDocumentsUpload";
+import {
+  ForestRowFields,
+  ConvRowFields,
+  EquipRowFields,
+  emptyForestRow,
+  emptyConvRow,
+  emptyEquipRow,
+  type ForestRow,
+  type ConvRow,
+  type EquipRow,
+} from "@/components/ui/ProductRows";
 
 type Office = { id: number; name: string };
-
-const PRODUCT_TYPES = ["Logs", "Flitches", "Lumber", "Rattan", "Other"] as const;
-
-const PRODUCT_CONDITIONS = [
-  { value: "GOOD_CONDITION", label: "Good condition" },
-  { value: "DETERIORATING", label: "Deteriorating" },
-  { value: "DETERIORATED", label: "Deteriorated" },
-] as const;
-
-const SERVICE_STATUSES = [
-  { value: "SERVICEABLE", label: "Serviceable" },
-  { value: "UNSERVICEABLE", label: "Unserviceable" },
-] as const;
 
 const inputClass =
   "w-full rounded-lg border border-[var(--border-strong)] bg-[var(--card)] px-3.5 py-2.5 text-[14px] text-[var(--foreground)] placeholder:text-[var(--muted)] focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20";
 
 const selectClass = inputClass;
+
+const rowStyles = {
+  inputCls: inputClass,
+  selectCls: selectClass,
+  labelCls: "field-label",
+};
+
+let rowKey = 0;
+const nextRowKey = () => ++rowKey;
 
 function YesNoField({
   name,
@@ -94,9 +101,16 @@ export default function NewRecordForm({
   lockedOfficeId?: number | null;
 }) {
   // Start empty so user must click "+ Add product" (same behavior as conveyances / equipment)
-  const [itemRows, setItemRows] = useState<number[]>([]);
-  const [convRows, setConvRows] = useState<number[]>([]);
-  const [equipRows, setEquipRows] = useState<number[]>([]);
+  // Rows live in state so the Appraisal section can show and edit the same data.
+  const [items, setItems] = useState<ForestRow[]>([]);
+  const [convs, setConvs] = useState<ConvRow[]>([]);
+  const [equips, setEquips] = useState<EquipRow[]>([]);
+  const patchItem = (k: number, patch: Partial<ForestRow>) =>
+    setItems((r) => r.map((x) => (x.k === k ? { ...x, ...patch } : x)));
+  const patchConv = (k: number, patch: Partial<ConvRow>) =>
+    setConvs((r) => r.map((x) => (x.k === k ? { ...x, ...patch } : x)));
+  const patchEquip = (k: number, patch: Partial<EquipRow>) =>
+    setEquips((r) => r.map((x) => (x.k === k ? { ...x, ...patch } : x)));
 
   // YES/NO gates (System Requirements process rule)
   const [hasRespondent, setHasRespondent] = useState<"" | "yes" | "no">("");
@@ -601,95 +615,40 @@ export default function NewRecordForm({
         </p>
       </Section>
 
-      {/* 5. Forest products — same empty-start + Add behavior as conveyances / equipment */}
+      {/* 5. Forest products */}
       <Section
         title="Forest products"
         action={
           <button
             type="button"
-            onClick={() =>
-              setItemRows((r) => [...r, r.length ? Math.max(...r) + 1 : 0])
-            }
+            onClick={() => setItems((r) => [...r, emptyForestRow(nextRowKey())])}
             className="text-[13px] font-medium text-[var(--accent)] hover:underline"
           >
             + Add product
           </button>
         }
       >
-        {itemRows.length === 0 ? (
+        {items.length === 0 ? (
           <p className="text-[14px] text-[var(--muted)]">No forest products added yet.</p>
         ) : (
           <div className="space-y-3">
-            {itemRows.map((row) => (
-              <div
-                key={row}
-                className="relative grid grid-cols-1 gap-2 rounded-lg border border-[var(--border)] bg-[var(--background)]/40 p-3 pt-10 sm:grid-cols-2 lg:grid-cols-3"
-              >
+            {items.map((row) => (
+              <div key={row.k} className="relative grid grid-cols-1 gap-2 rounded-lg border border-[var(--border)] bg-[var(--background)]/40 p-3 pt-10 sm:grid-cols-2 lg:grid-cols-3">
                 <button
                   type="button"
-                  onClick={() => setItemRows((r) => r.filter((id) => id !== row))}
+                  onClick={() => setItems((r) => r.filter((x) => x.k !== row.k))}
                   className="absolute right-2 top-2 rounded-md px-2 py-1 text-[12px] font-medium text-[var(--muted)] hover:bg-[var(--border)] hover:text-[var(--foreground)]"
                   aria-label="Remove product"
                   title="Remove"
                 >
                   ✕
                 </button>
-                <Field label="Type">
-                  <select name="itemType" className={selectClass} defaultValue="">
-                    <option value="">— Type —</option>
-                    {PRODUCT_TYPES.map((t) => (
-                      <option key={t} value={t}>
-                        {t}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-                <Field label="Number of pieces">
-                  <input
-                    type="text"
-                    name="itemQty"
-                    placeholder="e.g. 12"
-                    className={inputClass}
-                  />
-                </Field>
-                <Field label="Volume (bd. ft.)">
-                  <input
-                    type="number"
-                    step="any"
-                    name="itemVolumeBdFt"
-                    placeholder="Board feet"
-                    className={inputClass}
-                  />
-                </Field>
-                <Field label="Volume (cu. m.)">
-                  <input
-                    type="number"
-                    step="any"
-                    name="itemVolumeCuM"
-                    placeholder="Cubic meters"
-                    className={inputClass}
-                  />
-                </Field>
-                <Field label="Status">
-                  <select name="itemCondition" className={selectClass} defaultValue="">
-                    <option value="">— Status —</option>
-                    {PRODUCT_CONDITIONS.map((c) => (
-                      <option key={c.value} value={c.value}>
-                        {c.label}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-                <Field label="Estimated value (₱)">
-                  <input
-                    type="number"
-                    step="0.01"
-                    min={0}
-                    name="itemValue"
-                    placeholder="0.00"
-                    className={inputClass}
-                  />
-                </Field>
+                <ForestRowFields
+                  row={row}
+                  onChange={(patch) => patchItem(row.k, patch)}
+                  named
+                  styles={rowStyles}
+                />
               </div>
             ))}
           </div>
@@ -702,59 +661,34 @@ export default function NewRecordForm({
         action={
           <button
             type="button"
-            onClick={() =>
-              setConvRows((r) => [...r, r.length ? Math.max(...r) + 1 : 0])
-            }
+            onClick={() => setConvs((r) => [...r, emptyConvRow(nextRowKey())])}
             className="text-[13px] font-medium text-[var(--accent)] hover:underline"
           >
             + Add conveyance
           </button>
         }
       >
-        {convRows.length === 0 ? (
+        {convs.length === 0 ? (
           <p className="text-[14px] text-[var(--muted)]">No conveyances added yet.</p>
         ) : (
           <div className="space-y-3">
-            {convRows.map((row) => (
-              <div
-                key={row}
-                className="relative grid grid-cols-1 gap-2 rounded-lg border border-[var(--border)] bg-[var(--background)]/40 p-3 pt-10 sm:grid-cols-3"
-              >
+            {convs.map((row) => (
+              <div key={row.k} className="relative grid grid-cols-1 gap-2 rounded-lg border border-[var(--border)] bg-[var(--background)]/40 p-3 pt-10 sm:grid-cols-2 lg:grid-cols-3">
                 <button
                   type="button"
-                  onClick={() => setConvRows((r) => r.filter((id) => id !== row))}
+                  onClick={() => setConvs((r) => r.filter((x) => x.k !== row.k))}
                   className="absolute right-2 top-2 rounded-md px-2 py-1 text-[12px] font-medium text-[var(--muted)] hover:bg-[var(--border)] hover:text-[var(--foreground)]"
                   aria-label="Remove conveyance"
                   title="Remove"
                 >
                   ✕
                 </button>
-                <Field label="Type">
-                  <input
-                    type="text"
-                    name="convType"
-                    placeholder="e.g. Motorcycle, kulong-kulong"
-                    className={inputClass}
-                  />
-                </Field>
-                <Field label="Plate no. *">
-                  <input
-                    type="text"
-                    name="convPlateNo"
-                    placeholder="Plate number"
-                    className={inputClass}
-                  />
-                </Field>
-                <Field label="Status">
-                  <select name="convStatus" className={selectClass} defaultValue="">
-                    <option value="">— Status —</option>
-                    {SERVICE_STATUSES.map((s) => (
-                      <option key={s.value} value={s.value}>
-                        {s.label}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
+                <ConvRowFields
+                  row={row}
+                  onChange={(patch) => patchConv(row.k, patch)}
+                  named
+                  styles={rowStyles}
+                />
               </div>
             ))}
           </div>
@@ -767,58 +701,34 @@ export default function NewRecordForm({
         action={
           <button
             type="button"
-            onClick={() =>
-              setEquipRows((r) => [...r, r.length ? Math.max(...r) + 1 : 0])
-            }
+            onClick={() => setEquips((r) => [...r, emptyEquipRow(nextRowKey())])}
             className="text-[13px] font-medium text-[var(--accent)] hover:underline"
           >
             + Add equipment
           </button>
         }
       >
-        {equipRows.length === 0 ? (
+        {equips.length === 0 ? (
           <p className="text-[14px] text-[var(--muted)]">No equipment added yet.</p>
         ) : (
           <div className="space-y-3">
-            {equipRows.map((row) => (
-              <div
-                key={row}
-                className="relative grid grid-cols-1 gap-2 rounded-lg border border-[var(--border)] bg-[var(--background)]/40 p-3 pt-10 sm:grid-cols-3"
-              >
+            {equips.map((row) => (
+              <div key={row.k} className="relative grid grid-cols-1 gap-2 rounded-lg border border-[var(--border)] bg-[var(--background)]/40 p-3 pt-10 sm:grid-cols-2 lg:grid-cols-3">
                 <button
                   type="button"
-                  onClick={() => setEquipRows((r) => r.filter((id) => id !== row))}
+                  onClick={() => setEquips((r) => r.filter((x) => x.k !== row.k))}
                   className="absolute right-2 top-2 rounded-md px-2 py-1 text-[12px] font-medium text-[var(--muted)] hover:bg-[var(--border)] hover:text-[var(--foreground)]"
                   aria-label="Remove equipment"
                   title="Remove"
                 >
                   ✕
                 </button>
-                <Field label="Type">
-                  <input
-                    type="text"
-                    name="equipType"
-                    placeholder="e.g. Chainsaw"
-                    className={inputClass}
-                  />
-                </Field>
-                <Field label="Registered *">
-                  <select name="equipRegistered" className={selectClass} defaultValue="">
-                    <option value="">— Select —</option>
-                    <option value="yes">Yes</option>
-                    <option value="no">No</option>
-                  </select>
-                </Field>
-                <Field label="Status">
-                  <select name="equipStatus" className={selectClass} defaultValue="">
-                    <option value="">— Status —</option>
-                    {SERVICE_STATUSES.map((s) => (
-                      <option key={s.value} value={s.value}>
-                        {s.label}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
+                <EquipRowFields
+                  row={row}
+                  onChange={(patch) => patchEquip(row.k, patch)}
+                  named
+                  styles={rowStyles}
+                />
               </div>
             ))}
           </div>
@@ -997,72 +907,33 @@ export default function NewRecordForm({
                       submitFormat="iso"
                     />
                   </Field>
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                    <Field label="Type">
-                      <select
-                        name="appraisalFpType"
-                        className={selectClass}
-                        defaultValue=""
-                      >
-                        <option value="">— Type —</option>
-                        {PRODUCT_TYPES.map((t) => (
-                          <option key={t} value={t}>
-                            {t}
-                          </option>
-                        ))}
-                      </select>
-                    </Field>
-                    <Field label="Number of pieces">
-                      <input
-                        type="text"
-                        name="appraisalFpQty"
-                        placeholder="e.g. 12"
-                        className={inputClass}
-                      />
-                    </Field>
-                    <Field label="Volume (bd. ft.)">
-                      <input
-                        type="number"
-                        step="any"
-                        name="appraisalFpVolumeBdFt"
-                        placeholder="Board feet"
-                        className={inputClass}
-                      />
-                    </Field>
-                    <Field label="Volume (cu. m.)">
-                      <input
-                        type="number"
-                        step="any"
-                        name="appraisalFpVolumeCuM"
-                        placeholder="Cubic meters"
-                        className={inputClass}
-                      />
-                    </Field>
-                    <Field label="Status">
-                      <select
-                        name="appraisalFpCondition"
-                        className={selectClass}
-                        defaultValue=""
-                      >
-                        <option value="">— Status —</option>
-                        {PRODUCT_CONDITIONS.map((c) => (
-                          <option key={c.value} value={c.value}>
-                            {c.label}
-                          </option>
-                        ))}
-                      </select>
-                    </Field>
-                    <Field label="Estimated value (₱)">
-                      <input
-                        type="number"
-                        step="0.01"
-                        min={0}
-                        name="appraisalFpValue"
-                        placeholder="0.00"
-                        className={inputClass}
-                      />
-                    </Field>
-                  </div>
+                  {items.length === 0 ? (
+                    <p className="text-[13px] text-[var(--muted)]">
+                      No forest products encoded yet. Add them in the “Forest products” section above — they will appear here for appraisal.
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      <p className="text-[12px] text-[var(--muted)]">
+                        Same entries as above — update them here as appraised.
+                      </p>
+                      {items.map((row, idx) => (
+                        <div
+                          key={row.k}
+                          className="grid grid-cols-1 gap-2 rounded-lg border border-[var(--border)] bg-[var(--card)] p-3 sm:grid-cols-2 lg:grid-cols-3"
+                        >
+                          <p className="text-[12px] font-semibold uppercase tracking-wide text-[var(--muted)] sm:col-span-2 lg:col-span-3">
+                            Product {idx + 1}
+                          </p>
+                          <ForestRowFields
+                            row={row}
+                            onChange={(patch) => patchItem(row.k, patch)}
+                            named={false}
+                            styles={rowStyles}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1084,38 +955,33 @@ export default function NewRecordForm({
                       submitFormat="iso"
                     />
                   </Field>
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                    <Field label="Type">
-                      <input
-                        type="text"
-                        name="appraisalConvType"
-                        placeholder="e.g. Motorcycle, kulong-kulong"
-                        className={inputClass}
-                      />
-                    </Field>
-                    <Field label="Plate no.">
-                      <input
-                        type="text"
-                        name="appraisalConvPlateNo"
-                        placeholder="Plate number"
-                        className={inputClass}
-                      />
-                    </Field>
-                    <Field label="Status">
-                      <select
-                        name="appraisalConvStatus"
-                        className={selectClass}
-                        defaultValue=""
-                      >
-                        <option value="">— Status —</option>
-                        {SERVICE_STATUSES.map((s) => (
-                          <option key={s.value} value={s.value}>
-                            {s.label}
-                          </option>
-                        ))}
-                      </select>
-                    </Field>
-                  </div>
+                  {convs.length === 0 ? (
+                    <p className="text-[13px] text-[var(--muted)]">
+                      No conveyances encoded yet. Add them in the “Conveyances” section above — they will appear here for appraisal.
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      <p className="text-[12px] text-[var(--muted)]">
+                        Same entries as above — update them here as appraised.
+                      </p>
+                      {convs.map((row, idx) => (
+                        <div
+                          key={row.k}
+                          className="grid grid-cols-1 gap-2 rounded-lg border border-[var(--border)] bg-[var(--card)] p-3 sm:grid-cols-2 lg:grid-cols-3"
+                        >
+                          <p className="text-[12px] font-semibold uppercase tracking-wide text-[var(--muted)] sm:col-span-2 lg:col-span-3">
+                            Conveyance {idx + 1}
+                          </p>
+                          <ConvRowFields
+                            row={row}
+                            onChange={(patch) => patchConv(row.k, patch)}
+                            named={false}
+                            styles={rowStyles}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1137,41 +1003,33 @@ export default function NewRecordForm({
                       submitFormat="iso"
                     />
                   </Field>
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                    <Field label="Type">
-                      <input
-                        type="text"
-                        name="appraisalEquipType"
-                        placeholder="e.g. Chainsaw"
-                        className={inputClass}
-                      />
-                    </Field>
-                    <Field label="Registered">
-                      <select
-                        name="appraisalEquipRegistered"
-                        className={selectClass}
-                        defaultValue=""
-                      >
-                        <option value="">— Select —</option>
-                        <option value="yes">Yes</option>
-                        <option value="no">No</option>
-                      </select>
-                    </Field>
-                    <Field label="Status">
-                      <select
-                        name="appraisalEquipStatus"
-                        className={selectClass}
-                        defaultValue=""
-                      >
-                        <option value="">— Status —</option>
-                        {SERVICE_STATUSES.map((s) => (
-                          <option key={s.value} value={s.value}>
-                            {s.label}
-                          </option>
-                        ))}
-                      </select>
-                    </Field>
-                  </div>
+                  {equips.length === 0 ? (
+                    <p className="text-[13px] text-[var(--muted)]">
+                      No equipment encoded yet. Add it in the “Equipment / implement” section above — it will appear here for appraisal.
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      <p className="text-[12px] text-[var(--muted)]">
+                        Same entries as above — update them here as appraised.
+                      </p>
+                      {equips.map((row, idx) => (
+                        <div
+                          key={row.k}
+                          className="grid grid-cols-1 gap-2 rounded-lg border border-[var(--border)] bg-[var(--card)] p-3 sm:grid-cols-2 lg:grid-cols-3"
+                        >
+                          <p className="text-[12px] font-semibold uppercase tracking-wide text-[var(--muted)] sm:col-span-2 lg:col-span-3">
+                            Equipment {idx + 1}
+                          </p>
+                          <EquipRowFields
+                            row={row}
+                            onChange={(patch) => patchEquip(row.k, patch)}
+                            named={false}
+                            styles={rowStyles}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

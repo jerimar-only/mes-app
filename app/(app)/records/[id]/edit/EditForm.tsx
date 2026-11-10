@@ -5,6 +5,17 @@ import Link from "next/link";
 import { updateRecord, updateRecordInline } from "../../actions";
 import { useToast } from "@/components/ui/Toast";
 import CaseDocumentsUpload from "@/components/ui/CaseDocumentsUpload";
+import {
+  ForestRowFields,
+  ConvRowFields,
+  EquipRowFields,
+  emptyForestRow,
+  emptyConvRow,
+  emptyEquipRow,
+  type ForestRow,
+  type ConvRow,
+  type EquipRow,
+} from "@/components/ui/ProductRows";
 
 const inputCls =
   "w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-[14px] text-zinc-900 placeholder:text-zinc-400 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500";
@@ -12,16 +23,7 @@ const labelCls =
   "mb-1 block text-[13px] font-medium text-zinc-700 dark:text-zinc-300";
 const selectCls = inputCls;
 
-const PRODUCT_TYPES = ["Logs", "Flitches", "Lumber", "Rattan", "Other"] as const;
-const PRODUCT_CONDITIONS = [
-  { value: "GOOD_CONDITION", label: "Good condition" },
-  { value: "DETERIORATING", label: "Deteriorating" },
-  { value: "DETERIORATED", label: "Deteriorated" },
-] as const;
-const SERVICE_STATUSES = [
-  { value: "SERVICEABLE", label: "Serviceable" },
-  { value: "UNSERVICEABLE", label: "Unserviceable" },
-] as const;
+const rowStyles = { inputCls, selectCls, labelCls };
 
 let counter = 0;
 const nextKey = () => ++counter;
@@ -99,15 +101,45 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
     cenroOffices: [] as CenroOfficeItem[],
   };
 
-  const [items, setItems] = useState<any[]>(() =>
-    (record.items ?? []).map((i: any) => ({ ...i, k: nextKey() })),
+  // Rows live in state so the Appraisal section edits the same data.
+  const [items, setItems] = useState<ForestRow[]>(() =>
+    (record.items ?? []).map((i: any) => ({
+      k: nextKey(),
+      type: i.type || i.forms || "",
+      species: i.species ?? "",
+      qty: i.qty ?? "",
+      bdft: i.bdft ?? "",
+      cum: i.cum ?? "",
+      condition: i.condition ?? "",
+      value: i.value ?? "",
+    })),
   );
-  const [convs, setConvs] = useState<any[]>(() =>
-    (record.conveyances ?? []).map((c: any) => ({ ...c, k: nextKey() })),
+  const [convs, setConvs] = useState<ConvRow[]>(() =>
+    (record.conveyances ?? []).map((c: any) => ({
+      k: nextKey(),
+      type: c.type ?? "",
+      plateNo: c.plateNo ?? "",
+      status: c.status ?? "",
+      qty: c.qty ?? "1",
+      value: c.value ?? "",
+    })),
   );
-  const [equip, setEquip] = useState<any[]>(() =>
-    (record.equipment ?? []).map((e: any) => ({ ...e, k: nextKey() })),
+  const [equip, setEquip] = useState<EquipRow[]>(() =>
+    (record.equipment ?? []).map((e: any) => ({
+      k: nextKey(),
+      type: e.type ?? "",
+      registered: e.registered ?? "",
+      status: e.status ?? "",
+      qty: e.qty ?? "1",
+      value: e.value ?? "",
+    })),
   );
+  const patchItem = (k: number, patch: Partial<ForestRow>) =>
+    setItems((r) => r.map((x) => (x.k === k ? { ...x, ...patch } : x)));
+  const patchConv = (k: number, patch: Partial<ConvRow>) =>
+    setConvs((r) => r.map((x) => (x.k === k ? { ...x, ...patch } : x)));
+  const patchEquip = (k: number, patch: Partial<EquipRow>) =>
+    setEquip((r) => r.map((x) => (x.k === k ? { ...x, ...patch } : x)));
 
   const [selectedPenro, setSelectedPenro] = useState(record.penroOffice ?? "");
   const [selectedPenroOfficer, setSelectedPenroOfficer] = useState(
@@ -461,20 +493,7 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
         action={
           <button
             type="button"
-            onClick={() =>
-              setItems([
-                ...items,
-                {
-                  type: "",
-                  qty: "",
-                  bdft: "",
-                  cum: "",
-                  condition: "",
-                  value: "",
-                  k: nextKey(),
-                },
-              ])
-            }
+            onClick={() => setItems((r) => [...r, emptyForestRow(nextKey())])}
             className="text-[13px] font-medium text-emerald-700 hover:underline dark:text-emerald-400"
           >
             + Add product
@@ -485,60 +504,22 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
           <p className="text-[13px] text-zinc-500">No forest products.</p>
         ) : (
           <div className="space-y-3">
-            {items.map((it) => (
-              <div
-                key={it.k}
-                className="relative grid grid-cols-1 gap-2 rounded-lg border border-zinc-200 p-3 pt-10 dark:border-zinc-700 sm:grid-cols-2 lg:grid-cols-3"
-              >
+            {items.map((row) => (
+              <div key={row.k} className="relative grid grid-cols-1 gap-2 rounded-lg border border-zinc-200 p-3 pt-10 dark:border-zinc-700 sm:grid-cols-2 lg:grid-cols-3">
                 <button
                   type="button"
-                  onClick={() => setItems(items.filter((x) => x.k !== it.k))}
+                  onClick={() => setItems((r) => r.filter((x) => x.k !== row.k))}
                   className="absolute right-2 top-2 text-[12px] text-zinc-500 hover:text-red-600"
+                  aria-label="Remove product"
                 >
                   ✕
                 </button>
-                <div>
-                  <label className={labelCls}>Type</label>
-                  <select name="itemType" defaultValue={it.type || it.forms || ""} className={selectCls}>
-                    <option value="">— Type —</option>
-                    {PRODUCT_TYPES.map((t) => (
-                      <option key={t} value={t}>
-                        {t}
-                      </option>
-                    ))}
-                    {it.type &&
-                      !PRODUCT_TYPES.includes(it.type) && (
-                        <option value={it.type}>{it.type}</option>
-                      )}
-                  </select>
-                </div>
-                <div>
-                  <label className={labelCls}>Number of pieces</label>
-                  <input name="itemQty" defaultValue={it.qty} className={inputCls} />
-                </div>
-                <div>
-                  <label className={labelCls}>Volume (bd. ft.)</label>
-                  <input name="itemVolumeBdFt" defaultValue={it.bdft} className={inputCls} />
-                </div>
-                <div>
-                  <label className={labelCls}>Volume (cu. m.)</label>
-                  <input name="itemVolumeCuM" defaultValue={it.cum} className={inputCls} />
-                </div>
-                <div>
-                  <label className={labelCls}>Status</label>
-                  <select name="itemCondition" defaultValue={it.condition || ""} className={selectCls}>
-                    <option value="">— Status —</option>
-                    {PRODUCT_CONDITIONS.map((c) => (
-                      <option key={c.value} value={c.value}>
-                        {c.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className={labelCls}>Estimated value (₱)</label>
-                  <input name="itemValue" defaultValue={it.value} className={inputCls} />
-                </div>
+                <ForestRowFields
+                  row={row}
+                  onChange={(p) => patchItem(row.k, p)}
+                  named
+                  styles={rowStyles}
+                />
               </div>
             ))}
           </div>
@@ -551,12 +532,7 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
         action={
           <button
             type="button"
-            onClick={() =>
-              setConvs([
-                ...convs,
-                { type: "", plateNo: "", status: "", qty: "1", value: "", k: nextKey() },
-              ])
-            }
+            onClick={() => setConvs((r) => [...r, emptyConvRow(nextKey())])}
             className="text-[13px] font-medium text-emerald-700 hover:underline dark:text-emerald-400"
           >
             + Add conveyance
@@ -567,37 +543,22 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
           <p className="text-[13px] text-zinc-500">No conveyances.</p>
         ) : (
           <div className="space-y-3">
-            {convs.map((c) => (
-              <div
-                key={c.k}
-                className="relative grid grid-cols-1 gap-2 rounded-lg border border-zinc-200 p-3 pt-10 dark:border-zinc-700 sm:grid-cols-3"
-              >
+            {convs.map((row) => (
+              <div key={row.k} className="relative grid grid-cols-1 gap-2 rounded-lg border border-zinc-200 p-3 pt-10 dark:border-zinc-700 sm:grid-cols-2 lg:grid-cols-3">
                 <button
                   type="button"
-                  onClick={() => setConvs(convs.filter((x) => x.k !== c.k))}
+                  onClick={() => setConvs((r) => r.filter((x) => x.k !== row.k))}
                   className="absolute right-2 top-2 text-[12px] text-zinc-500 hover:text-red-600"
+                  aria-label="Remove conveyance"
                 >
                   ✕
                 </button>
-                <div>
-                  <label className={labelCls}>Type</label>
-                  <input name="convType" defaultValue={c.type} className={inputCls} />
-                </div>
-                <div>
-                  <label className={labelCls}>Plate no.</label>
-                  <input name="convPlateNo" defaultValue={c.plateNo} className={inputCls} />
-                </div>
-                <div>
-                  <label className={labelCls}>Status</label>
-                  <select name="convStatus" defaultValue={c.status || ""} className={selectCls}>
-                    <option value="">— Status —</option>
-                    {SERVICE_STATUSES.map((s) => (
-                      <option key={s.value} value={s.value}>
-                        {s.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <ConvRowFields
+                  row={row}
+                  onChange={(p) => patchConv(row.k, p)}
+                  named
+                  styles={rowStyles}
+                />
               </div>
             ))}
           </div>
@@ -610,19 +571,7 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
         action={
           <button
             type="button"
-            onClick={() =>
-              setEquip([
-                ...equip,
-                {
-                  type: "",
-                  registered: "",
-                  status: "",
-                  qty: "1",
-                  value: "",
-                  k: nextKey(),
-                },
-              ])
-            }
+            onClick={() => setEquip((r) => [...r, emptyEquipRow(nextKey())])}
             className="text-[13px] font-medium text-emerald-700 hover:underline dark:text-emerald-400"
           >
             + Add equipment
@@ -633,45 +582,22 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
           <p className="text-[13px] text-zinc-500">No equipment.</p>
         ) : (
           <div className="space-y-3">
-            {equip.map((e) => (
-              <div
-                key={e.k}
-                className="relative grid grid-cols-1 gap-2 rounded-lg border border-zinc-200 p-3 pt-10 dark:border-zinc-700 sm:grid-cols-3"
-              >
+            {equip.map((row) => (
+              <div key={row.k} className="relative grid grid-cols-1 gap-2 rounded-lg border border-zinc-200 p-3 pt-10 dark:border-zinc-700 sm:grid-cols-2 lg:grid-cols-3">
                 <button
                   type="button"
-                  onClick={() => setEquip(equip.filter((x) => x.k !== e.k))}
+                  onClick={() => setEquip((r) => r.filter((x) => x.k !== row.k))}
                   className="absolute right-2 top-2 text-[12px] text-zinc-500 hover:text-red-600"
+                  aria-label="Remove equipment"
                 >
                   ✕
                 </button>
-                <div>
-                  <label className={labelCls}>Type</label>
-                  <input name="equipType" defaultValue={e.type} className={inputCls} />
-                </div>
-                <div>
-                  <label className={labelCls}>Registered</label>
-                  <select
-                    name="equipRegistered"
-                    defaultValue={e.registered || ""}
-                    className={selectCls}
-                  >
-                    <option value="">— Select —</option>
-                    <option value="yes">Yes</option>
-                    <option value="no">No</option>
-                  </select>
-                </div>
-                <div>
-                  <label className={labelCls}>Status</label>
-                  <select name="equipStatus" defaultValue={e.status || ""} className={selectCls}>
-                    <option value="">— Status —</option>
-                    {SERVICE_STATUSES.map((s) => (
-                      <option key={s.value} value={s.value}>
-                        {s.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <EquipRowFields
+                  row={row}
+                  onChange={(p) => patchEquip(row.k, p)}
+                  named
+                  styles={rowStyles}
+                />
               </div>
             ))}
           </div>
@@ -786,86 +712,31 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
                       className={inputCls}
                     />
                   </div>
-                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                    <div>
-                      <label className={labelCls}>Type</label>
-                      <select
-                        name="appraisalFpType"
-                        className={selectCls}
-                        defaultValue={
-                          (record.items?.[0] as any)?.type ||
-                          (record.items?.[0] as any)?.forms ||
-                          ""
-                        }
-                      >
-                        <option value="">— Type —</option>
-                        {PRODUCT_TYPES.map((t) => (
-                          <option key={t} value={t}>
-                            {t}
-                          </option>
-                        ))}
-                      </select>
+                  {items.length === 0 ? (
+                    <p className="text-[13px] text-zinc-500">No forest products encoded yet. Add them in the “Forest products” section above — they will appear here for appraisal.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      <p className="text-[12px] text-zinc-500">
+                        Same entries as above — update them here as appraised.
+                      </p>
+                      {items.map((row, idx) => (
+                        <div
+                          key={row.k}
+                          className="grid gap-2 rounded-md border border-zinc-300 bg-white p-3 dark:border-zinc-600 dark:bg-zinc-950/40 sm:grid-cols-2 lg:grid-cols-3"
+                        >
+                          <p className="text-[12px] font-semibold uppercase tracking-wide text-zinc-500 sm:col-span-2 lg:col-span-3">
+                            Product {idx + 1}
+                          </p>
+                          <ForestRowFields
+                            row={row}
+                            onChange={(p) => patchItem(row.k, p)}
+                            named={false}
+                            styles={rowStyles}
+                          />
+                        </div>
+                      ))}
                     </div>
-                    <div>
-                      <label className={labelCls}>Number of pieces</label>
-                      <input
-                        type="text"
-                        name="appraisalFpQty"
-                        placeholder="e.g. 12"
-                        defaultValue={(record.items?.[0] as any)?.qty ?? ""}
-                        className={inputCls}
-                      />
-                    </div>
-                    <div>
-                      <label className={labelCls}>Volume (bd. ft.)</label>
-                      <input
-                        type="number"
-                        step="any"
-                        name="appraisalFpVolumeBdFt"
-                        placeholder="Board feet"
-                        defaultValue={(record.items?.[0] as any)?.bdft ?? ""}
-                        className={inputCls}
-                      />
-                    </div>
-                    <div>
-                      <label className={labelCls}>Volume (cu. m.)</label>
-                      <input
-                        type="number"
-                        step="any"
-                        name="appraisalFpVolumeCuM"
-                        placeholder="Cubic meters"
-                        defaultValue={(record.items?.[0] as any)?.cum ?? ""}
-                        className={inputCls}
-                      />
-                    </div>
-                    <div>
-                      <label className={labelCls}>Status</label>
-                      <select
-                        name="appraisalFpCondition"
-                        className={selectCls}
-                        defaultValue={(record.items?.[0] as any)?.condition || ""}
-                      >
-                        <option value="">— Status —</option>
-                        {PRODUCT_CONDITIONS.map((c) => (
-                          <option key={c.value} value={c.value}>
-                            {c.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className={labelCls}>Estimated value (₱)</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        min={0}
-                        name="appraisalFpValue"
-                        placeholder="0.00"
-                        defaultValue={(record.items?.[0] as any)?.value ?? ""}
-                        className={inputCls}
-                      />
-                    </div>
-                  </div>
+                  )}
                 </div>
               )}
             </div>
@@ -889,43 +760,31 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
                       className={inputCls}
                     />
                   </div>
-                  <div className="grid gap-2 sm:grid-cols-3">
-                    <div>
-                      <label className={labelCls}>Type</label>
-                      <input
-                        type="text"
-                        name="appraisalConvType"
-                        placeholder="e.g. Motorcycle, kulong-kulong"
-                        defaultValue={(record.conveyances?.[0] as any)?.type ?? ""}
-                        className={inputCls}
-                      />
+                  {convs.length === 0 ? (
+                    <p className="text-[13px] text-zinc-500">No conveyances encoded yet. Add them in the “Conveyances” section above — they will appear here for appraisal.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      <p className="text-[12px] text-zinc-500">
+                        Same entries as above — update them here as appraised.
+                      </p>
+                      {convs.map((row, idx) => (
+                        <div
+                          key={row.k}
+                          className="grid gap-2 rounded-md border border-zinc-300 bg-white p-3 dark:border-zinc-600 dark:bg-zinc-950/40 sm:grid-cols-2 lg:grid-cols-3"
+                        >
+                          <p className="text-[12px] font-semibold uppercase tracking-wide text-zinc-500 sm:col-span-2 lg:col-span-3">
+                            Conveyance {idx + 1}
+                          </p>
+                          <ConvRowFields
+                            row={row}
+                            onChange={(p) => patchConv(row.k, p)}
+                            named={false}
+                            styles={rowStyles}
+                          />
+                        </div>
+                      ))}
                     </div>
-                    <div>
-                      <label className={labelCls}>Plate no.</label>
-                      <input
-                        type="text"
-                        name="appraisalConvPlateNo"
-                        placeholder="Plate number"
-                        defaultValue={(record.conveyances?.[0] as any)?.plateNo ?? ""}
-                        className={inputCls}
-                      />
-                    </div>
-                    <div>
-                      <label className={labelCls}>Status</label>
-                      <select
-                        name="appraisalConvStatus"
-                        className={selectCls}
-                        defaultValue={(record.conveyances?.[0] as any)?.status || ""}
-                      >
-                        <option value="">— Status —</option>
-                        {SERVICE_STATUSES.map((s) => (
-                          <option key={s.value} value={s.value}>
-                            {s.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
+                  )}
                 </div>
               )}
             </div>
@@ -949,45 +808,31 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
                       className={inputCls}
                     />
                   </div>
-                  <div className="grid gap-2 sm:grid-cols-3">
-                    <div>
-                      <label className={labelCls}>Type</label>
-                      <input
-                        type="text"
-                        name="appraisalEquipType"
-                        placeholder="e.g. Chainsaw"
-                        defaultValue={(record.equipment?.[0] as any)?.type ?? ""}
-                        className={inputCls}
-                      />
+                  {equip.length === 0 ? (
+                    <p className="text-[13px] text-zinc-500">No equipment encoded yet. Add it in the “Equipment / implements” section above — it will appear here for appraisal.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      <p className="text-[12px] text-zinc-500">
+                        Same entries as above — update them here as appraised.
+                      </p>
+                      {equip.map((row, idx) => (
+                        <div
+                          key={row.k}
+                          className="grid gap-2 rounded-md border border-zinc-300 bg-white p-3 dark:border-zinc-600 dark:bg-zinc-950/40 sm:grid-cols-2 lg:grid-cols-3"
+                        >
+                          <p className="text-[12px] font-semibold uppercase tracking-wide text-zinc-500 sm:col-span-2 lg:col-span-3">
+                            Equipment {idx + 1}
+                          </p>
+                          <EquipRowFields
+                            row={row}
+                            onChange={(p) => patchEquip(row.k, p)}
+                            named={false}
+                            styles={rowStyles}
+                          />
+                        </div>
+                      ))}
                     </div>
-                    <div>
-                      <label className={labelCls}>Registered</label>
-                      <select
-                        name="appraisalEquipRegistered"
-                        className={selectCls}
-                        defaultValue={(record.equipment?.[0] as any)?.registered || ""}
-                      >
-                        <option value="">— Select —</option>
-                        <option value="yes">Yes</option>
-                        <option value="no">No</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className={labelCls}>Status</label>
-                      <select
-                        name="appraisalEquipStatus"
-                        className={selectCls}
-                        defaultValue={(record.equipment?.[0] as any)?.status || ""}
-                      >
-                        <option value="">— Status —</option>
-                        {SERVICE_STATUSES.map((s) => (
-                          <option key={s.value} value={s.value}>
-                            {s.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
+                  )}
                 </div>
               )}
             </div>

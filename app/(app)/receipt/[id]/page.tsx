@@ -182,7 +182,8 @@ export default async function ReceiptPage({
                 {record.items.map((item) => (
                   <tr key={item.id} className="border-b border-zinc-100">
                     <td className="py-1.5 pr-2">
-                      {item.type || item.forms || item.species || "—"}
+                      {item.type || item.forms || "—"}
+                      {item.species ? ` (${item.species})` : ""}
                     </td>
                     <td className="py-1.5 pr-2">{item.quantity || "—"}</td>
                     <td className="py-1.5 pr-2">

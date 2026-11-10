@@ -189,11 +189,13 @@ export async function createRecord(formData: FormData) {
   const itemVolumeCuM = formData.getAll("itemVolumeCuM") as string[];
   const itemCondition = formData.getAll("itemCondition") as string[];
   const itemValue = formData.getAll("itemValue") as string[];
+  const itemSpecies = formData.getAll("itemSpecies") as string[];
   const items = itemType
     .map((type, i) => ({
       type: type || null,
       forms: type || null, // keep legacy column populated
       quantity: itemQty[i] || null,
+      species: itemSpecies[i]?.trim() || null,
       volumeBdFt: itemVolumeBdFt[i] ? parseFloat(itemVolumeBdFt[i]) : null,
       volumeCuM: itemVolumeCuM[i] ? parseFloat(itemVolumeCuM[i]) : null,
       conditionStatus: (itemCondition[i] || null) as
@@ -207,6 +209,7 @@ export async function createRecord(formData: FormData) {
       (item) =>
         item.type ||
         item.quantity ||
+        item.species ||
         item.volumeBdFt ||
         item.volumeCuM ||
         item.estimatedValue,
@@ -216,6 +219,8 @@ export async function createRecord(formData: FormData) {
   const convType = formData.getAll("convType") as string[];
   const convPlateNo = formData.getAll("convPlateNo") as string[];
   const convStatus = formData.getAll("convStatus") as string[];
+  const convQty = formData.getAll("convQty") as string[];
+  const convValue = formData.getAll("convValue") as string[];
   const conveyances = convType
     .map((type, i) => ({
       type: type || null,
@@ -224,7 +229,8 @@ export async function createRecord(formData: FormData) {
         | "SERVICEABLE"
         | "UNSERVICEABLE"
         | null,
-      quantity: 1,
+      quantity: parseInt(convQty[i] || "1", 10) || 1,
+      estimatedValue: convValue[i] ? parseFloat(convValue[i]) : null,
     }))
     .filter((c) => c.type || c.plateNo);
 
@@ -232,6 +238,8 @@ export async function createRecord(formData: FormData) {
   const equipType = formData.getAll("equipType") as string[];
   const equipRegistered = formData.getAll("equipRegistered") as string[];
   const equipStatus = formData.getAll("equipStatus") as string[];
+  const equipQty = formData.getAll("equipQty") as string[];
+  const equipValue = formData.getAll("equipValue") as string[];
   const equipment = equipType
     .map((type, i) => ({
       type: type || null,
@@ -245,7 +253,8 @@ export async function createRecord(formData: FormData) {
         | "SERVICEABLE"
         | "UNSERVICEABLE"
         | null,
-      quantity: 1,
+      quantity: parseInt(equipQty[i] || "1", 10) || 1,
+      estimatedValue: equipValue[i] ? parseFloat(equipValue[i]) : null,
     }))
     .filter((e) => e.type);
 
