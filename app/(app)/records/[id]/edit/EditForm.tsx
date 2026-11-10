@@ -836,6 +836,20 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
                 </div>
               )}
             </div>
+
+            <div>
+              <label className={labelCls}>Appraisal report (Google Drive)</label>
+              <CaseDocumentsUpload
+                docType="appraisalReport"
+                name="appraisalReportUrl"
+                existingUrl={record.appraisalReportUrl || null}
+                docLabel="appraisal report"
+                caseLabel={
+                  record.docketNumber ||
+                  (record.id != null ? `Case-${record.id}` : undefined)
+                }
+              />
+            </div>
           </div>
         )}
 
@@ -901,6 +915,32 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
               <label className={labelCls}>Equip. donee</label>
               <input name="donationEquipDonee" defaultValue={record.donationEquipDonee ?? ""} className={inputCls} />
             </div>
+            <div>
+              <label className={labelCls}>Deed of donation (Google Drive)</label>
+              <CaseDocumentsUpload
+                docType="deedOfDonation"
+                name="deedOfDonationUrl"
+                existingUrl={record.deedOfDonationUrl || null}
+                docLabel="deed of donation"
+                caseLabel={
+                  record.docketNumber ||
+                  (record.id != null ? `Case-${record.id}` : undefined)
+                }
+              />
+            </div>
+            <div>
+              <label className={labelCls}>Terminal report (Google Drive)</label>
+              <CaseDocumentsUpload
+                docType="terminalReport"
+                name="terminalReportUrl"
+                existingUrl={record.terminalReportUrl || null}
+                docLabel="terminal report"
+                caseLabel={
+                  record.docketNumber ||
+                  (record.id != null ? `Case-${record.id}` : undefined)
+                }
+              />
+            </div>
           </div>
         )}
       </FormSection>
@@ -940,7 +980,8 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
         <div>
           <label className={labelCls}>Case documents (Google Drive)</label>
           <CaseDocumentsUpload
-            name="caseDocumentsUrl"
+            docType="caseDocuments"
+                name="caseDocumentsUrl"
             existingUrl={record.caseDocumentsUrl ?? null}
             caseLabel={
               record.docketNumber ||
@@ -948,7 +989,7 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
             }
           />
           <p className="mt-1 text-[12px] text-zinc-500 dark:text-zinc-400">
-            Upload a scan/PDF to Drive. The link is saved on this record.
+            Upload a PDF to Drive. The link is saved on this record.
           </p>
         </div>
       </FormSection>

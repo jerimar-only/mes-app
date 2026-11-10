@@ -371,6 +371,7 @@ export default async function RecordDetailPage({
                   label="Date of appraisal (equipment)"
                   value={fmtDate(record.appraisalEquipmentDate)}
                 />
+                <DocLink label="Appraisal report" href={record.appraisalReportUrl} />
               </div>
             </div>
           </Card>
@@ -388,6 +389,8 @@ export default async function RecordDetailPage({
               <Field label="Equipment — date" value={record.donationEquipDate} />
               <Field label="Equipment — donor" value={record.donationEquipDonor} />
               <Field label="Equipment — donee" value={record.donationEquipDonee} />
+              <DocLink label="Deed of donation" href={record.deedOfDonationUrl} />
+              <DocLink label="Terminal report" href={record.terminalReportUrl} />
             </div>
           </Card>
 
@@ -498,6 +501,28 @@ export default async function RecordDetailPage({
 }
 
 /* ---------- Small building blocks ---------- */
+
+function DocLink({ label, href }: { label: string; href?: string | null }) {
+  return (
+    <div>
+      <p className="mb-1 text-[12.5px] font-medium uppercase tracking-wide text-[var(--muted)]">
+        {label}
+      </p>
+      {href ? (
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[14px] font-medium text-[var(--accent)] underline-offset-2 hover:underline"
+        >
+          Open in Google Drive
+        </a>
+      ) : (
+        <p className="text-[14px] text-[var(--muted)]">—</p>
+      )}
+    </div>
+  );
+}
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (

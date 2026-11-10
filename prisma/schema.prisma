@@ -155,6 +155,15 @@ model ApprehensionRecord {
   /// Google Drive link for case scans / PDFs (uploaded from the app)
   caseDocumentsUrl String?
 
+  /// Google Drive link — appraisal report
+  appraisalReportUrl String?
+  
+  /// Google Drive link — deed of donation
+  deedOfDonationUrl  String?
+  
+  /// Google Drive link — terminal report
+  terminalReportUrl  String?
+
   // 8. Apprehending officer *
   apprehendingAgency  String? // agency: PNP, LGU, DENR, etc.
   apprehendingOfficer String? // officer name (optional detail)

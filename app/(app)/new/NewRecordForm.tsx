@@ -1033,6 +1033,16 @@ export default function NewRecordForm({
                 </div>
               )}
             </div>
+
+            <div className="space-y-2 rounded-lg border border-[var(--border)] bg-[var(--background)]/40 p-3">
+              <Field label="Appraisal report (Google Drive)">
+                <CaseDocumentsUpload
+                  docType="appraisalReport"
+                name="appraisalReportUrl"
+                  docLabel="appraisal report"
+                />
+              </Field>
+            </div>
           </div>
         )}
 
@@ -1126,6 +1136,28 @@ export default function NewRecordForm({
                 </Field>
               </div>
             </div>
+
+            <div>
+              <h3 className="mb-3 text-[13px] font-semibold uppercase tracking-wide text-[var(--muted)]">
+                Donation documents (Google Drive)
+              </h3>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Field label="Deed of donation">
+                  <CaseDocumentsUpload
+                    docType="deedOfDonation"
+                name="deedOfDonationUrl"
+                    docLabel="deed of donation"
+                  />
+                </Field>
+                <Field label="Terminal report">
+                  <CaseDocumentsUpload
+                    docType="terminalReport"
+                name="terminalReportUrl"
+                    docLabel="terminal report"
+                  />
+                </Field>
+              </div>
+            </div>
           </div>
         )}
         {donationMade === "no" && (
@@ -1143,8 +1175,9 @@ export default function NewRecordForm({
       </Section>
 
       <Section title="Case documents (Google Drive)">
-        <Field label="Upload scan / PDF to Drive">
-          <CaseDocumentsUpload name="caseDocumentsUrl" />
+        <Field label="Upload PDF to Drive">
+          <CaseDocumentsUpload docType="caseDocuments"
+                name="caseDocumentsUrl" />
         </Field>
         <p className="mt-2 text-[12.5px] text-[var(--muted)]">
           Requires Google Drive to be connected in Settings. The file is stored

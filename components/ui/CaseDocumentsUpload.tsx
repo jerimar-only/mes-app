@@ -8,7 +8,48 @@ type Uploaded = {
   webViewLink: string | null;
 };
 
+const MAX_BYTES = 50 * 1024 * 1024; // 50 MB (matches the server check)
+
+/** PUT the whole file to a Drive resumable-session URL, reporting progress. */
+function putToDrive(
+  uploadUrl: string,
+  file: File,
+  mime: string,
+  onPercent: (pct: number) => void
+): Promise<Uploaded> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", uploadUrl);
+    xhr.setRequestHeader("Content-Type", mime);
+    xhr.upload.onprogress = (ev) => {
+      if (ev.lengthComputable) {
+        onPercent(Math.min(99, Math.round((ev.loaded / ev.total) * 100)));
+      }
+    };
+    xhr.onerror = () =>
+      reject(
+        new Error(
+          "Upload to Google Drive failed. Check your connection and try again."
+        )
+      );
+    xhr.onload = () => {
+      if (xhr.status === 200 || xhr.status === 201) {
+        try {
+          resolve(JSON.parse(xhr.responseText) as Uploaded);
+        } catch {
+          reject(new Error("Google Drive returned an unexpected response."));
+        }
+        return;
+      }
+      reject(new Error(`Google Drive rejected the upload (${xhr.status}).`));
+    };
+    xhr.send(file);
+  });
+}
+
 type Props = {
+  /** Which Folder Settings target this upload goes to (set by Super Admin) */
+  docType?: "caseDocuments" | "appraisalReport" | "deedOfDonation" | "terminalReport";
   /** Optional label used as Drive subfolder name (e.g. case number) */
   caseLabel?: string;
   /** Existing Drive link already saved on the record */
@@ -18,6 +59,8 @@ type Props = {
   /** Hidden input name for form submit (stores the Drive URL) */
   name?: string;
   disabled?: boolean;
+  /** Document name for the button, e.g. "appraisal report" → "Upload appraisal report" */
+  docLabel?: string;
 };
 
 /**
@@ -25,11 +68,13 @@ type Props = {
  * Stores the returned webViewLink in a hidden field (or via onUploaded).
  */
 export default function CaseDocumentsUpload({
+  docType = "caseDocuments",
   caseLabel,
   existingUrl,
   onUploaded,
   name = "caseDocumentsUrl",
   disabled = false,
+  docLabel,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [link, setLink] = useState(existingUrl ?? "");
@@ -47,22 +92,39 @@ export default function CaseDocumentsUpload({
     setProgress("Uploading to Google Drive…");
 
     try {
-      const form = new FormData();
-      form.append("file", file);
-      if (caseLabel) form.append("caseLabel", caseLabel);
+      if (file.size > MAX_BYTES) {
+        throw new Error("File is too large (max 50 MB)");
+      }
+      if (file.type !== "application/pdf" || !/\.pdf$/i.test(file.name)) {
+        throw new Error("Only PDF files are allowed");
+      }
+      const mime = "application/pdf";
 
-      const res = await fetch("/api/drive/upload", {
+      // 1) Ask the server to open a Drive upload session (no file bytes sent,
+      //    so the ~4.5 MB serverless request limit does not apply).
+      const startRes = await fetch("/api/drive/upload/session", {
         method: "POST",
-        body: form,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: file.name,
+          mimeType: mime,
+          size: file.size,
+          docType,
+          caseLabel: caseLabel || undefined,
+        }),
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(
-          (data as { error?: string }).error || `Upload failed (${res.status})`
-        );
+      const start = (await startRes.json().catch(() => ({}))) as {
+        uploadUrl?: string;
+        error?: string;
+      };
+      if (!startRes.ok || !start.uploadUrl) {
+        throw new Error(start.error || `Could not start upload (${startRes.status})`);
       }
 
-      const uploaded = data as Uploaded;
+      // 2) Send the file straight to Google Drive, with progress.
+      const uploaded = await putToDrive(start.uploadUrl, file, mime, (pct) =>
+        setProgress(`Uploading to Google Drive… ${pct}%`)
+      );
       const url = uploaded.webViewLink || "";
       setLink(url);
       setProgress("Uploaded");
@@ -86,13 +148,19 @@ export default function CaseDocumentsUpload({
           onClick={() => inputRef.current?.click()}
           className="rounded-lg border border-[var(--border-strong)] bg-[var(--card)] px-3.5 py-2 text-[13.5px] font-medium text-[var(--foreground)] hover:bg-[var(--border)] disabled:opacity-50"
         >
-          {busy ? "Uploading…" : link ? "Replace document" : "Upload to Google Drive"}
+          {busy
+            ? "Uploading…"
+            : docLabel
+              ? `${link ? "Replace" : "Upload"} ${docLabel}`
+              : link
+                ? "Replace document"
+                : "Upload PDF to Google Drive"}
         </button>
         <input
           ref={inputRef}
           type="file"
           className="hidden"
-          accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx,application/pdf,image/*"
+          accept=".pdf,application/pdf"
           onChange={onFileChange}
         />
         {link && (

@@ -17,6 +17,8 @@ import {
 } from "./officeActions";
 import LookupPanel from "./LookupPanel";
 import OfficeMappingPanel from "./OfficeMappingPanel";
+import FolderSettingsPanel from "./FolderSettingsPanel";
+import { DOC_TYPES } from "@/lib/driveFolders";
 
 export const dynamic = "force-dynamic";
 
@@ -175,6 +177,17 @@ export default async function AdminPortalPage() {
           penroOfficers={penroOfficers}
           cenroOffices={offices}
           cenroOfficers={cenroOfficers}
+        />
+      </section>
+
+      {/* Google Drive folders per report type (PDF uploads) */}
+      <section>
+        <FolderSettingsPanel
+          docTypes={DOC_TYPES.map((d) => ({
+            key: d.key,
+            label: d.label,
+            description: d.description,
+          }))}
         />
       </section>
 

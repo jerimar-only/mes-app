@@ -142,6 +142,54 @@ export async function uploadBuffer(
   throw new Error("Upload finished without a Drive file response.");
 }
 
+/**
+ * Open a resumable upload session and return its upload URL, WITHOUT sending
+ * any file bytes. The browser then uploads the file straight to Google using
+ * that URL, so the file never passes through the serverless function (which
+ * is capped at ~4.5 MB per request on Vercel).
+ *
+ * `origin` must be the web page's origin; Google uses it to allow the
+ * browser's cross-origin (CORS) PUT to the session URL.
+ */
+export async function startResumableSession(
+  auth: Auth,
+  opts: {
+    name: string;
+    parentId: string;
+    mimeType: string;
+    size: number;
+    origin: string;
+  }
+): Promise<string> {
+  assertId(opts.parentId);
+  if (!(opts.size > 0)) throw new Error("File is empty");
+
+  const accessToken = (await auth.getAccessToken()).token;
+  if (!accessToken) {
+    throw new Error("Google sign-in expired. Reconnect Google in Settings.");
+  }
+
+  const init = await fetch(
+    `${UPLOAD_ENDPOINT}?uploadType=resumable&supportsAllDrives=true&fields=id,name,webViewLink`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json; charset=UTF-8",
+        "X-Upload-Content-Type": opts.mimeType,
+        "X-Upload-Content-Length": String(opts.size),
+        Origin: opts.origin,
+      },
+      body: JSON.stringify({ name: opts.name, parents: [opts.parentId] }),
+    }
+  );
+  if ([400, 401, 403, 404].includes(init.status)) throw await driveError(init);
+  if (!init.ok) throw new Error(`Could not start upload (${init.status})`);
+  const session = init.headers.get("location");
+  if (!session) throw new Error("Could not start the upload session.");
+  return session;
+}
+
 /** Create a subfolder under parentId (e.g. one folder per case). */
 export async function createFolder(
   auth: Auth,

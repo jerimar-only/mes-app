@@ -2,30 +2,20 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { permissions, type Role } from "@/lib/permissions";
 import { uploadBuffer, createFolder } from "@/lib/drive";
-import {
-  authedClient,
-  getSetting,
-} from "@/lib/googleSettings";
+import { isDocType, resolveFolder } from "@/lib/driveFolders";
+import { authedClient } from "@/lib/googleSettings";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const MAX_BYTES = 50 * 1024 * 1024; // 50 MB
-const ALLOWED = new Set([
-  "application/pdf",
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-]);
 
 /**
  * Upload a case document to Google Drive.
  * Form fields:
- *   - file (required)
- *   - caseLabel (optional) — creates/uses a subfolder named after the case
- *   - folderId (optional) — override parent; defaults to Settings parent folder
+ *   - file (required, PDF only)
+ *   - docType (optional, default caseDocuments) — picks the Folder Settings target
+ *   - caseLabel (optional) — prefixes the file name (or subfolder if no dedicated folder)
  */
 export async function POST(req: Request) {
   const session = await getSession();
@@ -50,11 +40,13 @@ export async function POST(req: Request) {
     );
   }
 
-  const parentFromSettings = await getSetting("parentFolderId");
   const form = await req.formData();
   const file = form.get("file");
   const caseLabel = String(form.get("caseLabel") ?? "").trim();
-  const folderOverride = String(form.get("folderId") ?? "").trim();
+  const docType = String(form.get("docType") ?? "caseDocuments");
+  if (!isDocType(docType)) {
+    return NextResponse.json({ error: "Unknown document type" }, { status: 400 });
+  }
 
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
@@ -65,35 +57,39 @@ export async function POST(req: Request) {
       { status: 400 }
     );
   }
-  const mime = file.type || "application/octet-stream";
-  if (!ALLOWED.has(mime) && !mime.startsWith("image/")) {
+  const mime = file.type;
+  if (mime !== "application/pdf" || !/\.pdf$/i.test(file.name)) {
     return NextResponse.json(
-      { error: "Only PDF, images, or Word documents are allowed" },
+      { error: "Only PDF files are allowed" },
       { status: 400 }
     );
   }
 
-  let parentId = folderOverride || parentFromSettings;
-  if (!parentId) {
+  const folder = await resolveFolder(docType);
+  if (!folder) {
     return NextResponse.json(
       {
         error:
-          "No parent Drive folder is set. Super Admin must save a parent folder in Settings.",
+          "No Drive folder is set for this document. Super Admin must set it in the Admin Portal → Folder settings.",
       },
       { status: 400 }
     );
   }
+  let parentId = folder.id;
 
   try {
-    // Optional: put files under a per-case subfolder
+    let fileName = file.name;
     if (caseLabel) {
       const safe = caseLabel.replace(/[\\/:*?"<>|]/g, "-").slice(0, 80);
-      const folder = await createFolder(auth, safe, parentId);
-      parentId = folder.id;
+      if (folder.specific) {
+        fileName = `${safe} - ${file.name}`;
+      } else {
+        parentId = (await createFolder(auth, safe, parentId)).id;
+      }
     }
 
     const buf = Buffer.from(await file.arrayBuffer());
-    const result = await uploadBuffer(auth, buf, file.name, parentId, mime);
+    const result = await uploadBuffer(auth, buf, fileName, parentId, mime);
 
     return NextResponse.json({
       id: result.id,

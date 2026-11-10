@@ -195,10 +195,11 @@ export default function GoogleDriveSettings({
             </div>
 
             <label className="block text-[13.5px] font-medium text-[var(--foreground)]">
-              Parent folder
+              General folder
               <span className="mt-0.5 block text-[12.5px] font-normal text-[var(--muted)]">
-                Paste a Drive folder link or ID (e.g. MES Case Documents). All
-                case uploads go here (or into a subfolder per case).
+                General fallback folder (link or ID). Used when a report type has no
+                folder of its own — set those per report in Admin Portal →
+                Folder settings.
               </span>
               <div className="mt-2 flex flex-wrap gap-2">
                 <input
