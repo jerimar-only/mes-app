@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { getOfficeScope, forcedOfficeId } from "@/lib/officeScope";
-import type { Prisma } from "@prisma/client";
+import { buildRecordWhere } from "@/lib/recordFilters";
 
 export async function GET(req: NextRequest) {
   const session = await getSession();
@@ -26,31 +26,19 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const year = sp.get("year") ? parseInt(sp.get("year")!, 10) : undefined;
-  const office = forcedOfficeId(scope, sp.get("office"));
+  const year = sp.get("year") || undefined;
+  const officeParam = forcedOfficeId(scope, sp.get("office"));
   const status = sp.get("status") || undefined;
   const q = sp.get("q") || undefined;
-  const deleted = sp.get("deleted") || ""; // "only" | "all" | ""
+  const deleted = sp.get("deleted") || undefined;
 
-  const where: Prisma.ApprehensionRecordWhereInput = {
-    ...(deleted === "only"
-      ? { isDeleted: true }
-      : deleted === "all"
-        ? {}
-        : { isDeleted: false }),
-    ...(year ? { year } : {}),
-    ...(office ? { cenroOfficeId: office } : {}),
-    ...(status ? { status: status as any } : {}),
-    ...(q
-      ? {
-          OR: [
-            { placeOfApprehension: { contains: q, mode: "insensitive" } },
-            { docketNumber: { contains: q, mode: "insensitive" } },
-            { remarks: { contains: q, mode: "insensitive" } },
-          ],
-        }
-      : {}),
-  };
+  const where = buildRecordWhere({
+    year,
+    office: officeParam != null ? String(officeParam) : undefined,
+    status,
+    q,
+    deleted,
+  });
 
   // Only the columns the table UI needs — avoid shipping long text fields
   const [rows, total] = await Promise.all([

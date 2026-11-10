@@ -1,16 +1,8 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { buildRecordWhere } from "@/lib/recordFilters";
+import { buildRecordWhere, STATUS_FILTER_OPTIONS, STATUS_LABEL } from "@/lib/recordFilters";
 import { getOfficeScope } from "@/lib/officeScope";
 
-const STATUS_LABEL: Record<string, string> = {
-  FOR_RESOLUTION: "For Donation",
-  UNDER_ADJUDICATION: "For Appraisal",
-  CONFISCATED: "Donated",
-  DONATED: "Donated",
-  RELEASED: "Donated",
-  UNKNOWN: "For Appraisal",
-};
 
 // Labels for the filters that come from the dashboard links
 const ACP_LABEL: Record<string, string> = {
@@ -247,7 +239,7 @@ export default async function FullRecordsPage({
             className="rounded-md border border-[var(--border-strong)] bg-[var(--card)] text-[var(--foreground)] px-3 py-2 text-[13px]"
           >
             <option value="">All</option>
-            {Object.entries(STATUS_LABEL).map(([value, label]) => (
+            {STATUS_FILTER_OPTIONS.map(({ value, label }) => (
               <option key={value} value={value}>
                 {label}
               </option>

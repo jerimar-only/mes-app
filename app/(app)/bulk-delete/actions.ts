@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { permissions, type Role } from "@/lib/permissions";
 import type { Prisma } from "@prisma/client";
+import { statusesForFilter } from "@/lib/recordFilters";
+
 
 export type BulkDeleteRow = {
   id: number;
@@ -30,13 +32,17 @@ export async function searchRecordsForDelete(params: {
   const year = params.year ? parseInt(params.year, 10) : undefined;
   const office = params.office ? parseInt(params.office, 10) : undefined;
   const q = params.q?.trim() || undefined;
-  const status = params.status || undefined;
+  const statusList = statusesForFilter(params.status);
 
   const where: Prisma.ApprehensionRecordWhereInput = {
     isDeleted: false,
     ...(year && !Number.isNaN(year) ? { year } : {}),
     ...(office && !Number.isNaN(office) ? { cenroOfficeId: office } : {}),
-    ...(status ? { status: status as any } : {}),
+    ...(statusList
+      ? statusList.length === 1
+        ? { status: statusList[0] as any }
+        : { status: { in: statusList as any } }
+      : {}),
     ...(q
       ? {
           OR: [

@@ -2,15 +2,8 @@ import { prisma } from "@/lib/prisma";
 import RecordsClient from "./RecordsClient";
 import FullViewLink from "./FullViewLink";
 import { getOfficeScope } from "@/lib/officeScope";
+import { STATUS_FILTER_OPTIONS } from "@/lib/recordFilters";
 
-const STATUS_LABEL: Record<string, string> = {
-  FOR_RESOLUTION: "For Donation",
-  UNDER_ADJUDICATION: "For Appraisal",
-  CONFISCATED: "Donated",
-  DONATED: "Donated",
-  RELEASED: "Donated",
-  UNKNOWN: "For Appraisal",
-};
 
 /** Next may give string | string[] for a search param */
 function paramOne(
@@ -130,7 +123,7 @@ export default async function RecordsPage({
               className="w-full rounded-md border border-[var(--border-strong)] bg-[var(--card)] text-[var(--foreground)] px-3 py-2 text-[13px]"
             >
               <option value="">All</option>
-              {Object.entries(STATUS_LABEL).map(([value, label]) => (
+              {STATUS_FILTER_OPTIONS.map(({ value, label }) => (
                 <option key={value} value={value}>{label}</option>
               ))}
             </select>

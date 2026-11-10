@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import { getSession } from "@/lib/auth";
 import { getOfficeScope, forcedOfficeId } from "@/lib/officeScope";
+import { statusesForFilter } from "@/lib/recordFilters";
+
 
 const OFFICE_ROWS = [
   { label: "Aparri", match: ["APARRI"] },
@@ -46,12 +48,16 @@ export async function GET(req: NextRequest) {
       ]
     : undefined;
 
+  const statusList = statusesForFilter(status);
+
   const where: Prisma.ApprehensionRecordWhereInput = {
     isDeleted: false,
     ...(year ? { year } : {}),
     ...(office ? { cenroOfficeId: office } : {}),
-    ...(status
-      ? { status: status as import("@prisma/client").ApprehensionStatus }
+    ...(statusList
+      ? statusList.length === 1
+        ? { status: statusList[0] as import("@prisma/client").ApprehensionStatus }
+        : { status: { in: statusList as import("@prisma/client").ApprehensionStatus[] } }
       : {}),
     ...(searchOr ? { OR: searchOr } : {}),
   };

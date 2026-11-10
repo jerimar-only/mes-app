@@ -9,15 +9,8 @@ import {
   getBulkDeleteFilters,
   type BulkDeleteRow,
 } from "./actions";
+import { STATUS_FILTER_OPTIONS, STATUS_LABEL } from "@/lib/recordFilters";
 
-const STATUS_LABEL: Record<string, string> = {
-  FOR_RESOLUTION: "For Donation",
-  UNDER_ADJUDICATION: "For Appraisal",
-  CONFISCATED: "Donated",
-  DONATED: "Donated",
-  RELEASED: "Donated",
-  UNKNOWN: "For Appraisal",
-};
 
 const inputClass =
   "w-full rounded-md border border-[var(--border-strong)] bg-[var(--card)] px-3 py-2 text-[13px] text-[var(--foreground)]";
@@ -155,8 +148,8 @@ export default function BulkDeleteClient() {
           </label>
           <select value={status} onChange={(e) => setStatus(e.target.value)} className={inputClass}>
             <option value="">All statuses</option>
-            {Object.entries(STATUS_LABEL).map(([k, label]) => (
-              <option key={k} value={k}>
+            {STATUS_FILTER_OPTIONS.map(({ value, label }) => (
+              <option key={value} value={value}>
                 {label}
               </option>
             ))}

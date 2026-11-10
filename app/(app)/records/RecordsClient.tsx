@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { STATUS_LABEL } from "@/lib/recordFilters";
 
 type RecordRow = {
   id: number;
@@ -28,14 +29,6 @@ function peso(n: number | null | undefined) {
   })}`;
 }
 
-const STATUS_LABEL: Record<string, string> = {
-  FOR_RESOLUTION: "For Donation",
-  UNDER_ADJUDICATION: "For Appraisal",
-  CONFISCATED: "Donated",
-  DONATED: "Donated",
-  RELEASED: "Donated",
-  UNKNOWN: "For Appraisal",
-};
 
 export default function RecordsClient({
   initialQuery,

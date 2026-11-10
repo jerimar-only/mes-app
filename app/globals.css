@@ -812,8 +812,19 @@ legend {
 
 /* ── App shell helpers ── */
 
+/* App chrome: sticky header + footer on every page.
+   Shell is a column so short pages still pin the footer to the bottom.
+   Dashboard desktop keeps its own locked 100dvh layout below. */
+.app-shell {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
 .app-main {
   background: var(--background);
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 /* Let the browser handle document scroll — no touch-action / overflow tricks */
@@ -824,6 +835,7 @@ body {
   min-height: 100%;
   height: auto;
 }
+
 
 /*
  * Desktop dashboard layout only — scoped to .dashboard-page, never touches html/body.
@@ -894,20 +906,23 @@ body {
 }
 
 .app-header {
-  /* Sticky glass bar — content scrolls underneath */
-  position: relative;
+  /* Sticky glass bar on all pages — content scrolls underneath */
+  position: sticky;
+  top: 0;
+  z-index: 30;
   color: var(--foreground);
   border-bottom: 1px solid color-mix(in srgb, var(--accent) 12%, var(--border));
   background:
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--card) 94%, var(--accent)) 0%,
-      color-mix(in srgb, var(--card) 88%, transparent) 100%
+      color-mix(in srgb, var(--card) 96%, var(--accent)) 0%,
+      color-mix(in srgb, var(--card) 92%, transparent) 100%
     );
   box-shadow: var(--shadow);
   backdrop-filter: blur(14px) saturate(1.2);
   -webkit-backdrop-filter: blur(14px) saturate(1.2);
 }
+
 .app-header::before {
   content: "";
   position: absolute;
@@ -998,13 +1013,21 @@ body {
 }
 
 .app-footer {
-  background: var(--card);
+  position: sticky;
+  bottom: 0;
+  z-index: 30;
+  background: color-mix(in srgb, var(--card) 94%, transparent);
   border-top: 1px solid var(--border);
   color: var(--muted);
   /* Full width of the shell (runs under the provincial rail column) */
   width: 100%;
-  padding-bottom: max(0.35rem, env(safe-area-inset-bottom, 0px));
+  padding-top: 0.4rem;
+  padding-bottom: max(0.4rem, env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -4px 16px color-mix(in srgb, var(--foreground) 4%, transparent);
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
 }
+
 
 .sidebar-panel {
   background: var(--nav);

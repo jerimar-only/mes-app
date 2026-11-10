@@ -3,6 +3,42 @@ import type { Prisma } from "@prisma/client";
 // Statuses that count as a "resolved case" (used by the dashboard and the full view)
 export const RESOLVED_STATUSES = ["CONFISCATED", "DONATED", "RELEASED"] as const;
 
+/** Display label for any stored status value */
+export const STATUS_LABEL: Record<string, string> = {
+  FOR_RESOLUTION: "For Donation",
+  UNDER_ADJUDICATION: "For Appraisal",
+  CONFISCATED: "Donated",
+  DONATED: "Donated",
+  RELEASED: "Donated",
+  UNKNOWN: "For Appraisal",
+};
+
+/**
+ * Filter dropdown options (unique labels).
+ * Selecting one expands to all matching DB enum values via STATUS_GROUPS.
+ */
+export const STATUS_FILTER_OPTIONS = [
+  { value: "FOR_RESOLUTION", label: "For Donation" },
+  { value: "UNDER_ADJUDICATION", label: "For Appraisal" },
+  { value: "DONATED", label: "Donated" },
+] as const;
+
+/** Map a filter value (or raw status) to the set of DB statuses it should match */
+export const STATUS_GROUPS: Record<string, string[]> = {
+  FOR_RESOLUTION: ["FOR_RESOLUTION"],
+  UNDER_ADJUDICATION: ["UNDER_ADJUDICATION", "UNKNOWN"],
+  DONATED: ["DONATED", "CONFISCATED", "RELEASED"],
+  // allow drilling down by exact legacy values too
+  CONFISCATED: ["CONFISCATED"],
+  RELEASED: ["RELEASED"],
+  UNKNOWN: ["UNKNOWN"],
+};
+
+export function statusesForFilter(status: string | undefined | null): string[] | null {
+  if (!status) return null;
+  return STATUS_GROUPS[status] ?? [status];
+}
+
 export type RecordFilterParams = {
   q?: string;
   year?: string;
@@ -33,6 +69,8 @@ export function buildRecordWhere(params: RecordFilterParams): Prisma.Apprehensio
   }
   if (params.resolved === "1") and.push({ status: { in: [...RESOLVED_STATUSES] } });
 
+  const statusList = statusesForFilter(params.status);
+
   return {
     ...(params.deleted === "only"
       ? { isDeleted: true }
@@ -50,7 +88,11 @@ export function buildRecordWhere(params: RecordFilterParams): Prisma.Apprehensio
           },
         }
       : {}),
-    ...(params.status ? { status: params.status as any } : {}),
+    ...(statusList
+      ? statusList.length === 1
+        ? { status: statusList[0] as any }
+        : { status: { in: statusList as any } }
+      : {}),
     ...(params.q
       ? {
           OR: [
