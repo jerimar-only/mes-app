@@ -215,6 +215,67 @@ export async function createFolder(
   };
 }
 
+/**
+ * One Drive folder per saved apprehension record. The folder is tagged with the record id
+ * (appProperties), so every document of the same record goes to the same folder even if
+ * the docket number is changed later. Created on the first upload, reused afterwards, and
+ * renamed when its readable name (docket number) is out of date.
+ */
+export async function findOrCreateRecordFolder(
+  auth: Auth,
+  opts: { recordId: number; name: string; parentId: string }
+): Promise<DriveFile> {
+  assertId(opts.parentId);
+  const drive = google.drive({ version: "v3", auth });
+  const key = String(Math.trunc(opts.recordId));
+
+  const found = await drive.files.list({
+    q: `appProperties has { key='emsRecordId' and value='${key}' } and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+    fields: "files(id,name,webViewLink)",
+    pageSize: 1,
+    corpora: "allDrives",
+    includeItemsFromAllDrives: true,
+    supportsAllDrives: true,
+  });
+
+  const existing = found.data.files?.[0];
+  if (existing?.id) {
+    if (existing.name !== opts.name) {
+      try {
+        await drive.files.update({
+          fileId: existing.id,
+          requestBody: { name: opts.name },
+          supportsAllDrives: true,
+        });
+      } catch {
+        // renaming is cosmetic; keep going
+      }
+    }
+    return {
+      id: existing.id,
+      name: opts.name,
+      webViewLink: existing.webViewLink ?? undefined,
+    };
+  }
+
+  const res = await drive.files.create({
+    requestBody: {
+      name: opts.name,
+      mimeType: "application/vnd.google-apps.folder",
+      parents: [opts.parentId],
+      appProperties: { emsRecordId: key },
+    },
+    fields: "id,name,webViewLink",
+    supportsAllDrives: true,
+  });
+  if (!res.data.id) throw new Error("Could not create the record's Drive folder");
+  return {
+    id: res.data.id,
+    name: res.data.name ?? opts.name,
+    webViewLink: res.data.webViewLink ?? undefined,
+  };
+}
+
 export type DriveClient = drive_v3.Drive;
 
 /** List files in a Drive folder (non-recursive). SA folder browser. */

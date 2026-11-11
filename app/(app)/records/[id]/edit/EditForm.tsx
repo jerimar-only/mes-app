@@ -187,6 +187,13 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
   const [error, setError] = useState("");
   const { success, error: toastError, flash } = useToast();
 
+  // Documents go to a Drive folder named after the SAVED docket number.
+  const savedDocket = String(record.docketNumber ?? "").trim();
+  const docketLocked = record.canEditDocket === false;
+  const uploadBlockedReason = savedDocket
+    ? undefined
+    : "Add a Docket no. and save the record first. Documents are stored in a Drive folder named after it.";
+
   const selectedPenroRow = (lookups.penroOffices as PenroOfficeItem[]).find(
     (p) => p.name === selectedPenro,
   );
@@ -218,10 +225,11 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
 
   async function handleInlineSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const formData = new FormData(e.currentTarget);
     setBusy(true);
     setError("");
     try {
-      await updateRecordInline(new FormData(e.currentTarget));
+      await updateRecordInline(formData);
       success("Record changes were saved.", "Saved");
       onSaved?.();
     } catch (err) {
@@ -235,10 +243,11 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
 
   async function handlePageSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const formData = new FormData(e.currentTarget);
     setBusy(true);
     setError("");
     try {
-      await updateRecord(new FormData(e.currentTarget));
+      await updateRecord(formData);
       flash("success", "Record changes were saved.", "Saved");
     } catch (err) {
       if (
@@ -667,8 +676,14 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
             <input
               name="docketNumber"
               defaultValue={record.docketNumber ?? ""}
-              className={inputCls}
+              readOnly={docketLocked}
+              className={`${inputCls}${docketLocked ? " cursor-not-allowed bg-zinc-100 dark:bg-zinc-800" : ""}`}
             />
+            {docketLocked && (
+              <p className="mt-1 text-[12px] text-zinc-500 dark:text-zinc-400">
+                Locked. Only the Super Admin can change the docket number.
+              </p>
+            )}
           </div>
         </div>
       </FormSection>
@@ -840,6 +855,8 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
             <div>
               <label className={labelCls}>Appraisal report (Google Drive)</label>
               <CaseDocumentsUpload
+                recordId={record.id ?? null}
+                disabledReason={uploadBlockedReason}
                 docType="appraisalReport"
                 name="appraisalReportUrl"
                 existingUrl={record.appraisalReportUrl || null}
@@ -919,6 +936,8 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
             <div>
               <label className={labelCls}>Deed of donation (Google Drive)</label>
               <CaseDocumentsUpload
+                recordId={record.id ?? null}
+                disabledReason={uploadBlockedReason}
                 docType="deedOfDonation"
                 name="deedOfDonationUrl"
                 existingUrl={record.deedOfDonationUrl || null}
@@ -933,6 +952,8 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
             <div>
               <label className={labelCls}>Terminal report (Google Drive)</label>
               <CaseDocumentsUpload
+                recordId={record.id ?? null}
+                disabledReason={uploadBlockedReason}
                 docType="terminalReport"
                 name="terminalReportUrl"
                 existingUrl={record.terminalReportUrl || null}
@@ -983,6 +1004,8 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
         <div>
           <label className={labelCls}>Case documents (Google Drive)</label>
           <CaseDocumentsUpload
+            recordId={record.id ?? null}
+            disabledReason={uploadBlockedReason}
             docType="caseDocuments"
                 name="caseDocumentsUrl"
             existingUrl={record.caseDocumentsUrl ?? null}

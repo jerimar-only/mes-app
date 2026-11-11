@@ -89,6 +89,9 @@ export default async function RecordDetailPage({
   const canPermanentDelete = session
     ? permissions.permanentDeleteRecord(session.role as Role)
     : false;
+  const docketLocked = !(session
+    ? permissions.changeDocketNumber(session.role as Role, record.docketNumber)
+    : false);
 
   const totalBdFt = record.items.reduce((s, i) => s + (i.volumeBdFt ?? 0), 0);
   const totalCuM = record.items.reduce((s, i) => s + (i.volumeCuM ?? 0), 0);
@@ -470,6 +473,7 @@ export default async function RecordDetailPage({
                 recordId={record.id}
                 status={record.status}
                 docketNumber={record.docketNumber}
+                docketLocked={docketLocked}
                 orderOfFinalityDate={record.orderOfFinalityDate}
               />
 

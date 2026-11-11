@@ -22,7 +22,17 @@ export async function updateRecordStatus(formData: FormData) {
   if (!Number.isFinite(id) || id <= 0) throw new Error("Invalid record.");
   await assertRecordAccess(id);
   const status = formData.get("status") as any;
-  const docketNumber = (formData.get("docketNumber") as string) || null;
+  const currentRecord = await prisma.apprehensionRecord.findUnique({
+    where: { id },
+    select: { docketNumber: true },
+  });
+  // Once a docket number is set, only the Super Admin may change it.
+  const docketNumber = permissions.changeDocketNumber(
+    session.role as Role,
+    currentRecord?.docketNumber,
+  )
+    ? (formData.get("docketNumber") as string) || null
+    : (currentRecord?.docketNumber ?? null);
   const orderOfFinalityDate = (formData.get("orderOfFinalityDate") as string) || null;
 
   await prisma.apprehensionRecord.update({
@@ -437,6 +447,15 @@ async function saveRecord(formData: FormData) {
   const id = parseInt(formData.get("id") as string, 10);
   if (!Number.isFinite(id) || id <= 0) throw new Error("Invalid record.");
   await assertRecordAccess(id);
+  // Once a docket number is set, only the Super Admin may change it.
+  const currentDocketRow = await prisma.apprehensionRecord.findUnique({
+    where: { id },
+    select: { docketNumber: true },
+  });
+  const keepDocket = !permissions.changeDocketNumber(
+    session.role as Role,
+    currentDocketRow?.docketNumber,
+  );
   const str = (k: string) => ((formData.get(k) as string) || "").trim() || null;
   const num = (v: string | undefined) => {
     if (!v) return null;
@@ -627,7 +646,9 @@ async function saveRecord(formData: FormData) {
         : dateField("acpEndorsedToRo"),
     dateOfPromulgation: str("dateOfPromulgation"),
     promulgatedBy: str("promulgatedBy"),
-    docketNumber: str("docketNumber"),
+    docketNumber: keepDocket
+      ? (currentDocketRow?.docketNumber ?? null)
+      : str("docketNumber"),
     appraisalForestProducts: appraisalFp,
     appraisalForestProductsDate:
       appraisalFp === true ? dateField("appraisalForestProductsDate") : null,
@@ -699,6 +720,55 @@ export async function updateRecordInline(formData: FormData) {
   await saveRecord(formData);
 }
 
+// Saves (or clears) ONE Google Drive link on a record right after an upload/removal,
+// so a file that reached Drive is never left without its link in the database.
+const DRIVE_URL_FIELDS = [
+  "caseDocumentsUrl",
+  "appraisalReportUrl",
+  "deedOfDonationUrl",
+  "terminalReportUrl",
+] as const;
+type DriveUrlField = (typeof DRIVE_URL_FIELDS)[number];
+
+export async function saveRecordDocumentUrl(
+  recordId: number,
+  field: string,
+  url: string,
+) {
+  const session = await getSession();
+  if (!session || !permissions.editSavedRecord(session.role as Role)) {
+    throw new Error("You don't have permission to edit saved records.");
+  }
+
+  const id = Number(recordId);
+  if (!Number.isFinite(id) || id <= 0) throw new Error("Invalid record.");
+  if (!(DRIVE_URL_FIELDS as readonly string[]).includes(field)) {
+    throw new Error("Invalid document field.");
+  }
+
+  const clean = (url || "").trim();
+  if (clean && !/^https:\/\//i.test(clean)) {
+    throw new Error("Invalid link.");
+  }
+
+  await assertRecordAccess(id);
+
+  const existing = await prisma.apprehensionRecord.findUnique({
+    where: { id },
+    select: { id: true, isDeleted: true },
+  });
+  if (!existing) throw new Error("Record not found.");
+  if (existing.isDeleted) throw new Error("This record is deleted.");
+
+  await prisma.apprehensionRecord.update({
+    where: { id },
+    data: { [field as DriveUrlField]: clean || null },
+  });
+
+  revalidatePath(`/records/${id}`);
+  revalidatePath("/records");
+}
+
 // Used by the modal to load one record's data (+ office lookup lists for cascading)
 export async function getRecordForEdit(id: number) {
   const session = await getSession();
@@ -728,6 +798,10 @@ export async function getRecordForEdit(id: number) {
   // Records of offices outside the user's area behave as "not found"
   const editScope = await getOfficeScope();
   if (!canAccessOffice(editScope, r.cenroOfficeId)) return null;
+  const canEditDocket = permissions.changeDocketNumber(
+    session.role as Role,
+    r.docketNumber,
+  );
 
   const iso = (d: Date | null | undefined) =>
     d ? d.toISOString().slice(0, 10) : "";
@@ -767,6 +841,7 @@ export async function getRecordForEdit(id: number) {
 
   return {
     id: r.id,
+    canEditDocket,
     penroOffice: r.penroOffice ?? "",
     penroOfficer: r.penroOfficer ?? "",
     cenroOfficeId: r.cenroOfficeId,

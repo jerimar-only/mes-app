@@ -12,8 +12,8 @@ const MONTH_NAMES = [
 
 export async function GET(request: NextRequest) {
   const session = await getSession();
-  if (!session || !permissions.printRecords(session.role as Role)) {
-    return NextResponse.json({ error: "You don't have permission to export records." }, { status: 403 });
+  if (!session || !permissions.exportExcel(session.role as Role)) {
+    return NextResponse.json({ error: "Report downloads are limited to the Regional Office and Super Admin." }, { status: 403 });
   }
 
   const { searchParams } = new URL(request.url);

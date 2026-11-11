@@ -5,7 +5,6 @@ import Section from "@/components/ui/Section";
 import Field from "@/components/ui/Field";
 import { useToast } from "@/components/ui/Toast";
 import { LongDateField } from "@/components/ui/DateOfApprehensionField";
-import CaseDocumentsUpload from "@/components/ui/CaseDocumentsUpload";
 import {
   ForestRowFields,
   ConvRowFields,
@@ -1036,12 +1035,7 @@ export default function NewRecordForm({
 
             <div className="space-y-2 rounded-lg border border-[var(--border)] bg-[var(--background)]/40 p-3">
               <Field label="Appraisal report (Google Drive)">
-                <CaseDocumentsUpload
-                  docType="appraisalReport"
-                  name="appraisalReportUrl"
-                  docLabel="appraisal report"
-                  cenroOfficeId={selectedCenroId ? Number(selectedCenroId) : null}
-                />
+                <p className="text-[12.5px] text-[var(--muted)]">Available after saving: open Edit record, add a Docket no., then upload.</p>
               </Field>
             </div>
           </div>
@@ -1144,20 +1138,10 @@ export default function NewRecordForm({
               </h3>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Field label="Deed of donation">
-                  <CaseDocumentsUpload
-                    docType="deedOfDonation"
-                    name="deedOfDonationUrl"
-                    docLabel="deed of donation"
-                    cenroOfficeId={selectedCenroId ? Number(selectedCenroId) : null}
-                  />
+                  <p className="text-[12.5px] text-[var(--muted)]">Available after saving: open Edit record, add a Docket no., then upload.</p>
                 </Field>
                 <Field label="Terminal report">
-                  <CaseDocumentsUpload
-                    docType="terminalReport"
-                    name="terminalReportUrl"
-                    docLabel="terminal report"
-                    cenroOfficeId={selectedCenroId ? Number(selectedCenroId) : null}
-                  />
+                  <p className="text-[12.5px] text-[var(--muted)]">Available after saving: open Edit record, add a Docket no., then upload.</p>
                 </Field>
               </div>
             </div>
@@ -1179,15 +1163,11 @@ export default function NewRecordForm({
 
       <Section title="Case documents (Google Drive)">
         <Field label="Upload PDF to Drive">
-          <CaseDocumentsUpload
-            docType="caseDocuments"
-            name="caseDocumentsUrl"
-            cenroOfficeId={selectedCenroId ? Number(selectedCenroId) : null}
-          />
+          <p className="text-[12.5px] text-[var(--muted)]">Available after saving: open Edit record, add a Docket no., then upload.</p>
         </Field>
         <p className="mt-2 text-[12.5px] text-[var(--muted)]">
-          Requires Google Drive to be connected in Settings. The file is stored
-          in Drive; only the link is saved on this record.
+          Documents can be uploaded after the record is saved. Open Edit record,
+          make sure it has a docket number, then upload.
         </p>
       </Section>
 

@@ -9,7 +9,7 @@ import { revalidatePath } from "next/cache";
 import * as XLSX from "xlsx";
 
 // Column positions in the PENRO consolidated sheet (0 = column A)
-const COL = {
+const DEFAULT_COL = {
   inc: 1, date: 2, place: 3, source: 4, gps: 5, land: 6, officers: 7, claimant: 8,
   product: 9, cuM: 10, bdFt: 11, value: 12,
   convQty: 13, conv: 14, convValue: 15,
@@ -17,6 +17,58 @@ const COL = {
   impounded: 19, otherRemarks: 20, remarks: 21,
   acpPenro: 22, acpRo: 23, caseStatus: 24,
 } as const;
+
+type ColMap = { [K in keyof typeof DEFAULT_COL]: number };
+
+/**
+ * Find columns by their header names (two header rows: group + sub-label), so the
+ * columns can be in any order. If any column cannot be found, the original fixed
+ * PENRO layout is used instead.
+ */
+function resolveColumns(rows: any[][], headerIdx: number): ColMap {
+  const r1 = rows[headerIdx] ?? [];
+  const r2 = rows[headerIdx + 1] ?? [];
+  const width = Math.max(r1.length, r2.length);
+  const s = (v: unknown) => (typeof v === "string" ? v.trim() : "");
+  let group = "";
+  const heads: { g: string; sub: string }[] = [];
+  for (let c = 0; c < width; c++) {
+    const top = s(r1[c]);
+    const sub = s(r2[c]);
+    if (top) group = top;
+    else if (!sub) group = "";
+    heads.push({ g: top || group, sub });
+  }
+  const find = (g: RegExp, sub?: RegExp) =>
+    heads.findIndex((h) => g.test(h.g) && (sub ? sub.test(h.sub) : true));
+  const found = {
+    inc: find(/^inc/i),
+    date: find(/date of apprehension/i),
+    place: find(/place of apprehension/i),
+    source: find(/source/i),
+    gps: find(/gps|coordinates/i),
+    land: find(/land class/i),
+    officers: find(/apprehending/i),
+    claimant: find(/claimant|respondent/i),
+    product: find(/forest product/i, /desc|product|species/i),
+    cuM: find(/forest product/i, /cu/i),
+    bdFt: find(/forest product/i, /bd/i),
+    value: find(/forest product/i, /value/i),
+    convQty: find(/conveyance/i, /qty|quantity/i),
+    conv: find(/conveyance/i, /type/i),
+    convValue: find(/conveyance/i, /value/i),
+    equipQty: find(/equipment/i, /qty|quantity/i),
+    equip: find(/equipment/i, /type/i),
+    equipValue: find(/equipment/i, /value/i),
+    impounded: find(/impound|custodian/i),
+    otherRemarks: find(/other remarks/i),
+    remarks: find(/^remarks/i),
+    acpPenro: find(/acp.*penro/i),
+    acpRo: find(/acp.*(\bro\b|regional)/i),
+    caseStatus: find(/case status/i),
+  };
+  return Object.values(found).every((i) => i >= 0) ? found : { ...DEFAULT_COL };
+}
 
 const MONTHS = [
   "january", "february", "march", "april", "may", "june",
@@ -164,6 +216,7 @@ export async function uploadExcel(formData: FormData): Promise<{
     throw new Error('This file doesn\'t match the template: the "DATE OF APPREHENSION" header was not found.');
   }
   const start = headerIdx + 2;
+  const COL = resolveColumns(rows, headerIdx);
 
   // Year from the title ("... FOR CY 2026"), used when a date is typed as text
   const titleText = rows.slice(0, 5).flat().filter((c) => typeof c === "string").join(" ");

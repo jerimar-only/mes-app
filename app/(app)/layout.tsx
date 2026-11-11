@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { permissions } from "@/lib/permissions";
 import Sidebar from "@/components/layout/Sidebar";
 import SidebarLayout from "@/components/layout/SidebarLayout";
 import Header from "@/components/layout/Header";
@@ -58,6 +59,7 @@ export default async function AppLayout({
         isSuperAdmin={isSuperAdmin}
         isCenro={isCenro}
         canBulk={canBulk}
+        canExport={permissions.exportExcel(user.role)}
         userName={user.fullName}
         officeName={user.cenroOffice?.name ?? null}
       />

@@ -19,11 +19,14 @@ export function StatusForm({
   status,
   docketNumber,
   orderOfFinalityDate,
+  docketLocked = false,
 }: {
   recordId: number;
   status: string;
   docketNumber: string | null;
   orderOfFinalityDate: string | null;
+  /** Docket number already set and the user is not the Super Admin */
+  docketLocked?: boolean;
 }) {
   const initial: Values = {
     status,
@@ -116,8 +119,14 @@ export function StatusForm({
             value={values.docketNumber}
             onChange={(e) => setValues({ ...values, docketNumber: e.target.value })}
             placeholder="e.g. R2-F-1105"
-            className={field}
+            readOnly={docketLocked}
+            className={`${field}${docketLocked ? " cursor-not-allowed bg-zinc-100 dark:bg-zinc-800" : ""}`}
           />
+          {docketLocked && (
+            <p className="mt-1 text-[12px] text-zinc-500 dark:text-zinc-400">
+              Locked. Only the Super Admin can change the docket number.
+            </p>
+          )}
         </div>
         <div>
           <label className={label}>Order of finality date</label>

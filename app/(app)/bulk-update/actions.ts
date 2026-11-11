@@ -441,6 +441,24 @@ export async function applyBulkUpdate(payload: ApplyPayload): Promise<{
     officeByKey.set(o.name.trim().toUpperCase(), o.id);
   }
 
+  // Docket numbers that are already set are locked: only the Super Admin may change them.
+  const lockedDockets = new Map<number, string>();
+  if (session.role !== "SUPERADMIN") {
+    const ids = payload
+      .filter((p) => p.fields && "docketNumber" in p.fields)
+      .map((p) => p.id);
+    if (ids.length) {
+      const rows = await prisma.apprehensionRecord.findMany({
+        where: { id: { in: ids } },
+        select: { id: true, docketNumber: true },
+      });
+      for (const r of rows) {
+        const d = (r.docketNumber ?? "").trim();
+        if (d) lockedDockets.set(r.id, d);
+      }
+    }
+  }
+
   const failed: { id: number; message: string }[] = [];
   let updated = 0;
 
@@ -484,6 +502,17 @@ export async function applyBulkUpdate(payload: ApplyPayload): Promise<{
         str("remarks");
         str("caseStatus");
         str("docketNumber");
+        if ("docketNumber" in data && lockedDockets.has(item.id)) {
+          if (data.docketNumber === lockedDockets.get(item.id)) {
+            delete data.docketNumber; // unchanged
+          } else {
+            failed.push({
+              id: item.id,
+              message: "Docket number is locked. Only the Super Admin can change it.",
+            });
+            continue;
+          }
+        }
         str("orderOfFinalityDate");
         str("dateOfPromulgation");
         str("promulgatedBy");

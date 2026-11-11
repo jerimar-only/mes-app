@@ -16,8 +16,8 @@ const STATUS_LABEL: Record<string, string> = {
 
 export async function GET(request: NextRequest) {
   const session = await getSession();
-  if (!session || !permissions.printRecords(session.role as Role)) {
-    return NextResponse.json({ error: "You don't have permission to export records." }, { status: 403 });
+  if (!session || !permissions.exportExcel(session.role as Role)) {
+    return NextResponse.json({ error: "Export to Excel is limited to the Regional Office and Super Admin." }, { status: 403 });
   }
 
   const { searchParams } = new URL(request.url);
@@ -55,6 +55,10 @@ export async function GET(request: NextRequest) {
     { header: "Place Stockpiled and Custodian", width: 26 },
     { header: "Other Agencies Involved", width: 20 },
     { header: "Status / Remarks", width: 30 },
+    { header: "Case Documents (Drive link)", width: 40 },
+    { header: "Appraisal Report (Drive link)", width: 40 },
+    { header: "Deed of Donation (Drive link)", width: 40 },
+    { header: "Terminal Report (Drive link)", width: 40 },
   ];
   const colCount = columns.length;
 
@@ -103,12 +107,20 @@ export async function GET(request: NextRequest) {
         row.getCell(7).value = record.custodianLocation;
         row.getCell(8).value = record.otherAgencies;
         row.getCell(9).value = remarksText || null;
+        // Google Drive links (clickable)
+        [record.caseDocumentsUrl, record.appraisalReportUrl, record.deedOfDonationUrl, record.terminalReportUrl].forEach(
+          (url, k) => {
+            if (!url) return;
+            row.getCell(10 + k).value = { text: url, hyperlink: url };
+            row.getCell(10 + k).font = { name: "Arial", size: 10, color: { argb: "FF0563C1" }, underline: true };
+          },
+        );
       }
       row.getCell(4).value = item.description;
       row.getCell(5).value = item.volumeCuM;
       row.getCell(6).value = item.estimatedValue;
       for (let c = 1; c <= colCount; c++) {
-        row.getCell(c).font = { name: "Arial", size: 10 };
+        if (!(idx === 0 && c >= 10 && row.getCell(c).value)) row.getCell(c).font = { name: "Arial", size: 10 };
         row.getCell(c).alignment = { vertical: "top", wrapText: true };
         row.getCell(c).border = { bottom: { style: "thin", color: { argb: "FFE9E5D8" } } };
       }

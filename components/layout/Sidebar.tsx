@@ -13,6 +13,7 @@ export default function Sidebar({
   isAdmin,
   isSuperAdmin,
   isCenro = false,
+  canExport = false,
   canBulk = false,
   userName,
   officeName = null,
@@ -20,6 +21,7 @@ export default function Sidebar({
   isAdmin: boolean;
   isSuperAdmin: boolean;
   isCenro?: boolean;
+  canExport?: boolean;
   canBulk?: boolean;
   userName: string;
   officeName?: string | null;
@@ -207,12 +209,11 @@ export default function Sidebar({
             >
               Apprehension receipt
             </NavItem>
-            {!isCenro && (
+            {canExport && (
               <NavItem
                 href="/export"
+                active={isActive("/export")}
                 collapsed={railCollapsed}
-                disabled
-                disabledReason="Export is currently unavailable"
                 icon={<DownloadIcon />}
               >
                 Export to Excel

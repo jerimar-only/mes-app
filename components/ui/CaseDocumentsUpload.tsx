@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { saveRecordDocumentUrl } from "@/app/(app)/records/actions";
 
 type Uploaded = {
   id: string;
@@ -52,10 +53,14 @@ type Props = {
   docType?: "caseDocuments" | "appraisalReport" | "deedOfDonation" | "terminalReport";
   /** Optional label used as Drive subfolder name (e.g. case number) */
   caseLabel?: string;
+  /** When set, uploading is blocked and this reason is shown (e.g. no docket number yet) */
+  disabledReason?: string;
   /** Record's CENRO — used to resolve office Drive folder */
   cenroOfficeId?: number | null;
   /** Optional parent PENRO id */
   penroOfficeId?: number | null;
+  /** When set (editing a saved record), the link is saved to the database as soon as the upload finishes or the link is removed */
+  recordId?: number | null;
   /** Existing Drive link already saved on the record */
   existingUrl?: string | null;
   /** Called after a successful upload so the parent form can store the URL */
@@ -74,8 +79,10 @@ type Props = {
 export default function CaseDocumentsUpload({
   docType = "caseDocuments",
   caseLabel,
+  disabledReason,
   cenroOfficeId = null,
   penroOfficeId = null,
+  recordId = null,
   existingUrl,
   onUploaded,
   name = "caseDocumentsUrl",
@@ -88,10 +95,16 @@ export default function CaseDocumentsUpload({
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<string | null>(null);
 
+  const needsLabel = Boolean(disabledReason);
+
   async function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file || disabled) return;
+    if (needsLabel) {
+      setError(disabledReason ?? "Uploading is not available.");
+      return;
+    }
 
     setError(null);
     setBusy(true);
@@ -117,6 +130,7 @@ export default function CaseDocumentsUpload({
           size: file.size,
           docType,
           caseLabel: caseLabel || undefined,
+          recordId: recordId ?? undefined,
           cenroOfficeId: cenroOfficeId ?? undefined,
           penroOfficeId: penroOfficeId ?? undefined,
         }),
@@ -135,8 +149,25 @@ export default function CaseDocumentsUpload({
       );
       const url = uploaded.webViewLink || "";
       setLink(url);
-      setProgress("Uploaded");
       onUploaded?.(url, uploaded);
+
+      if (recordId) {
+        // Save the link to the record right away so the file is never orphaned.
+        setProgress("Uploaded. Saving link to the record…");
+        try {
+          await saveRecordDocumentUrl(recordId, name, url);
+          setProgress("Uploaded and saved to the record");
+        } catch (saveErr) {
+          setProgress(null);
+          setError(
+            `Uploaded to Google Drive, but the link could not be saved to the record: ${
+              (saveErr as Error).message
+            }. Click Save record to try again.`
+          );
+        }
+      } else {
+        setProgress("Uploaded");
+      }
     } catch (err) {
       setError((err as Error).message);
       setProgress(null);
@@ -152,7 +183,7 @@ export default function CaseDocumentsUpload({
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
-          disabled={disabled || busy}
+          disabled={disabled || busy || needsLabel}
           onClick={() => inputRef.current?.click()}
           className="rounded-lg border border-[var(--border-strong)] bg-[var(--card)] px-3.5 py-2 text-[13.5px] font-medium text-[var(--foreground)] hover:bg-[var(--border)] disabled:opacity-50"
         >
@@ -185,17 +216,31 @@ export default function CaseDocumentsUpload({
           <button
             type="button"
             disabled={busy}
-            onClick={() => {
-              if (
-                window.confirm(
-                  "Remove this Drive link from the record? The file stays in Google Drive. Click Save to apply."
-                )
-              ) {
-                setLink("");
-                setProgress(null);
-                setError(null);
-                onUploaded?.("", { id: "", name: "", webViewLink: null });
+            onClick={async () => {
+              const ok = window.confirm(
+                recordId
+                  ? "Remove this Drive link from the record? The file stays in Google Drive."
+                  : "Remove this Drive link from the record? The file stays in Google Drive. Click Save to apply."
+              );
+              if (!ok) return;
+
+              setError(null);
+              if (recordId) {
+                setBusy(true);
+                try {
+                  await saveRecordDocumentUrl(recordId, name, "");
+                } catch (err) {
+                  setError(
+                    `Could not remove the link: ${(err as Error).message}`
+                  );
+                  setBusy(false);
+                  return;
+                }
+                setBusy(false);
               }
+              setLink("");
+              setProgress(recordId ? "Link removed from the record" : null);
+              onUploaded?.("", { id: "", name: "", webViewLink: null });
             }}
             className="rounded-lg border border-red-200 px-3 py-2 text-[13.5px] font-medium text-red-600 hover:bg-red-50 disabled:opacity-50 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-950/40"
           >
@@ -204,6 +249,11 @@ export default function CaseDocumentsUpload({
         )}
       </div>
 
+      {needsLabel && !link && (
+        <p className="text-[12.5px] text-[var(--muted)]">
+          {disabledReason}
+        </p>
+      )}
       {progress && !error && (
         <p className="text-[12.5px] text-[var(--muted)]">{progress}</p>
       )}

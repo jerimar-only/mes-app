@@ -1,6 +1,13 @@
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { getSession } from "@/lib/auth";
+import { permissions } from "@/lib/permissions";
 
 export default async function ExportPage() {
+  // Export to Excel: Regional Office and Super Admin only
+  const session = await getSession();
+  if (!session || !permissions.exportExcel(session.role)) redirect("/dashboard");
+
   const offices = await prisma.cenroOffice.findMany({ orderBy: { name: "asc" } });
   const yearsResult = await prisma.apprehensionRecord.findMany({
     select: { year: true },

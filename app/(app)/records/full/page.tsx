@@ -2,6 +2,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { buildRecordWhere, STATUS_FILTER_OPTIONS, STATUS_LABEL } from "@/lib/recordFilters";
 import { getOfficeScope } from "@/lib/officeScope";
+import { getSession } from "@/lib/auth";
+import { permissions } from "@/lib/permissions";
 
 
 // Labels for the filters that come from the dashboard links
@@ -46,6 +48,7 @@ export default async function FullRecordsPage({
 }) {
   const raw = await searchParams;
   const scope = await getOfficeScope();
+  const canExport = permissions.exportExcel((await getSession())?.role ?? "");
   const params = {
     q: paramOne(raw.q),
     year: paramOne(raw.year),
@@ -138,12 +141,14 @@ export default async function FullRecordsPage({
           {total.toLocaleString()} records
         </p>
         <div className="flex flex-wrap gap-2">
+          {canExport && (
           <a
             href={`/records/full/export?${exportQs.toString()}`}
             className="inline-flex shrink-0 items-center rounded-md border border-[var(--border-strong)] bg-[var(--card)] text-[var(--foreground)] px-4 py-2 text-[14px] font-medium text-[var(--accent)] shadow-sm hover:bg-[var(--shell)]"
           >
             Export to Excel
           </a>
+          )}
           <Link
             href={(() => {
               const back = new URLSearchParams();

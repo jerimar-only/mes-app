@@ -190,7 +190,15 @@ export default function BulkUpdateClient() {
             <a href="/records/full" className="text-[var(--accent)] underline">
               Full view
             </a>{" "}
-            and export to Excel (or use any sheet with an <strong>ID</strong> column).
+            and export to Excel (Regional Office / Super Admin), or download the{" "}
+            <a
+              href="/bulk_update_template.xlsx"
+              download
+              className="text-[var(--accent)] underline"
+            >
+              blank template (.xlsx)
+            </a>{" "}
+            and fill in the record <strong>ID</strong> column.
           </li>
           <li>Edit the cells you want to change. Keep the ID column intact.</li>
           <li>Upload the file here, review the table, tweak values if needed, then apply.</li>

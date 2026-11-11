@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/prisma";
+import { getSession } from "@/lib/auth";
+import { permissions } from "@/lib/permissions";
 
 const MONTH_NAMES = [
   "", "January", "February", "March", "April", "May", "June",
@@ -26,6 +28,7 @@ export default async function ReportsPage({
   searchParams: Promise<{ year?: string }>;
 }) {
   const params = await searchParams;
+  const canDownload = permissions.exportExcel((await getSession())?.role ?? "");
   const yearsResult = await prisma.apprehensionRecord.findMany({
     select: { year: true },
     distinct: ["year"],
@@ -322,6 +325,7 @@ export default async function ReportsPage({
         </div>
       </div>
 
+      {canDownload && (
       <section className="space-y-4">
         <h2 className="text-[15px] font-semibold text-[var(--foreground)]">Download reports</h2>
 
@@ -405,6 +409,7 @@ export default async function ReportsPage({
           </button>
         </form>
       </section>
+      )}
     </div>
   );
 }

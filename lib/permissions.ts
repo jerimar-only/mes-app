@@ -24,6 +24,8 @@ const SOFT_DELETE_ROLES = rolesOf(
   "SUPERADMIN", "ADMINISTRATOR", "PENRO_ADMIN", "CENRO_ADMIN", "CENRO"
 );
 const PERMANENT_DELETE_ROLES = rolesOf("SUPERADMIN");
+/** Export to Excel: Regional Office and Super Admin only. */
+const EXPORT_ROLES = rolesOf("SUPERADMIN", "REGIONAL");
 const PRINT_ROLES = new Set<string>(ALL_ROLES); // REGIONAL can view/print too
 
 /**
@@ -37,8 +39,12 @@ export const permissions = {
   editSavedRecord: (role: Role | string) => EDIT_ROLES.has(role),
   softDeleteRecord: (role: Role | string) => SOFT_DELETE_ROLES.has(role),
   permanentDeleteRecord: (role: Role | string) => PERMANENT_DELETE_ROLES.has(role),
+  exportExcel: (role: Role | string) => EXPORT_ROLES.has(role),
   printRecords: (role: Role | string) => PRINT_ROLES.has(role),
   uploadExcel: (role: Role | string) => CREATE_ROLES.has(role),
+  /** Docket number: anyone may set it while it is empty; once set, only the Super Admin may change it. */
+  changeDocketNumber: (role: Role | string, current?: string | null) =>
+    role === "SUPERADMIN" || !(current ?? "").trim(),
   /** Accounts locked to exactly one CENRO office. */
   isCenro: (role: Role | string) => role === "CENRO" || role === "CENRO_ADMIN",
 } as const;
