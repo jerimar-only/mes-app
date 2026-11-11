@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { updateRecord, updateRecordInline } from "../../actions";
 import { useToast } from "@/components/ui/Toast";
@@ -40,6 +40,8 @@ type EditFormProps = {
   record: any;
   onSaved?: () => void;
   onCancel?: () => void;
+  /** True while any PDF is uploading to Google Drive (lets the modal block closing) */
+  onBusyChange?: (busy: boolean) => void;
 };
 
 function YesNo({
@@ -93,7 +95,7 @@ function FormSection({
   );
 }
 
-export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
+export function EditForm({ record, onSaved, onCancel, onBusyChange }: EditFormProps) {
   const lookups = record.lookups ?? {
     penroOffices: [] as PenroOfficeItem[],
     penroOfficers: [] as Named[],
@@ -184,6 +186,14 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
   );
 
   const [busy, setBusy] = useState(false);
+  const [uploadingDocs, setUploadingDocs] = useState<Record<string, boolean>>({});
+  const reportUpload = (key: string) => (b: boolean) =>
+    setUploadingDocs((prev) => (prev[key] === b ? prev : { ...prev, [key]: b }));
+  const anyUploading = Object.values(uploadingDocs).some(Boolean);
+  useEffect(() => {
+    onBusyChange?.(anyUploading);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [anyUploading]);
   const [error, setError] = useState("");
   const { success, error: toastError, flash } = useToast();
 
@@ -859,6 +869,7 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
                 disabledReason={uploadBlockedReason}
                 docType="appraisalReport"
                 name="appraisalReportUrl"
+                onBusyChange={reportUpload("appraisal")}
                 existingUrl={record.appraisalReportUrl || null}
                 docLabel="appraisal report"
                 caseLabel={
@@ -940,6 +951,7 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
                 disabledReason={uploadBlockedReason}
                 docType="deedOfDonation"
                 name="deedOfDonationUrl"
+                onBusyChange={reportUpload("deed")}
                 existingUrl={record.deedOfDonationUrl || null}
                 docLabel="deed of donation"
                 caseLabel={
@@ -956,6 +968,7 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
                 disabledReason={uploadBlockedReason}
                 docType="terminalReport"
                 name="terminalReportUrl"
+                onBusyChange={reportUpload("terminal")}
                 existingUrl={record.terminalReportUrl || null}
                 docLabel="terminal report"
                 caseLabel={
@@ -1008,6 +1021,7 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
             disabledReason={uploadBlockedReason}
             docType="caseDocuments"
                 name="caseDocumentsUrl"
+                onBusyChange={reportUpload("case")}
             existingUrl={record.caseDocumentsUrl ?? null}
             caseLabel={
               record.docketNumber ||

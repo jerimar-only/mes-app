@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { saveRecordDocumentUrl } from "@/app/(app)/records/actions";
 
 type Uploaded = {
@@ -70,6 +70,8 @@ type Props = {
   disabled?: boolean;
   /** Document name for the button, e.g. "appraisal report" → "Upload appraisal report" */
   docLabel?: string;
+  /** Called with true while a file is uploading / saving, false when finished */
+  onBusyChange?: (busy: boolean) => void;
 };
 
 /**
@@ -88,12 +90,18 @@ export default function CaseDocumentsUpload({
   name = "caseDocumentsUrl",
   disabled = false,
   docLabel,
+  onBusyChange,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [link, setLink] = useState(existingUrl ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<string | null>(null);
+
+  useEffect(() => {
+    onBusyChange?.(busy);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [busy]);
 
   const needsLabel = Boolean(disabledReason);
 
