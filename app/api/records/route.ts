@@ -1,114 +1,114 @@
-// app/api/records/route.ts
-import { NextRequest, NextResponse } from "next/server";
+/**
+ * GET /api/records
+ * AOR-filtered list. Response: { records, total, page, totalPages, pageSize }
+ */
+import { NextResponse } from "next/server";
+import { getAuthUser } from "@/lib/currentUser";
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
-import { getOfficeScope, forcedOfficeId } from "@/lib/officeScope";
-import { buildRecordWhere } from "@/lib/recordFilters";
+import { getAllowedCenroOfficeIds, narrowOfficeIds } from "@/lib/permissions";
 
-export async function GET(req: NextRequest) {
-  const session = await getSession();
-  if (!session) {
+export async function GET(req: Request) {
+  const user = await getAuthUser();
+
+  if (!user || !user.isActive) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const sp = req.nextUrl.searchParams;
-  const page = Math.max(1, parseInt(sp.get("page") ?? "1", 10) || 1);
+  const allowedOfficeIds = await getAllowedCenroOfficeIds(user);
+  const { searchParams } = new URL(req.url);
 
-  // Accept 25 / 50 / 100 / "all" (capped at 500)
-  const rawSize = sp.get("pageSize") ?? "25";
+  const year = searchParams.get("year");
+  const status = searchParams.get("status");
+  const q = searchParams.get("q");
+  const office = searchParams.get("office");
+  const deleted = searchParams.get("deleted");
+
+  const pageRaw = parseInt(searchParams.get("page") ?? "1", 10);
+  const page = Number.isFinite(pageRaw) && pageRaw > 0 ? pageRaw : 1;
+
+  const pageSizeParam = searchParams.get("pageSize") ?? "25";
   const pageSize =
-    rawSize === "all"
+    pageSizeParam === "all"
       ? 500
-      : Math.min(500, Math.max(10, parseInt(rawSize, 10) || 25));
+      : Math.min(500, Math.max(1, parseInt(pageSizeParam, 10) || 25));
 
-  const scope = await getOfficeScope();
-  if (!scope) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  // The requested office filter can only narrow, never widen, the user's area
+  const requestedOffices = office
+    ? office
+        .split(",")
+        .map((x) => parseInt(x, 10))
+        .filter((n) => !Number.isNaN(n))
+    : null;
+  const officeIds = narrowOfficeIds(allowedOfficeIds, requestedOffices);
 
-  const year = sp.get("year") || undefined;
-  const officeParam = forcedOfficeId(scope, sp.get("office"));
-  const status = sp.get("status") || undefined;
-  const q = sp.get("q") || undefined;
-  const deleted = sp.get("deleted") || undefined;
+  const where: any = {
+    ...(deleted === "only"
+      ? { isDeleted: true }
+      : deleted === "all"
+        ? {}
+        : { isDeleted: false }),
+    ...(year ? { year: Number(year) } : {}),
+    ...(status
+      ? status === "DONATED"
+        ? { status: { in: ["DONATED", "CONFISCATED", "RELEASED"] } }
+        : status === "UNDER_ADJUDICATION"
+          ? { status: { in: ["UNDER_ADJUDICATION", "UNKNOWN"] } }
+          : { status: status as any }
+      : {}),
+    ...(officeIds ? { cenroOfficeId: { in: officeIds } } : {}),
+    ...(q
+      ? {
+          OR: [
+            { docketNumber: { contains: q, mode: "insensitive" } },
+            { claimantRespondent: { contains: q, mode: "insensitive" } },
+            { placeOfApprehension: { contains: q, mode: "insensitive" } },
+            { sourcePlace: { contains: q, mode: "insensitive" } },
+            { apprehendingAgency: { contains: q, mode: "insensitive" } },
+          ],
+        }
+      : {}),
+  };
 
-  const where = buildRecordWhere({
-    year,
-    office: officeParam != null ? String(officeParam) : undefined,
-    status,
-    q,
-    deleted,
-  });
-
-  // Only the columns the table UI needs — avoid shipping long text fields
-  const [rows, total] = await Promise.all([
+  const [total, rows] = await Promise.all([
+    prisma.apprehensionRecord.count({ where }),
     prisma.apprehensionRecord.findMany({
       where,
-      select: {
-        id: true,
-        year: true,
-        placeOfApprehension: true,
-        dateOfApprehension: true,
-        docketNumber: true,
-        status: true,
-        createdAt: true,
-        cenroOffice: { select: { name: true } },
-        _count: { select: { items: true } },
+      include: {
+        cenroOffice: { select: { id: true, name: true } },
+        items: { select: { estimatedValue: true } },
+        conveyances: { select: { estimatedValue: true } },
+        equipment: { select: { estimatedValue: true } },
+        _count: { select: { items: true, comments: true } },
       },
-      orderBy: [{ createdAt: "desc" }, { year: "desc" }, { id: "desc" }],
+      orderBy: { createdAt: "desc" },
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
-    prisma.apprehensionRecord.count({ where }),
   ]);
 
-  type ValueRow = {
-    id: number;
-    productsValue: number;
-    conveyancesValue: number;
-    equipmentValue: number;
-  };
-
-  let valueMap = new Map<number, ValueRow>();
-
-  if (rows.length > 0) {
-    const ids = rows.map((r) => r.id);
-
-    const valueRows = await prisma.$queryRaw<ValueRow[]>`
-      SELECT
-        ar.id,
-        COALESCE(
-          (SELECT SUM(f."estimatedValue")
-           FROM "ForestProductItem" f
-           WHERE f."apprehensionRecordId" = ar.id),
-          0
-        )::float AS "productsValue",
-        COALESCE(
-          (SELECT SUM(c."estimatedValue")
-           FROM "Conveyance" c
-           WHERE c."apprehensionRecordId" = ar.id),
-          0
-        )::float AS "conveyancesValue",
-        COALESCE(
-          (SELECT SUM(e."estimatedValue")
-           FROM "Equipment" e
-           WHERE e."apprehensionRecordId" = ar.id),
-          0
-        )::float AS "equipmentValue"
-      FROM "ApprehensionRecord" ar
-      WHERE ar.id = ANY(${ids})
-    `;
-
-    valueMap = new Map(valueRows.map((v) => [v.id, v]));
-  }
-
   const records = rows.map((r) => {
-    const v = valueMap.get(r.id);
-    const productsValue = v?.productsValue ?? 0;
-    const conveyancesValue = v?.conveyancesValue ?? 0;
-    const equipmentValue = v?.equipmentValue ?? 0;
+    const productsValue = r.items.reduce(
+      (s, i) => s + (i.estimatedValue ?? 0),
+      0,
+    );
+    const conveyancesValue = r.conveyances.reduce(
+      (s, c) => s + (c.estimatedValue ?? 0),
+      0,
+    );
+    const equipmentValue = r.equipment.reduce(
+      (s, e) => s + (e.estimatedValue ?? 0),
+      0,
+    );
     return {
-      ...r,
+      id: r.id,
+      year: r.year,
+      placeOfApprehension: r.placeOfApprehension,
+      dateOfApprehension: r.dateOfApprehension,
+      docketNumber: r.docketNumber,
+      status: r.status,
+      createdAt: r.createdAt,
+      cenroOffice: r.cenroOffice,
+      _count: r._count,
       productsValue,
       conveyancesValue,
       equipmentValue,
@@ -116,11 +116,13 @@ export async function GET(req: NextRequest) {
     };
   });
 
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
   return NextResponse.json({
     records,
     total,
     page,
+    totalPages,
     pageSize,
-    totalPages: Math.max(1, Math.ceil(total / pageSize)),
   });
 }

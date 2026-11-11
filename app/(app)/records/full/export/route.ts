@@ -1,6 +1,7 @@
 import * as XLSX from "xlsx";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { getOfficeScope } from "@/lib/officeScope";
 import { buildRecordWhere, type RecordFilterParams } from "@/lib/recordFilters";
 
 export const maxDuration = 60;
@@ -10,6 +11,8 @@ const iso = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : "");
 export async function GET(req: Request) {
   const session = await getSession();
   if (!session) return new Response("Unauthorized", { status: 401 });
+  const scope = await getOfficeScope();
+  if (!scope) return new Response("Unauthorized", { status: 401 });
 
   const sp = new URL(req.url).searchParams;
   const params: RecordFilterParams = {
@@ -24,7 +27,7 @@ export async function GET(req: Request) {
   };
 
   const records = await prisma.apprehensionRecord.findMany({
-    where: buildRecordWhere(params),
+    where: buildRecordWhere(params, scope.allowedOfficeIds),
     include: { cenroOffice: true, items: true, conveyances: true, equipment: true },
     orderBy: [{ year: "desc" }, { id: "desc" }],
     take: 10000,

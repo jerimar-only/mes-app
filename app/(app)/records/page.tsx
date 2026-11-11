@@ -33,10 +33,9 @@ export default async function RecordsPage({
     pageSize: paramOne(raw.pageSize),
   };
   const allOffices = await prisma.cenroOffice.findMany({ orderBy: { name: "asc" } });
-  const offices =
-    scope?.isCenro && scope.officeId
-      ? allOffices.filter((o) => o.id === scope.officeId)
-      : allOffices;
+  const offices = scope?.allowedOfficeIds
+    ? allOffices.filter((o) => scope.allowedOfficeIds!.includes(o.id))
+    : allOffices;
   const isCenro = Boolean(scope?.isCenro);
 
   // Carry current URL filters into Full view (also read live form in FullViewLink)

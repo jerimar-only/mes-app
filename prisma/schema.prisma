@@ -13,8 +13,11 @@ datasource db {
 enum UserRole {
   SUPERADMIN
   ADMINISTRATOR
+  PENRO_ADMIN      // Scoped to one PenroOffice + its child CENROs
+  CENRO_ADMIN      // Scoped to one CenroOffice
   ENCODER
-  CENRO // CENRO portal account — scoped to one office
+  CENRO            // Portal account — scoped to one office
+  REGIONAL         // View all + comment only (no edit/delete)
 }
 
 model User {
@@ -23,13 +26,21 @@ model User {
   passwordHash  String
   fullName      String
   role          UserRole @default(ENCODER)
-  /// Required when role = CENRO; null for Super Admin / Administrator / Encoder
+
+  /// Required when role = PENRO_ADMIN
+  penroOfficeId Int?
+
+  /// Required when role = CENRO_ADMIN or CENRO
   cenroOfficeId Int?
+
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
 
+  penroOffice PenroOffice? @relation(fields: [penroOfficeId], references: [id])
   cenroOffice CenroOffice? @relation(fields: [cenroOfficeId], references: [id])
+  comments    RecordComment[]
 
+  @@index([penroOfficeId])
   @@index([cenroOfficeId])
 }
 
@@ -81,8 +92,9 @@ model CenroOffice {
   /// Default CENRO officer auto-filled on New Record when this office is selected
   defaultOfficerId Int?
 
-  records ApprehensionRecord[]
-  users   User[]
+  records      ApprehensionRecord[]
+  users        User[]
+  driveFolders DriveFolder[]
 
   penroOffice    PenroOffice?  @relation(fields: [penroOfficeId], references: [id], onDelete: SetNull)
   defaultOfficer CenroOfficer? @relation(fields: [defaultOfficerId], references: [id], onDelete: SetNull)
@@ -99,6 +111,8 @@ model PenroOffice {
   defaultOfficerId Int?
 
   cenroOffices CenroOffice[]
+  users        User[]
+  driveFolders DriveFolder[]
 
   defaultOfficer PenroOfficer? @relation(fields: [defaultOfficerId], references: [id], onDelete: SetNull)
 
@@ -157,12 +171,12 @@ model ApprehensionRecord {
 
   /// Google Drive link — appraisal report
   appraisalReportUrl String?
-  
+
   /// Google Drive link — deed of donation
-  deedOfDonationUrl  String?
-  
+  deedOfDonationUrl String?
+
   /// Google Drive link — terminal report
-  terminalReportUrl  String?
+  terminalReportUrl String?
 
   // 8. Apprehending officer *
   apprehendingAgency  String? // agency: PNP, LGU, DENR, etc.
@@ -223,6 +237,7 @@ model ApprehensionRecord {
   conveyances Conveyance[]
   equipment   Equipment[]
   fieldValues FieldValue[]
+  comments    RecordComment[]
 
   @@index([cenroOfficeId])
   @@index([year])
@@ -325,6 +340,55 @@ model FieldValue {
 
   @@unique([apprehensionRecordId, fieldDefinitionId])
   @@index([fieldDefinitionId])
+}
+
+// ─── Comments (Regional Office + others) ─────────
+
+model RecordComment {
+  id                   Int      @id @default(autoincrement())
+  apprehensionRecordId Int
+  userId               Int
+  content              String   @db.Text
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  apprehensionRecord ApprehensionRecord @relation(fields: [apprehensionRecordId], references: [id], onDelete: Cascade)
+  user               User               @relation(fields: [userId], references: [id])
+
+  @@index([apprehensionRecordId])
+  @@index([userId])
+}
+
+// ─── Google Drive Folder Management (SA only) ────
+
+enum FolderType {
+  ROOT
+  PENRO
+  CENRO
+  OTHER
+}
+
+model DriveFolder {
+  id            Int        @id @default(autoincrement())
+  name          String     // display name
+  driveId       String     // Google Drive folder ID
+  type          FolderType
+  penroOfficeId Int?
+  cenroOfficeId Int?
+  parentId      Int?       // optional hierarchy
+  isActive      Boolean    @default(true)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  penroOffice PenroOffice? @relation(fields: [penroOfficeId], references: [id], onDelete: SetNull)
+  cenroOffice CenroOffice? @relation(fields: [cenroOfficeId], references: [id], onDelete: SetNull)
+  parent      DriveFolder? @relation("FolderHierarchy", fields: [parentId], references: [id])
+  children    DriveFolder[] @relation("FolderHierarchy")
+
+  @@index([penroOfficeId])
+  @@index([cenroOfficeId])
+  @@index([parentId])
+  @@index([type])
 }
 
 // ─── App settings (Google Drive tokens, parent folder, etc.) ───

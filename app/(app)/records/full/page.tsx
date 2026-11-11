@@ -75,9 +75,15 @@ export default async function FullRecordsPage({
   }
 
   const [offices, fieldDefs, yearRows] = await Promise.all([
-    prisma.cenroOffice.findMany({ orderBy: { name: "asc" } }),
+    prisma.cenroOffice.findMany({
+      where: scope?.allowedOfficeIds ? { id: { in: scope.allowedOfficeIds } } : {},
+      orderBy: { name: "asc" },
+    }),
     prisma.fieldDefinition.findMany({ where: { disabled: false }, orderBy: { order: "asc" } }),
     prisma.apprehensionRecord.findMany({
+      where: scope?.allowedOfficeIds
+        ? { cenroOfficeId: { in: scope.allowedOfficeIds } }
+        : {},
       distinct: ["year"],
       select: { year: true },
       orderBy: { year: "desc" },
@@ -89,7 +95,7 @@ export default async function FullRecordsPage({
     .filter((y) => !Number.isNaN(y))
     .sort((a, b) => b - a);
 
-  const where = buildRecordWhere(params);
+  const where = buildRecordWhere(params, scope?.allowedOfficeIds ?? null);
 
   const [records, total] = await Promise.all([
     prisma.apprehensionRecord.findMany({

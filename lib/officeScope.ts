@@ -1,6 +1,11 @@
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { permissions, type Role } from "@/lib/permissions";
+import {
+  permissions,
+  getAllowedCenroOfficeIds,
+  type AuthUser,
+  type Role,
+} from "@/lib/permissions";
 
 export type OfficeScope = {
   role: Role;
@@ -10,6 +15,12 @@ export type OfficeScope = {
   /** Forced office id for CENRO users; null for provincial staff */
   officeId: number | null;
   officeName: string | null;
+  /**
+   * CENRO offices this user may see / change.
+   * null = all offices; [] = none (e.g. misconfigured account).
+   * PENRO admins get every CENRO under their PENRO.
+   */
+  allowedOfficeIds: number[] | null;
 };
 
 /**
@@ -27,6 +38,7 @@ export async function getOfficeScope(): Promise<OfficeScope | null> {
       role: true,
       isActive: true,
       cenroOfficeId: true,
+      penroOfficeId: true,
       cenroOffice: { select: { name: true } },
     },
   });
@@ -34,6 +46,7 @@ export async function getOfficeScope(): Promise<OfficeScope | null> {
   if (!user || !user.isActive) return null;
 
   const role = user.role as Role;
+  const allowedOfficeIds = await getAllowedCenroOfficeIds(user as unknown as AuthUser);
   const isCenro = permissions.isCenro(role);
   const officeId =
     isCenro && user.cenroOfficeId != null ? user.cenroOfficeId : null;
@@ -44,7 +57,34 @@ export async function getOfficeScope(): Promise<OfficeScope | null> {
     isCenro,
     officeId,
     officeName: officeId ? user.cenroOffice?.name ?? null : null,
+    allowedOfficeIds,
   };
+}
+
+/** True when the scope may work with records of this CENRO office. */
+export function canAccessOffice(
+  scope: OfficeScope | null,
+  officeId: number
+): boolean {
+  if (!scope) return false;
+  if (scope.allowedOfficeIds === null) return true;
+  return scope.allowedOfficeIds.includes(officeId);
+}
+
+/** Throws unless the signed-in user may access this record's CENRO office. */
+export async function assertRecordAccess(recordId: number): Promise<void> {
+  const scope = await getOfficeScope();
+  if (!scope) throw new Error("Unauthorized");
+  if (scope.allowedOfficeIds === null) return;
+
+  const rec = await prisma.apprehensionRecord.findUnique({
+    where: { id: recordId },
+    select: { cenroOfficeId: true },
+  });
+  if (!rec) throw new Error("Record not found.");
+  if (!scope.allowedOfficeIds.includes(rec.cenroOfficeId)) {
+    throw new Error("You don't have access to records of this office.");
+  }
 }
 
 /**

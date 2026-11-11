@@ -44,6 +44,14 @@ export async function POST(req: Request) {
   const file = form.get("file");
   const caseLabel = String(form.get("caseLabel") ?? "").trim();
   const docType = String(form.get("docType") ?? "caseDocuments");
+  const cenroOfficeIdRaw = form.get("cenroOfficeId");
+  const penroOfficeIdRaw = form.get("penroOfficeId");
+  const cenroOfficeId = cenroOfficeIdRaw
+    ? parseInt(String(cenroOfficeIdRaw), 10)
+    : null;
+  const penroOfficeId = penroOfficeIdRaw
+    ? parseInt(String(penroOfficeIdRaw), 10)
+    : null;
   if (!isDocType(docType)) {
     return NextResponse.json({ error: "Unknown document type" }, { status: 400 });
   }
@@ -65,7 +73,10 @@ export async function POST(req: Request) {
     );
   }
 
-  const folder = await resolveFolder(docType);
+  const folder = await resolveFolder(docType, {
+    cenroOfficeId: Number.isFinite(cenroOfficeId as number) ? cenroOfficeId : null,
+    penroOfficeId: Number.isFinite(penroOfficeId as number) ? penroOfficeId : null,
+  });
   if (!folder) {
     return NextResponse.json(
       {

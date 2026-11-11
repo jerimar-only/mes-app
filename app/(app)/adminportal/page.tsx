@@ -18,9 +18,20 @@ import {
 import LookupPanel from "./LookupPanel";
 import OfficeMappingPanel from "./OfficeMappingPanel";
 import FolderSettingsPanel from "./FolderSettingsPanel";
+import FolderBrowserPanel from "./FolderBrowserPanel";
 import { DOC_TYPES } from "@/lib/driveFolders";
 
 export const dynamic = "force-dynamic";
+
+const ROLE_BADGE: Record<string, string> = {
+  SUPERADMIN: "Super Admin",
+  ADMINISTRATOR: "Administrator",
+  PENRO_ADMIN: "PENRO Admin",
+  CENRO_ADMIN: "CENRO Admin",
+  CENRO: "CENRO",
+  REGIONAL: "Regional",
+  ENCODER: "Encoder",
+};
 
 export default async function AdminPortalPage() {
   const session = await getSession();
@@ -38,6 +49,7 @@ export default async function AdminPortalPage() {
       isActive: true,
       createdAt: true,
       cenroOfficeId: true,
+      penroOfficeId: true,
       cenroOffice: { select: { name: true } },
     },
   });
@@ -180,15 +192,25 @@ export default async function AdminPortalPage() {
         />
       </section>
 
-      {/* Google Drive folders per report type (PDF uploads) */}
+      {/* Office → Drive folder mappings (primary) + optional legacy doc-type folders */}
       <section>
         <FolderSettingsPanel
+          penroOffices={penroOffices.map((o) => ({ id: o.id, name: o.name }))}
+          cenroOffices={offices.map((o) => ({
+            id: o.id,
+            name: o.name,
+            penroOfficeId: o.penroOfficeId ?? o.penroOffice?.id ?? null,
+          }))}
           docTypes={DOC_TYPES.map((d) => ({
             key: d.key,
             label: d.label,
             description: d.description,
           }))}
         />
+      </section>
+
+      <section>
+        <FolderBrowserPanel />
       </section>
 
       {/* Create user */}
@@ -249,15 +271,38 @@ export default async function AdminPortalPage() {
               className="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--card)] px-3.5 py-2.5 text-[14px] text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
             >
               <option value="ENCODER">Encoder</option>
-              <option value="ADMINISTRATOR">Administrator</option>
-              <option value="SUPERADMIN">Super Admin</option>
               <option value="CENRO">CENRO (office portal)</option>
+              <option value="CENRO_ADMIN">CENRO Admin</option>
+              <option value="PENRO_ADMIN">PENRO Admin</option>
+              <option value="ADMINISTRATOR">Administrator</option>
+              <option value="REGIONAL">Regional (view + comment)</option>
+              <option value="SUPERADMIN">Super Admin</option>
             </select>
           </div>
 
-          <div className="sm:col-span-2">
+          <div>
             <label className="mb-1.5 block text-[13px] font-medium text-[var(--muted)]">
-              CENRO office <span className="font-normal">(required for CENRO role)</span>
+              PENRO office{" "}
+              <span className="font-normal">(required for PENRO Admin)</span>
+            </label>
+            <select
+              name="penroOfficeId"
+              className="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--card)] px-3.5 py-2.5 text-[14px] text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
+              defaultValue=""
+            >
+              <option value="">— Not applicable —</option>
+              {penroOffices.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-[13px] font-medium text-[var(--muted)]">
+              CENRO office{" "}
+              <span className="font-normal">(required for CENRO / CENRO Admin)</span>
             </label>
             <select
               name="cenroOfficeId"
@@ -268,6 +313,7 @@ export default async function AdminPortalPage() {
               {offices.map((o) => (
                 <option key={o.id} value={o.id}>
                   {o.name}
+                  {o.penroOffice?.name ? ` (${o.penroOffice.name})` : ""}
                 </option>
               ))}
             </select>
@@ -349,16 +395,13 @@ export default async function AdminPortalPage() {
                         className={`inline-block rounded-full px-2.5 py-1 text-[11px] font-medium sm:text-[12px] ${
                           user.role === "SUPERADMIN"
                             ? "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
-                            : user.role === "ADMINISTRATOR"
+                            : user.role === "ADMINISTRATOR" ||
+                              user.role === "PENRO_ADMIN"
                             ? "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300"
                             : "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300"
                         }`}
                       >
-                        {user.role === "SUPERADMIN"
-                          ? "Super Admin"
-                          : user.role === "ADMINISTRATOR"
-                          ? "Administrator"
-                          : "Encoder"}
+                        {ROLE_BADGE[user.role] ?? user.role}
                       </span>
                     </td>
                     <td className="px-3 py-3 sm:px-4">
@@ -394,8 +437,19 @@ export default async function AdminPortalPage() {
                           fullName: user.fullName,
                           isActive: user.isActive,
                           role: user.role,
+                          penroOfficeId: user.penroOfficeId,
+                          cenroOfficeId: user.cenroOfficeId,
                         }}
                         isSelf={isSelf}
+                        penroOffices={penroOffices.map((o) => ({
+                          id: o.id,
+                          name: o.name,
+                        }))}
+                        cenroOffices={offices.map((o) => ({
+                          id: o.id,
+                          name: o.name,
+                          penroName: o.penroOffice?.name ?? null,
+                        }))}
                       />
                     </td>
                   </tr>

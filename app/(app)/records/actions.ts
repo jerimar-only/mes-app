@@ -3,7 +3,11 @@
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { permissions, type Role } from "@/lib/permissions";
-import { getOfficeScope } from "@/lib/officeScope";
+import {
+  getOfficeScope,
+  canAccessOffice,
+  assertRecordAccess,
+} from "@/lib/officeScope";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
@@ -15,6 +19,8 @@ export async function updateRecordStatus(formData: FormData) {
   }
 
   const id = parseInt(formData.get("id") as string, 10);
+  if (!Number.isFinite(id) || id <= 0) throw new Error("Invalid record.");
+  await assertRecordAccess(id);
   const status = formData.get("status") as any;
   const docketNumber = (formData.get("docketNumber") as string) || null;
   const orderOfFinalityDate = (formData.get("orderOfFinalityDate") as string) || null;
@@ -41,6 +47,10 @@ export async function createRecord(formData: FormData) {
   // CENRO accounts may only create records for their own office
   if (scope?.isCenro && scope.officeId) {
     cenroOfficeId = scope.officeId;
+  }
+  // Only offices inside the user's area of responsibility (e.g. a PENRO's CENROs)
+  if (!scope || (Number.isFinite(cenroOfficeId) && !canAccessOffice(scope, cenroOfficeId))) {
+    throw new Error("You can only create records for offices in your area of responsibility.");
   }
 
   const str = (k: string) => ((formData.get(k) as string) || "").trim() || null;
@@ -394,6 +404,8 @@ export async function deleteRecord(formData: FormData) {
     throw new Error("Invalid record.");
   }
 
+  await assertRecordAccess(id);
+
   const existing = await prisma.apprehensionRecord.findUnique({
     where: { id },
     select: { id: true, isDeleted: true },
@@ -423,6 +435,8 @@ async function saveRecord(formData: FormData) {
 
   const scope = await getOfficeScope();
   const id = parseInt(formData.get("id") as string, 10);
+  if (!Number.isFinite(id) || id <= 0) throw new Error("Invalid record.");
+  await assertRecordAccess(id);
   const str = (k: string) => ((formData.get(k) as string) || "").trim() || null;
   const num = (v: string | undefined) => {
     if (!v) return null;
@@ -444,6 +458,10 @@ async function saveRecord(formData: FormData) {
   let cenroOfficeId = parseInt(String(formData.get("cenroOfficeId") ?? ""), 10);
   if (scope?.isCenro && scope.officeId) {
     cenroOfficeId = scope.officeId;
+  }
+  // A record can only be moved to an office inside the user's area
+  if (Number.isFinite(cenroOfficeId) && cenroOfficeId > 0 && !canAccessOffice(scope, cenroOfficeId)) {
+    throw new Error("You can only assign records to offices in your area of responsibility.");
   }
 
   // Year / month from date of apprehension
@@ -707,6 +725,10 @@ export async function getRecordForEdit(id: number) {
   });
   if (!r || r.isDeleted) return null;
 
+  // Records of offices outside the user's area behave as "not found"
+  const editScope = await getOfficeScope();
+  if (!canAccessOffice(editScope, r.cenroOfficeId)) return null;
+
   const iso = (d: Date | null | undefined) =>
     d ? d.toISOString().slice(0, 10) : "";
 
@@ -732,6 +754,9 @@ export async function getRecordForEdit(id: number) {
       prisma.penroOfficer.findMany({ orderBy: { name: "asc" } }),
       prisma.cenroOfficer.findMany({ orderBy: { name: "asc" } }),
       prisma.cenroOffice.findMany({
+        where: editScope?.allowedOfficeIds
+          ? { id: { in: editScope.allowedOfficeIds } }
+          : {},
         orderBy: { name: "asc" },
         include: {
           penroOffice: { select: { id: true, name: true } },
@@ -855,6 +880,8 @@ export async function restoreRecord(formData: FormData) {
   if (!Number.isFinite(id) || id <= 0) {
     throw new Error("Invalid record.");
   }
+
+  await assertRecordAccess(id);
 
   const existing = await prisma.apprehensionRecord.findUnique({
     where: { id },

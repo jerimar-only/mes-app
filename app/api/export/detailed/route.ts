@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { getOfficeScope } from "@/lib/officeScope";
 import { permissions, type Role } from "@/lib/permissions";
 import ExcelJS from "exceljs";
 
@@ -22,9 +23,20 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "A valid year and month are required." }, { status: 400 });
   }
 
-  const offices = await prisma.cenroOffice.findMany({ orderBy: { name: "asc" } });
+  const scope = await getOfficeScope();
+  if (!scope) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const officeScopeWhere = scope.allowedOfficeIds
+    ? { cenroOfficeId: { in: scope.allowedOfficeIds } }
+    : {};
+
+  const offices = await prisma.cenroOffice.findMany({
+    where: scope.allowedOfficeIds ? { id: { in: scope.allowedOfficeIds } } : {},
+    orderBy: { name: "asc" },
+  });
   const records = await prisma.apprehensionRecord.findMany({
-    where: { year, month, isDeleted: false },
+    where: { year, month, isDeleted: false, ...officeScopeWhere },
     include: { items: true, conveyances: true, equipment: true, cenroOffice: true },
     orderBy: [{ cenroOfficeId: "asc" }, { id: "asc" }],
   });

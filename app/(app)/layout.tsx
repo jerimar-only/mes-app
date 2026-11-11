@@ -40,6 +40,14 @@ export default async function AppLayout({
   const isAdmin =
     user.role === "ADMINISTRATOR" || user.role === "SUPERADMIN";
   const isSuperAdmin = user.role === "SUPERADMIN";
+  // Bulk edit/delete: SA, Administrator, PENRO admin, CENRO admin, CENRO portal
+  const canBulk = [
+    "SUPERADMIN",
+    "ADMINISTRATOR",
+    "PENRO_ADMIN",
+    "CENRO_ADMIN",
+    "CENRO",
+  ].includes(user.role);
 
   return (
     <AppProviders>
@@ -49,6 +57,7 @@ export default async function AppLayout({
         isAdmin={isAdmin}
         isSuperAdmin={isSuperAdmin}
         isCenro={isCenro}
+        canBulk={canBulk}
         userName={user.fullName}
         officeName={user.cenroOffice?.name ?? null}
       />

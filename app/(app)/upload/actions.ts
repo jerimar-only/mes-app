@@ -169,7 +169,10 @@ export async function uploadExcel(formData: FormData): Promise<{
   const titleText = rows.slice(0, 5).flat().filter((c) => typeof c === "string").join(" ");
   const titleYear = parseInt(titleText.match(/CY\s*(\d{4})/i)?.[1] ?? "", 10) || null;
 
-  const offices = await prisma.cenroOffice.findMany();
+  // Only offices inside the user's area of responsibility can be imported into
+  const offices = await prisma.cenroOffice.findMany({
+    where: scope?.allowedOfficeIds ? { id: { in: scope.allowedOfficeIds } } : {},
+  });
   const officeByKey = new Map(offices.map((o) => [officeKey(o.name), o]));
   const lockedOffice = lockedOfficeId
     ? offices.find((o) => o.id === lockedOfficeId) ?? null

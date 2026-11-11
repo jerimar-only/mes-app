@@ -27,10 +27,9 @@ export default async function NewRecordPage() {
       prisma.cenroOfficer.findMany({ orderBy: { name: "asc" } }),
     ]);
 
-  const scoped =
-    scope.isCenro && scope.officeId
-      ? allOffices.filter((o) => o.id === scope.officeId)
-      : allOffices;
+  const scoped = scope.allowedOfficeIds
+    ? allOffices.filter((o) => scope.allowedOfficeIds!.includes(o.id))
+    : allOffices;
 
   const offices = scoped.map((o) => ({
     id: o.id,

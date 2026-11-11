@@ -1038,8 +1038,9 @@ export default function NewRecordForm({
               <Field label="Appraisal report (Google Drive)">
                 <CaseDocumentsUpload
                   docType="appraisalReport"
-                name="appraisalReportUrl"
+                  name="appraisalReportUrl"
                   docLabel="appraisal report"
+                  cenroOfficeId={selectedCenroId ? Number(selectedCenroId) : null}
                 />
               </Field>
             </div>
@@ -1145,15 +1146,17 @@ export default function NewRecordForm({
                 <Field label="Deed of donation">
                   <CaseDocumentsUpload
                     docType="deedOfDonation"
-                name="deedOfDonationUrl"
+                    name="deedOfDonationUrl"
                     docLabel="deed of donation"
+                    cenroOfficeId={selectedCenroId ? Number(selectedCenroId) : null}
                   />
                 </Field>
                 <Field label="Terminal report">
                   <CaseDocumentsUpload
                     docType="terminalReport"
-                name="terminalReportUrl"
+                    name="terminalReportUrl"
                     docLabel="terminal report"
+                    cenroOfficeId={selectedCenroId ? Number(selectedCenroId) : null}
                   />
                 </Field>
               </div>
@@ -1176,8 +1179,11 @@ export default function NewRecordForm({
 
       <Section title="Case documents (Google Drive)">
         <Field label="Upload PDF to Drive">
-          <CaseDocumentsUpload docType="caseDocuments"
-                name="caseDocumentsUrl" />
+          <CaseDocumentsUpload
+            docType="caseDocuments"
+            name="caseDocumentsUrl"
+            cenroOfficeId={selectedCenroId ? Number(selectedCenroId) : null}
+          />
         </Field>
         <p className="mt-2 text-[12.5px] text-[var(--muted)]">
           Requires Google Drive to be connected in Settings. The file is stored

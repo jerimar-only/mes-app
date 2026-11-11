@@ -5,6 +5,26 @@ import { getSession } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 
+const ALLOWED_ROLES = [
+  "SUPERADMIN",
+  "ADMINISTRATOR",
+  "PENRO_ADMIN",
+  "CENRO_ADMIN",
+  "ENCODER",
+  "CENRO",
+  "REGIONAL",
+] as const;
+
+const ROLE_LABEL: Record<string, string> = {
+  SUPERADMIN: "Super Admin",
+  ADMINISTRATOR: "Administrator",
+  PENRO_ADMIN: "PENRO Admin",
+  CENRO_ADMIN: "CENRO Admin",
+  ENCODER: "Encoder",
+  CENRO: "CENRO",
+  REGIONAL: "Regional",
+};
+
 export async function createUser(formData: FormData) {
   const session = await getSession();
   if (!session || session.role !== "SUPERADMIN") {
@@ -14,14 +34,14 @@ export async function createUser(formData: FormData) {
   const rawEmail = (formData.get("email") as string) ?? "";
   const password = formData.get("password") as string;
   const fullName = (formData.get("fullName") as string)?.trim();
-  const role = formData.get("role") as
-    | "SUPERADMIN"
-    | "ADMINISTRATOR"
-    | "ENCODER"
-    | "CENRO";
+  const role = formData.get("role") as string;
   const cenroOfficeRaw = (formData.get("cenroOfficeId") as string) || "";
+  const penroOfficeRaw = (formData.get("penroOfficeId") as string) || "";
   const cenroOfficeId = cenroOfficeRaw
     ? parseInt(cenroOfficeRaw, 10)
+    : null;
+  const penroOfficeId = penroOfficeRaw
+    ? parseInt(penroOfficeRaw, 10)
     : null;
 
   if (/\s/.test(rawEmail)) {
@@ -34,14 +54,40 @@ export async function createUser(formData: FormData) {
     throw new Error("All fields are required.");
   }
 
-  if (!["SUPERADMIN", "ADMINISTRATOR", "ENCODER", "CENRO"].includes(role)) {
+  if (!(ALLOWED_ROLES as readonly string[]).includes(role)) {
     throw new Error("Invalid role.");
   }
 
-  if (role === "CENRO") {
+  if (role === "CENRO" || role === "CENRO_ADMIN") {
     if (!cenroOfficeId || Number.isNaN(cenroOfficeId)) {
-      throw new Error("CENRO accounts must be assigned to an office.");
+      throw new Error("CENRO / CENRO admin accounts must be assigned to a CENRO office.");
     }
+  }
+
+  if (role === "PENRO_ADMIN") {
+    if (!penroOfficeId || Number.isNaN(penroOfficeId)) {
+      throw new Error("PENRO admin accounts must be assigned to a PENRO office.");
+    }
+  }
+
+  if (role === "PENRO_ADMIN" && penroOfficeId) {
+    const penro = await prisma.penroOffice.findUnique({
+      where: { id: penroOfficeId },
+      select: { id: true },
+    });
+    if (!penro) {
+      throw new Error(
+        "Selected PENRO office does not exist. Add PENRO offices first in the Super Admin portal.",
+      );
+    }
+  }
+
+  if ((role === "CENRO" || role === "CENRO_ADMIN") && cenroOfficeId) {
+    const cenro = await prisma.cenroOffice.findUnique({
+      where: { id: cenroOfficeId },
+      select: { id: true },
+    });
+    if (!cenro) throw new Error("Selected CENRO office does not exist.");
   }
 
   if (password.length < 6) {
@@ -60,8 +106,10 @@ export async function createUser(formData: FormData) {
       email,
       passwordHash,
       fullName,
-      role,
-      cenroOfficeId: role === "CENRO" ? cenroOfficeId : null,
+      role: role as any,
+      cenroOfficeId:
+        role === "CENRO" || role === "CENRO_ADMIN" ? cenroOfficeId : null,
+      penroOfficeId: role === "PENRO_ADMIN" ? penroOfficeId : null,
     },
   });
 
@@ -132,64 +180,74 @@ export async function resetPassword(formData: FormData) {
   revalidatePath("/adminportal");
 }
 
-const ROLE_ORDER = ["ENCODER", "ADMINISTRATOR", "SUPERADMIN"] as const;
-type AppRole = (typeof ROLE_ORDER)[number];
-
-const ROLE_LABEL: Record<AppRole, string> = {
-  ENCODER: "Encoder",
-  ADMINISTRATOR: "Administrator",
-  SUPERADMIN: "Super Admin",
-};
-
 /**
- * Promote or demote a user one step on the role ladder:
- * Encoder → Administrator → Super Admin
+ * Set a user's role directly (works for every role, including PENRO_ADMIN,
+ * CENRO_ADMIN, CENRO and REGIONAL). Office assignment is validated and the
+ * irrelevant office column is cleared so scoping stays consistent.
  */
-export async function changeUserRole(formData: FormData) {
+export async function setUserRole(formData: FormData) {
   const session = await getSession();
   if (!session || session.role !== "SUPERADMIN") {
     throw new Error("Unauthorized");
   }
 
   const userId = parseInt(formData.get("userId") as string, 10);
-  const direction = formData.get("direction") as string; // "promote" | "demote"
+  const role = (formData.get("role") as string) ?? "";
+  const penroRaw = (formData.get("penroOfficeId") as string) || "";
+  const cenroRaw = (formData.get("cenroOfficeId") as string) || "";
+  const penroOfficeId = penroRaw ? parseInt(penroRaw, 10) : null;
+  const cenroOfficeId = cenroRaw ? parseInt(cenroRaw, 10) : null;
 
-  if (!userId) throw new Error("Missing user.");
+  if (!userId || Number.isNaN(userId)) throw new Error("Missing user.");
   if (userId === session.userId) {
     throw new Error("Cannot change your own role.");
   }
-  if (direction !== "promote" && direction !== "demote") {
-    throw new Error("Invalid direction.");
+  if (!(ALLOWED_ROLES as readonly string[]).includes(role)) {
+    throw new Error("Invalid role.");
   }
 
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw new Error("User not found.");
 
-  const current = user.role as AppRole;
-  const idx = ROLE_ORDER.indexOf(current);
-  if (idx < 0) throw new Error("Unknown role.");
+  const needsPenro = role === "PENRO_ADMIN";
+  const needsCenro = role === "CENRO" || role === "CENRO_ADMIN";
 
-  const nextIdx = direction === "promote" ? idx + 1 : idx - 1;
-  if (nextIdx < 0 || nextIdx >= ROLE_ORDER.length) {
-    throw new Error(
-      direction === "promote"
-        ? "Already at the highest role (Super Admin)."
-        : "Already at the lowest role (Encoder).",
-    );
+  if (needsPenro) {
+    if (!penroOfficeId || Number.isNaN(penroOfficeId)) {
+      throw new Error("PENRO admin accounts must be assigned to a PENRO office.");
+    }
+    const penro = await prisma.penroOffice.findUnique({
+      where: { id: penroOfficeId },
+      select: { id: true },
+    });
+    if (!penro) throw new Error("Selected PENRO office does not exist.");
   }
 
-  const nextRole = ROLE_ORDER[nextIdx];
+  if (needsCenro) {
+    if (!cenroOfficeId || Number.isNaN(cenroOfficeId)) {
+      throw new Error("CENRO / CENRO admin accounts must be assigned to a CENRO office.");
+    }
+    const cenro = await prisma.cenroOffice.findUnique({
+      where: { id: cenroOfficeId },
+      select: { id: true },
+    });
+    if (!cenro) throw new Error("Selected CENRO office does not exist.");
+  }
 
   await prisma.user.update({
     where: { id: userId },
-    data: { role: nextRole },
+    data: {
+      role: role as any,
+      penroOfficeId: needsPenro ? penroOfficeId : null,
+      cenroOfficeId: needsCenro ? cenroOfficeId : null,
+    },
   });
 
   revalidatePath("/adminportal");
 
   return {
-    from: ROLE_LABEL[current],
-    to: ROLE_LABEL[nextRole],
+    from: ROLE_LABEL[user.role] ?? user.role,
+    to: ROLE_LABEL[role] ?? role,
   };
 }
 

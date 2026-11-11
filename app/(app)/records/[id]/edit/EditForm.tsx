@@ -848,6 +848,7 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
                   record.docketNumber ||
                   (record.id != null ? `Case-${record.id}` : undefined)
                 }
+              cenroOfficeId={selectedCenroId ? Number(selectedCenroId) : (record.cenroOfficeId ?? null)}
               />
             </div>
           </div>
@@ -926,6 +927,7 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
                   record.docketNumber ||
                   (record.id != null ? `Case-${record.id}` : undefined)
                 }
+              cenroOfficeId={selectedCenroId ? Number(selectedCenroId) : (record.cenroOfficeId ?? null)}
               />
             </div>
             <div>
@@ -939,6 +941,7 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
                   record.docketNumber ||
                   (record.id != null ? `Case-${record.id}` : undefined)
                 }
+              cenroOfficeId={selectedCenroId ? Number(selectedCenroId) : (record.cenroOfficeId ?? null)}
               />
             </div>
           </div>
@@ -987,7 +990,8 @@ export function EditForm({ record, onSaved, onCancel }: EditFormProps) {
               record.docketNumber ||
               (record.id != null ? `Case-${record.id}` : undefined)
             }
-          />
+          cenroOfficeId={selectedCenroId ? Number(selectedCenroId) : (record.cenroOfficeId ?? null)}
+              />
           <p className="mt-1 text-[12px] text-zinc-500 dark:text-zinc-400">
             Upload a PDF to Drive. The link is saved on this record.
           </p>

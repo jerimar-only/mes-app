@@ -50,7 +50,11 @@ export type RecordFilterParams = {
   resolved?: string; // "1" = resolved cases only
 };
 
-export function buildRecordWhere(params: RecordFilterParams): Prisma.ApprehensionRecordWhereInput {
+export function buildRecordWhere(
+  params: RecordFilterParams,
+  /** Offices the signed-in user may see (null = all). */
+  allowedOfficeIds: number[] | null = null
+): Prisma.ApprehensionRecordWhereInput {
   const and: Prisma.ApprehensionRecordWhereInput[] = [];
 
   if (params.acp === "penro") and.push({ acpEndorsedToPenro: { not: null } });
@@ -71,6 +75,20 @@ export function buildRecordWhere(params: RecordFilterParams): Prisma.Apprehensio
 
   const statusList = statusesForFilter(params.status);
 
+  // Requested offices (from the URL) narrowed to the user's allowed offices
+  const requestedOffices = params.office
+    ? params.office
+        .split(",")
+        .map((x) => parseInt(x, 10))
+        .filter((n) => !Number.isNaN(n))
+    : null;
+  const officeIds =
+    allowedOfficeIds === null
+      ? requestedOffices
+      : requestedOffices === null
+      ? allowedOfficeIds
+      : requestedOffices.filter((id) => allowedOfficeIds.includes(id));
+
   return {
     ...(params.deleted === "only"
       ? { isDeleted: true }
@@ -78,16 +96,7 @@ export function buildRecordWhere(params: RecordFilterParams): Prisma.Apprehensio
       ? {}
       : { isDeleted: false }),
     ...(params.year ? { year: parseInt(params.year, 10) } : {}),
-    ...(params.office
-      ? {
-          cenroOfficeId: {
-            in: params.office
-              .split(",")
-              .map((s) => parseInt(s, 10))
-              .filter((n) => !Number.isNaN(n)),
-          },
-        }
-      : {}),
+    ...(officeIds ? { cenroOfficeId: { in: officeIds } } : {}),
     ...(statusList
       ? statusList.length === 1
         ? { status: statusList[0] as any }

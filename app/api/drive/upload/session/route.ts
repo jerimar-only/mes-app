@@ -11,16 +11,11 @@ export const dynamic = "force-dynamic";
 const MAX_BYTES = 50 * 1024 * 1024; // 50 MB
 
 /**
- * Step 1 of a direct-to-Drive upload. PDF only.
- * Body (JSON): { name, mimeType, size, docType, caseLabel? }
+ * Step 1 of a direct-to-Drive upload.
+ * Body (JSON): { name, mimeType, size, docType, caseLabel?, cenroOfficeId?, penroOfficeId? }
  * Returns:     { uploadUrl, folderId }
  *
- * The destination folder is chosen on the server from the Super Admin's
- * Folder Settings for `docType` (falling back to the general parent folder);
- * the browser cannot pick a folder.
- *
- * No file bytes are sent here, so the Vercel request-body limit (~4.5 MB)
- * does not apply. The browser PUTs the file to `uploadUrl` itself.
+ * Folder resolution: CENRO office folder → PENRO → ROOT → legacy doc-type / parent.
  */
 export async function POST(req: Request) {
   const session = await getSession();
@@ -39,7 +34,7 @@ export async function POST(req: Request) {
         error:
           "Google Drive is not connected. Ask a Super Admin to connect it in Settings.",
       },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -49,6 +44,8 @@ export async function POST(req: Request) {
     size?: number;
     docType?: string;
     caseLabel?: string;
+    cenroOfficeId?: number | string | null;
+    penroOfficeId?: number | string | null;
   } | null;
 
   const name = String(body?.name ?? "").trim();
@@ -56,6 +53,13 @@ export async function POST(req: Request) {
   const size = Number(body?.size);
   const caseLabel = String(body?.caseLabel ?? "").trim();
   const docType = body?.docType ?? "caseDocuments";
+
+  const cenroOfficeId = body?.cenroOfficeId
+    ? parseInt(String(body.cenroOfficeId), 10)
+    : null;
+  const penroOfficeId = body?.penroOfficeId
+    ? parseInt(String(body.penroOfficeId), 10)
+    : null;
 
   if (!isDocType(docType)) {
     return NextResponse.json({ error: "Unknown document type" }, { status: 400 });
@@ -69,24 +73,27 @@ export async function POST(req: Request) {
   if (size > MAX_BYTES) {
     return NextResponse.json(
       { error: "File is too large (max 50 MB)" },
-      { status: 400 }
+      { status: 400 },
     );
   }
   if (mime !== "application/pdf" || !/\.pdf$/i.test(name)) {
     return NextResponse.json(
       { error: "Only PDF files are allowed" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
-  const folder = await resolveFolder(docType);
+  const folder = await resolveFolder(docType, {
+    cenroOfficeId: Number.isFinite(cenroOfficeId as number) ? cenroOfficeId : null,
+    penroOfficeId: Number.isFinite(penroOfficeId as number) ? penroOfficeId : null,
+  });
   if (!folder) {
     return NextResponse.json(
       {
         error:
-          "No Drive folder is set for this document. Super Admin must set it in the Admin Portal → Folder settings.",
+          "No Drive folder is set. Super Admin must map a PENRO/CENRO/ROOT folder in Admin Portal → Folder settings.",
       },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -97,11 +104,8 @@ export async function POST(req: Request) {
 
     if (safeLabel) {
       if (folder.specific) {
-        // Dedicated folder for this report type: keep it flat and put the
-        // case label in the file name so files are easy to find.
         fileName = `${safeLabel} - ${name}`;
       } else {
-        // General fallback folder: keep the old per-case subfolder behaviour.
         parentId = (await createFolder(auth, safeLabel, parentId)).id;
       }
     }

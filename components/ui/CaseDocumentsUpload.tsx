@@ -52,6 +52,10 @@ type Props = {
   docType?: "caseDocuments" | "appraisalReport" | "deedOfDonation" | "terminalReport";
   /** Optional label used as Drive subfolder name (e.g. case number) */
   caseLabel?: string;
+  /** Record's CENRO — used to resolve office Drive folder */
+  cenroOfficeId?: number | null;
+  /** Optional parent PENRO id */
+  penroOfficeId?: number | null;
   /** Existing Drive link already saved on the record */
   existingUrl?: string | null;
   /** Called after a successful upload so the parent form can store the URL */
@@ -70,6 +74,8 @@ type Props = {
 export default function CaseDocumentsUpload({
   docType = "caseDocuments",
   caseLabel,
+  cenroOfficeId = null,
+  penroOfficeId = null,
   existingUrl,
   onUploaded,
   name = "caseDocumentsUrl",
@@ -111,6 +117,8 @@ export default function CaseDocumentsUpload({
           size: file.size,
           docType,
           caseLabel: caseLabel || undefined,
+          cenroOfficeId: cenroOfficeId ?? undefined,
+          penroOfficeId: penroOfficeId ?? undefined,
         }),
       });
       const start = (await startRes.json().catch(() => ({}))) as {
@@ -172,6 +180,27 @@ export default function CaseDocumentsUpload({
           >
             Open in Drive
           </a>
+        )}
+        {link && !disabled && (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => {
+              if (
+                window.confirm(
+                  "Remove this Drive link from the record? The file stays in Google Drive. Click Save to apply."
+                )
+              ) {
+                setLink("");
+                setProgress(null);
+                setError(null);
+                onUploaded?.("", { id: "", name: "", webViewLink: null });
+              }
+            }}
+            className="rounded-lg border border-red-200 px-3 py-2 text-[13.5px] font-medium text-red-600 hover:bg-red-50 disabled:opacity-50 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-950/40"
+          >
+            Remove link
+          </button>
         )}
       </div>
 

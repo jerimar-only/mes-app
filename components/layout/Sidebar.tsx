@@ -13,12 +13,14 @@ export default function Sidebar({
   isAdmin,
   isSuperAdmin,
   isCenro = false,
+  canBulk = false,
   userName,
   officeName = null,
 }: {
   isAdmin: boolean;
   isSuperAdmin: boolean;
   isCenro?: boolean;
+  canBulk?: boolean;
   userName: string;
   officeName?: string | null;
 }) {
@@ -172,7 +174,7 @@ export default function Sidebar({
             <NavItem href="/upload" active={isActive("/upload")} collapsed={railCollapsed} icon={<UploadIcon />}>
               Upload Excel file
             </NavItem>
-            {isAdmin && !isCenro && (
+            {canBulk && (
               <NavItem
                 href="/bulk-update"
                 active={isActive("/bulk-update")}
@@ -182,7 +184,7 @@ export default function Sidebar({
                 Bulk update
               </NavItem>
             )}
-            {isAdmin && !isCenro && (
+            {canBulk && (
               <NavItem
                 href="/bulk-delete"
                 active={isActive("/bulk-delete")}
@@ -230,14 +232,16 @@ export default function Sidebar({
                     Admin portal
                   </NavItem>
                 )}
-                <NavItem
-                  href="/settings"
-                  active={isActive("/settings")}
-                  collapsed={railCollapsed}
-                  icon={<CloudIcon />}
-                >
-                  Google Drive
-                </NavItem>
+                {isSuperAdmin && (
+                  <NavItem
+                    href="/settings"
+                    active={isActive("/settings")}
+                    collapsed={railCollapsed}
+                    icon={<CloudIcon />}
+                  >
+                    Google Drive
+                  </NavItem>
+                )}
                 <NavItem
                   href="/field-values"
                   active={isActive("/field-values")}

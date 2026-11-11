@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
-import { permissions, type Role } from "@/lib/permissions";
+import { permissions, narrowOfficeIds, type Role } from "@/lib/permissions";
+import { getOfficeScope } from "@/lib/officeScope";
 import type { Prisma } from "@prisma/client";
 import { statusesForFilter } from "@/lib/recordFilters";
 
@@ -29,15 +30,24 @@ export async function searchRecordsForDelete(params: {
     return { rows: [], error: "You don't have permission to delete records." };
   }
 
+  const scope = await getOfficeScope();
+  if (!scope) return { rows: [], error: "Unauthorized" };
+
   const year = params.year ? parseInt(params.year, 10) : undefined;
   const office = params.office ? parseInt(params.office, 10) : undefined;
   const q = params.q?.trim() || undefined;
   const statusList = statusesForFilter(params.status);
 
+  // Requested office can only narrow the user's own area
+  const officeIds = narrowOfficeIds(
+    scope.allowedOfficeIds,
+    office && !Number.isNaN(office) ? [office] : null,
+  );
+
   const where: Prisma.ApprehensionRecordWhereInput = {
     isDeleted: false,
     ...(year && !Number.isNaN(year) ? { year } : {}),
-    ...(office && !Number.isNaN(office) ? { cenroOfficeId: office } : {}),
+    ...(officeIds ? { cenroOfficeId: { in: officeIds } } : {}),
     ...(statusList
       ? statusList.length === 1
         ? { status: statusList[0] as any }
@@ -105,6 +115,14 @@ export async function bulkDeleteRecords(
     return { deleted: 0, failed: [{ id: 0, message: "No records selected." }] };
   }
 
+  const scope = await getOfficeScope();
+  if (!scope) {
+    return { deleted: 0, failed: [{ id: 0, message: "Unauthorized" }] };
+  }
+  const areaWhere = scope.allowedOfficeIds
+    ? { cenroOfficeId: { in: scope.allowedOfficeIds } }
+    : {};
+
   const failed: { id: number; message: string }[] = [];
   let deleted = 0;
 
@@ -112,11 +130,11 @@ export async function bulkDeleteRecords(
   for (const id of uniqueIds) {
     try {
       const result = await prisma.apprehensionRecord.updateMany({
-        where: { id, isDeleted: false },
+        where: { id, isDeleted: false, ...areaWhere },
         data: { isDeleted: true },
       });
       if (result.count === 0) {
-        failed.push({ id, message: "Not found or already deleted." });
+        failed.push({ id, message: "Not found, already deleted, or outside your area." });
       } else {
         deleted += 1;
       }
@@ -142,13 +160,20 @@ export async function getBulkDeleteFilters() {
     return { offices: [] as { id: number; name: string }[], years: [] as number[] };
   }
 
+  const scope = await getOfficeScope();
+  const allowed = scope?.allowedOfficeIds ?? null;
+
   const [offices, yearRows] = await Promise.all([
     prisma.cenroOffice.findMany({
+      where: allowed ? { id: { in: allowed } } : {},
       orderBy: { name: "asc" },
       select: { id: true, name: true },
     }),
     prisma.apprehensionRecord.findMany({
-      where: { isDeleted: false },
+      where: {
+        isDeleted: false,
+        ...(allowed ? { cenroOfficeId: { in: allowed } } : {}),
+      },
       distinct: ["year"],
       select: { year: true },
       orderBy: { year: "desc" },

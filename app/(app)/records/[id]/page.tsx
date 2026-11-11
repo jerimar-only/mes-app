@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { getSession } from "@/lib/auth";
+import { getOfficeScope, canAccessOffice } from "@/lib/officeScope";
 import { permissions, type Role } from "@/lib/permissions";
 import { restoreRecord } from "../actions";
 import { DeleteButton } from "./DeleteButton";
@@ -68,12 +69,19 @@ export default async function RecordDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const recordId = parseInt(id, 10);
+  if (!Number.isFinite(recordId) || recordId <= 0) notFound();
+
   const record = await prisma.apprehensionRecord.findUnique({
-    where: { id: parseInt(id, 10) },
+    where: { id: recordId },
     include: { cenroOffice: true, items: true, conveyances: true, equipment: true },
   });
 
   if (!record) notFound();
+
+  // Records of offices outside the user's area behave as "not found"
+  const scope = await getOfficeScope();
+  if (!canAccessOffice(scope, record.cenroOfficeId)) notFound();
 
   const session = await getSession();
   const canEdit = session ? permissions.editSavedRecord(session.role as Role) : false;

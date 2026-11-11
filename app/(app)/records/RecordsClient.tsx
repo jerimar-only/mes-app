@@ -65,10 +65,22 @@ export default function RecordsClient({
         const data = await fetch(`/api/records?${qs}`).then((r) => r.json());
         if (data.error) throw new Error(data.error);
 
-        setRecords(data.records);
-        setTotal(data.total);
-        setPage(data.page);
-        setTotalPages(data.totalPages);
+        // Support both { records, total, ... } and a bare array (older API)
+        const list = Array.isArray(data) ? data : (data.records ?? []);
+        const count = Array.isArray(data)
+          ? list.length
+          : Number(data.total ?? list.length) || 0;
+        const currentPage = Array.isArray(data)
+          ? p
+          : Number(data.page ?? p) || 1;
+        const pages = Array.isArray(data)
+          ? 1
+          : Number(data.totalPages ?? 1) || 1;
+
+        setRecords(list);
+        setTotal(count);
+        setPage(currentPage);
+        setTotalPages(pages);
       } catch (e: any) {
         setError(e.message || "Failed to load records");
       } finally {
@@ -95,7 +107,7 @@ export default function RecordsClient({
         <span>
           {loading
             ? "Loading…"
-            : `${total.toLocaleString()} record${total === 1 ? "" : "s"}`}
+            : `${(total ?? 0).toLocaleString()} record${total === 1 ? "" : "s"}`}
         </span>
 
         {totalPages > 1 && (

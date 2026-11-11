@@ -6,51 +6,70 @@ import {
   deleteUser,
   resetPassword,
   resetLoginAttempts,
-  changeUserRole,
+  setUserRole,
 } from "./actions";
 import { useToast } from "@/components/ui/Toast";
-
-type UserRole = "ENCODER" | "ADMINISTRATOR" | "SUPERADMIN";
 
 type User = {
   id: number;
   fullName: string;
   isActive: boolean;
-  role: UserRole | string;
+  role: string;
+  penroOfficeId?: number | null;
+  cenroOfficeId?: number | null;
 };
+
+type PenroOption = { id: number; name: string };
+type CenroOption = { id: number; name: string; penroName?: string | null };
 
 const ROLE_LABEL: Record<string, string> = {
   ENCODER: "Encoder",
+  CENRO: "CENRO (office portal)",
+  CENRO_ADMIN: "CENRO Admin",
+  PENRO_ADMIN: "PENRO Admin",
   ADMINISTRATOR: "Administrator",
+  REGIONAL: "Regional (view + comment)",
   SUPERADMIN: "Super Admin",
 };
 
-const NEXT_ROLE: Record<string, string> = {
-  ENCODER: "Administrator",
-  ADMINISTRATOR: "Super Admin",
-};
-
-const PREV_ROLE: Record<string, string> = {
-  ADMINISTRATOR: "Encoder",
-  SUPERADMIN: "Administrator",
-};
+const ROLE_OPTIONS = [
+  "ENCODER",
+  "CENRO",
+  "CENRO_ADMIN",
+  "PENRO_ADMIN",
+  "ADMINISTRATOR",
+  "REGIONAL",
+  "SUPERADMIN",
+] as const;
 
 export default function UserActions({
   user,
   isSelf,
+  penroOffices = [],
+  cenroOffices = [],
 }: {
   user: User;
   isSelf: boolean;
+  penroOffices?: PenroOption[];
+  cenroOffices?: CenroOption[];
 }) {
   const [pending, startTransition] = useTransition();
   const [confirm, setConfirm] = useState<
-    "delete" | "deactivate" | "reset" | "unlock" | "promote" | "demote" | null
+    "delete" | "deactivate" | "reset" | "unlock" | "role" | null
   >(null);
   const [newPassword, setNewPassword] = useState("");
+  const [newRole, setNewRole] = useState<string>(user.role);
+  const [penroId, setPenroId] = useState<string>(
+    user.penroOfficeId ? String(user.penroOfficeId) : "",
+  );
+  const [cenroId, setCenroId] = useState<string>(
+    user.cenroOfficeId ? String(user.cenroOfficeId) : "",
+  );
   const { success, error } = useToast();
 
-  const canPromote = !isSelf && user.role !== "SUPERADMIN";
-  const canDemote = !isSelf && user.role !== "ENCODER";
+  const canChangeRole = !isSelf;
+  const needsPenro = newRole === "PENRO_ADMIN";
+  const needsCenro = newRole === "CENRO" || newRole === "CENRO_ADMIN";
 
   function showToast(type: "success" | "error", message: string) {
     if (type === "success") success(message);
@@ -154,26 +173,36 @@ export default function UserActions({
     });
   }
 
-  function handlePromoteOpen() {
-    setConfirm("promote");
+  function handleRoleOpen() {
+    setNewRole(user.role);
+    setPenroId(user.penroOfficeId ? String(user.penroOfficeId) : "");
+    setCenroId(user.cenroOfficeId ? String(user.cenroOfficeId) : "");
+    setConfirm("role");
   }
 
-  function handleDemoteOpen() {
-    setConfirm("demote");
-  }
-
-  function handleConfirmRoleChange(direction: "promote" | "demote") {
+  function handleConfirmRoleChange() {
+    if (newRole === user.role && !needsPenro && !needsCenro) {
+      showToast("error", "Choose a different role first");
+      return;
+    }
+    if (needsPenro && !penroId) {
+      showToast("error", "Select a PENRO office for a PENRO Admin");
+      return;
+    }
+    if (needsCenro && !cenroId) {
+      showToast("error", "Select a CENRO office for this role");
+      return;
+    }
     setConfirm(null);
     startTransition(async () => {
       try {
         const fd = new FormData();
         fd.set("userId", String(user.id));
-        fd.set("direction", direction);
-        const res = await changeUserRole(fd);
-        showToast(
-          "success",
-          `${user.fullName}: ${res.from} → ${res.to}`,
-        );
+        fd.set("role", newRole);
+        if (needsPenro) fd.set("penroOfficeId", penroId);
+        if (needsCenro) fd.set("cenroOfficeId", cenroId);
+        const res = await setUserRole(fd);
+        showToast("success", `${user.fullName}: ${res.from} → ${res.to}`);
       } catch (e: any) {
         showToast("error", e.message || "Failed to change role");
       }
@@ -184,27 +213,15 @@ export default function UserActions({
     <>
       {/* Action buttons */}
       <div className="flex flex-wrap items-center justify-end gap-2">
-        {canPromote && (
+        {canChangeRole && (
           <button
             type="button"
-            onClick={handlePromoteOpen}
+            onClick={handleRoleOpen}
             disabled={pending}
             className="rounded-md border border-[var(--accent)]/40 bg-[var(--accent)]/10 px-2.5 py-1.5 text-[12px] font-medium text-[var(--accent)] transition hover:bg-[var(--accent)]/20 disabled:opacity-50"
-            title={`Promote to ${NEXT_ROLE[user.role] ?? "next role"}`}
+            title="Change this account's role"
           >
-            Promote
-          </button>
-        )}
-
-        {canDemote && (
-          <button
-            type="button"
-            onClick={handleDemoteOpen}
-            disabled={pending}
-            className="rounded-md border border-[var(--border-strong)] px-2.5 py-1.5 text-[12px] font-medium text-[var(--foreground)] transition hover:bg-[var(--background)] disabled:opacity-50"
-            title={`Demote to ${PREV_ROLE[user.role] ?? "previous role"}`}
-          >
-            Demote
+            Change role
           </button>
         )}
 
@@ -308,16 +325,77 @@ export default function UserActions({
               </>
             )}
 
-            {confirm === "promote" && (
+            {confirm === "role" && (
               <>
                 <h3 className="text-lg font-semibold text-[var(--foreground)]">
-                  Promote account?
+                  Change role
                 </h3>
                 <p className="mt-2 text-[14px] text-[var(--muted)]">
-                  Promote <strong>{user.fullName}</strong> from{" "}
-                  <strong>{ROLE_LABEL[user.role] ?? user.role}</strong> to{" "}
-                  <strong>{NEXT_ROLE[user.role]}</strong>?
+                  <strong>{user.fullName}</strong> is currently{" "}
+                  <strong>{ROLE_LABEL[user.role] ?? user.role}</strong>.
                 </p>
+
+                <label className="mt-4 mb-1.5 block text-[13px] font-medium text-[var(--muted)]">
+                  New role
+                </label>
+                <select
+                  value={newRole}
+                  onChange={(e) => setNewRole(e.target.value)}
+                  className="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--card)] px-3.5 py-2.5 text-[14px] text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
+                >
+                  {ROLE_OPTIONS.map((r) => (
+                    <option key={r} value={r}>
+                      {ROLE_LABEL[r]}
+                    </option>
+                  ))}
+                </select>
+
+                {needsPenro && (
+                  <>
+                    <label className="mt-4 mb-1.5 block text-[13px] font-medium text-[var(--muted)]">
+                      PENRO office <span className="font-normal">(required)</span>
+                    </label>
+                    <select
+                      value={penroId}
+                      onChange={(e) => setPenroId(e.target.value)}
+                      className="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--card)] px-3.5 py-2.5 text-[14px] text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
+                    >
+                      <option value="">— Select PENRO office —</option>
+                      {penroOffices.map((o) => (
+                        <option key={o.id} value={o.id}>
+                          {o.name}
+                        </option>
+                      ))}
+                    </select>
+                    {penroOffices.length === 0 && (
+                      <p className="mt-1.5 text-[12px] text-amber-700 dark:text-amber-300">
+                        No PENRO offices yet. Add one in the Super Admin portal first.
+                      </p>
+                    )}
+                  </>
+                )}
+
+                {needsCenro && (
+                  <>
+                    <label className="mt-4 mb-1.5 block text-[13px] font-medium text-[var(--muted)]">
+                      CENRO office <span className="font-normal">(required)</span>
+                    </label>
+                    <select
+                      value={cenroId}
+                      onChange={(e) => setCenroId(e.target.value)}
+                      className="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--card)] px-3.5 py-2.5 text-[14px] text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/20"
+                    >
+                      <option value="">— Select CENRO office —</option>
+                      {cenroOffices.map((o) => (
+                        <option key={o.id} value={o.id}>
+                          {o.name}
+                          {o.penroName ? ` (${o.penroName})` : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </>
+                )}
+
                 <div className="mt-6 flex justify-end gap-3">
                   <button
                     type="button"
@@ -328,39 +406,10 @@ export default function UserActions({
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleConfirmRoleChange("promote")}
+                    onClick={handleConfirmRoleChange}
                     className="rounded-lg bg-[var(--accent)] px-4 py-2 text-[14px] font-medium text-white hover:bg-[var(--accent-hover)]"
                   >
-                    Promote
-                  </button>
-                </div>
-              </>
-            )}
-
-            {confirm === "demote" && (
-              <>
-                <h3 className="text-lg font-semibold text-[var(--foreground)]">
-                  Demote account?
-                </h3>
-                <p className="mt-2 text-[14px] text-[var(--muted)]">
-                  Demote <strong>{user.fullName}</strong> from{" "}
-                  <strong>{ROLE_LABEL[user.role] ?? user.role}</strong> to{" "}
-                  <strong>{PREV_ROLE[user.role]}</strong>?
-                </p>
-                <div className="mt-6 flex justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setConfirm(null)}
-                    className="rounded-lg border border-[var(--border-strong)] px-4 py-2 text-[14px] font-medium text-[var(--foreground)] hover:bg-[var(--background)]"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleConfirmRoleChange("demote")}
-                    className="rounded-lg bg-amber-600 px-4 py-2 text-[14px] font-medium text-white hover:bg-amber-700"
-                  >
-                    Demote
+                    Save role
                   </button>
                 </div>
               </>

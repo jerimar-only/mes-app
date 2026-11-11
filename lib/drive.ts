@@ -216,3 +216,40 @@ export async function createFolder(
 }
 
 export type DriveClient = drive_v3.Drive;
+
+/** List files in a Drive folder (non-recursive). SA folder browser. */
+export async function listFolderFiles(
+  auth: Auth,
+  folderId: string,
+  pageSize = 100,
+): Promise<{ id: string; name: string; mimeType: string; modifiedTime?: string; webViewLink?: string; size?: string }[]> {
+  assertId(folderId);
+  const drive = google.drive({ version: "v3", auth });
+  const res = await drive.files.list({
+    q: `'${folderId}' in parents and trashed = false`,
+    pageSize: Math.min(200, Math.max(1, pageSize)),
+    fields:
+      "files(id,name,mimeType,modifiedTime,webViewLink,size)",
+    orderBy: "modifiedTime desc",
+    supportsAllDrives: true,
+    includeItemsFromAllDrives: true,
+  });
+  return (res.data.files ?? []).map((f) => ({
+    id: f.id!,
+    name: f.name ?? "(unnamed)",
+    mimeType: f.mimeType ?? "application/octet-stream",
+    modifiedTime: f.modifiedTime ?? undefined,
+    webViewLink: f.webViewLink ?? undefined,
+    size: f.size ?? undefined,
+  }));
+}
+
+/** Permanently delete a file in Google Drive (SA only). */
+export async function deleteDriveFile(auth: Auth, fileId: string): Promise<void> {
+  assertId(fileId);
+  const drive = google.drive({ version: "v3", auth });
+  await drive.files.delete({
+    fileId,
+    supportsAllDrives: true,
+  });
+}

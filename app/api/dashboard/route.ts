@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import { getSession } from "@/lib/auth";
 import { getOfficeScope, forcedOfficeId } from "@/lib/officeScope";
+import { narrowOfficeIds } from "@/lib/permissions";
 import { statusesForFilter } from "@/lib/recordFilters";
 
 
@@ -34,6 +35,12 @@ export async function GET(req: NextRequest) {
   const status = sp.get("status")?.trim() || undefined;
   const q = sp.get("q")?.trim() || undefined;
 
+  // Office filter narrowed to the user's area (PENRO admin → child CENROs, etc.)
+  const officeIds = narrowOfficeIds(
+    scope.allowedOfficeIds,
+    office ? [office] : null
+  );
+
   const searchOr: Prisma.ApprehensionRecordWhereInput[] | undefined = q
     ? [
         { placeOfApprehension: { contains: q, mode: "insensitive" } },
@@ -53,7 +60,7 @@ export async function GET(req: NextRequest) {
   const where: Prisma.ApprehensionRecordWhereInput = {
     isDeleted: false,
     ...(year ? { year } : {}),
-    ...(office ? { cenroOfficeId: office } : {}),
+    ...(officeIds ? { cenroOfficeId: { in: officeIds } } : {}),
     ...(statusList
       ? statusList.length === 1
         ? { status: statusList[0] as import("@prisma/client").ApprehensionStatus }
@@ -72,10 +79,10 @@ export async function GET(req: NextRequest) {
     byStatus,
     total,
     itemTotals,
-    provincialCounts,
-    volumeRows,
-    convRows,
-    chainsawRows,
+    provincialCountsRaw,
+    volumeRowsRaw,
+    convRowsRaw,
+    chainsawRowsRaw,
     allYears,
   ] = await Promise.all([
     prisma.cenroOffice.findMany({
@@ -173,12 +180,28 @@ export async function GET(req: NextRequest) {
       GROUP BY ar."cenroOfficeId"
     `,
     prisma.apprehensionRecord.findMany({
-      where: { isDeleted: false },
+      where: {
+        isDeleted: false,
+        ...(scope.allowedOfficeIds
+          ? { cenroOfficeId: { in: scope.allowedOfficeIds } }
+          : {}),
+      },
       select: { year: true },
       distinct: ["year"],
       orderBy: { year: "desc" },
     }),
   ]);
+
+  // The raw SQL above is grouped per office; keep only offices in the user's area
+  const inArea = <T extends { cenroOfficeId: number }>(rows: T[]) =>
+    officeIds ? rows.filter((r) => officeIds.includes(r.cenroOfficeId)) : rows;
+  const officesInArea = scope.allowedOfficeIds
+    ? offices.filter((o) => scope.allowedOfficeIds!.includes(o.id))
+    : offices;
+  const provincialCounts = inArea(provincialCountsRaw);
+  const volumeRows = inArea(volumeRowsRaw);
+  const convRows = inArea(convRowsRaw);
+  const chainsawRows = inArea(chainsawRowsRaw);
 
   type Row = {
     ids: number[];
@@ -214,7 +237,7 @@ export async function GET(req: NextRequest) {
   const chainsawMap = new Map(chainsawRows.map((r) => [r.cenroOfficeId, Number(r.qty)]));
 
   const provincialRows: Row[] = OFFICE_ROWS.map((o) => {
-    const matched = offices.filter((x) => o.match.includes(officeKey(x.name)));
+    const matched = officesInArea.filter((x) => o.match.includes(officeKey(x.name)));
     const row = blank(
       matched.map((m) => m.id),
       o.label
@@ -249,10 +272,7 @@ export async function GET(req: NextRequest) {
   }
 
   // CENRO: only expose their office in the filter list
-  const officesOut =
-    scope.isCenro && scope.officeId
-      ? offices.filter((o) => o.id === scope.officeId)
-      : offices;
+  const officesOut = officesInArea;
 
   return NextResponse.json({
     offices: officesOut,

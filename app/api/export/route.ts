@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { getOfficeScope, canAccessOffice } from "@/lib/officeScope";
 import { permissions, type Role } from "@/lib/permissions";
 import ExcelJS from "exceljs";
 
@@ -30,6 +31,9 @@ export async function GET(request: NextRequest) {
   const office = await prisma.cenroOffice.findUnique({ where: { id: parseInt(officeId, 10) } });
   if (!office) {
     return NextResponse.json({ error: "CENRO office not found." }, { status: 404 });
+  }
+  if (!canAccessOffice(await getOfficeScope(), office.id)) {
+    return NextResponse.json({ error: "You don't have access to this office." }, { status: 403 });
   }
 
   const records = await prisma.apprehensionRecord.findMany({

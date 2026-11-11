@@ -19,8 +19,8 @@ export default async function ReceiptIndexPage({
   const scope = await getOfficeScope();
 
   const where: any = { isDeleted: false };
-  if (scope?.isCenro && scope.officeId) {
-    where.cenroOfficeId = scope.officeId;
+  if (scope?.allowedOfficeIds) {
+    where.cenroOfficeId = { in: scope.allowedOfficeIds };
   }
   if (q) {
     const idNum = parseInt(q, 10);

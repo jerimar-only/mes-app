@@ -4,6 +4,7 @@ import * as XLSX from "xlsx";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { permissions, type Role } from "@/lib/permissions";
+import { getOfficeScope } from "@/lib/officeScope";
 import { revalidatePath } from "next/cache";
 
 /** Editable scalar fields for bulk update (matches full-view export headers). */
@@ -304,13 +305,25 @@ export async function parseBulkExcel(formData: FormData): Promise<{
   for (const p of parsed) byId.set(p.id, p);
 
   const ids = [...byId.keys()];
+  // Only records / offices inside the user's area of responsibility
+  const scope = await getOfficeScope();
+  if (!scope) throw new Error("Unauthorized");
+  const areaOfficeWhere = scope.allowedOfficeIds
+    ? { id: { in: scope.allowedOfficeIds } }
+    : {};
+
   const existing = await prisma.apprehensionRecord.findMany({
-    where: { id: { in: ids } },
+    where: {
+      id: { in: ids },
+      ...(scope.allowedOfficeIds
+        ? { cenroOfficeId: { in: scope.allowedOfficeIds } }
+        : {}),
+    },
     include: { cenroOffice: { select: { name: true } } },
   });
   const existingById = new Map(existing.map((r) => [r.id, r]));
 
-  const offices = await prisma.cenroOffice.findMany();
+  const offices = await prisma.cenroOffice.findMany({ where: areaOfficeWhere });
   const officeByKey = new Map(
     offices.map((o) => [
       o.name
@@ -392,7 +405,12 @@ export async function applyBulkUpdate(payload: ApplyPayload): Promise<{
     return { updated: 0, failed: [] };
   }
 
-  const offices = await prisma.cenroOffice.findMany();
+  const scope = await getOfficeScope();
+  if (!scope) throw new Error("Unauthorized");
+
+  const offices = await prisma.cenroOffice.findMany({
+    where: scope.allowedOfficeIds ? { id: { in: scope.allowedOfficeIds } } : {},
+  });
   const officeByKey = new Map(
     offices.map((o) => [
       o.name
@@ -403,6 +421,21 @@ export async function applyBulkUpdate(payload: ApplyPayload): Promise<{
       o.id,
     ]),
   );
+
+  // Records the user may actually change (everything for full-access roles)
+  const allowedRecordIds = scope.allowedOfficeIds
+    ? new Set(
+        (
+          await prisma.apprehensionRecord.findMany({
+            where: {
+              id: { in: payload.map((p) => p.id) },
+              cenroOfficeId: { in: scope.allowedOfficeIds },
+            },
+            select: { id: true },
+          })
+        ).map((r) => r.id),
+      )
+    : null;
   // Also map full name
   for (const o of offices) {
     officeByKey.set(o.name.trim().toUpperCase(), o.id);
@@ -415,6 +448,13 @@ export async function applyBulkUpdate(payload: ApplyPayload): Promise<{
   for (let s = 0; s < payload.length; s += CHUNK) {
     const chunk = payload.slice(s, s + CHUNK);
     for (const item of chunk) {
+      if (allowedRecordIds && !allowedRecordIds.has(item.id)) {
+        failed.push({
+          id: item.id,
+          message: "Record not found or outside your area of responsibility.",
+        });
+        continue;
+      }
       try {
         const data: Record<string, unknown> = {};
         const f = item.fields;

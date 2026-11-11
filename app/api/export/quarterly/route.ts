@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { getOfficeScope } from "@/lib/officeScope";
 import { permissions, type Role } from "@/lib/permissions";
 import ExcelJS from "exceljs";
 
@@ -22,6 +23,14 @@ export async function GET(request: NextRequest) {
   if (!year || !startMonth || !endMonth || startMonth > endMonth) {
     return NextResponse.json({ error: "A valid year and month range are required." }, { status: 400 });
   }
+
+  const scope = await getOfficeScope();
+  if (!scope) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const officeScopeWhere = scope.allowedOfficeIds
+    ? { cenroOfficeId: { in: scope.allowedOfficeIds } }
+    : {};
 
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet("Summary");
@@ -58,7 +67,7 @@ export async function GET(request: NextRequest) {
 
   for (let m = startMonth; m <= endMonth; m++) {
     const records = await prisma.apprehensionRecord.findMany({
-      where: { year, month: m, isDeleted: false },
+      where: { year, month: m, isDeleted: false, ...officeScopeWhere },
       include: { items: true, conveyances: true, equipment: true },
     });
 
