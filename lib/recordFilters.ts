@@ -39,6 +39,33 @@ export function statusesForFilter(status: string | undefined | null): string[] |
   return STATUS_GROUPS[status] ?? [status];
 }
 
+/**
+ * Canonical group key for dashboard / reports aggregation.
+ * UNKNOWN + UNDER_ADJUDICATION → one "For Appraisal" bucket
+ * CONFISCATED + RELEASED + DONATED → one "Donated" bucket
+ */
+export function statusGroupKey(status: string): string {
+  if (status === "UNKNOWN" || status === "UNDER_ADJUDICATION") return "UNDER_ADJUDICATION";
+  if (status === "CONFISCATED" || status === "RELEASED" || status === "DONATED") return "DONATED";
+  if (status === "FOR_RESOLUTION") return "FOR_RESOLUTION";
+  return status;
+}
+
+/** Merge groupBy-status rows so each display label appears once with a summed count */
+export function mergeStatusCounts(
+  rows: { status: string; _count: { _all: number } }[]
+): { status: string; _count: { _all: number } }[] {
+  const map = new Map<string, number>();
+  for (const r of rows) {
+    const key = statusGroupKey(r.status);
+    map.set(key, (map.get(key) ?? 0) + r._count._all);
+  }
+  return [...map.entries()].map(([status, all]) => ({
+    status,
+    _count: { _all: all },
+  }));
+}
+
 export type RecordFilterParams = {
   q?: string;
   year?: string;

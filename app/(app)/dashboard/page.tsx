@@ -1,7 +1,7 @@
 // app/dashboard/page.tsx  (or DashboardClient.tsx if you prefer a thin server wrapper)
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import DashboardFilters from "./DashboardFilters";
@@ -117,7 +117,10 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  // Stale-while-revalidate: keep prior data visible while the next filter loads.
+  // Abort in-flight requests when filters change so responses don't race.
+  useEffect(() => {
+    const ac = new AbortController();
     setLoading(true);
     setError(null);
 
@@ -127,21 +130,23 @@ export default function DashboardPage() {
     if (selectedStatus) qs.set("status", selectedStatus);
     if (selectedQ) qs.set("q", selectedQ);
 
-    try {
-      const res = await fetch(`/api/dashboard?${qs}`);
-      const json = await res.json();
-      if (json.error) throw new Error(json.error);
-      setData(json);
-    } catch (e: any) {
-      setError(e.message || "Failed to load dashboard");
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedYear, selectedOffice, selectedStatus, selectedQ]);
+    (async () => {
+      try {
+        const res = await fetch(`/api/dashboard?${qs}`, { signal: ac.signal });
+        const json = await res.json();
+        if (ac.signal.aborted) return;
+        if (json.error) throw new Error(json.error);
+        setData(json);
+      } catch (e: any) {
+        if (e?.name === "AbortError") return;
+        setError(e.message || "Failed to load dashboard");
+      } finally {
+        if (!ac.signal.aborted) setLoading(false);
+      }
+    })();
 
-  useEffect(() => {
-    load();
-  }, [load]);
+    return () => ac.abort();
+  }, [selectedYear, selectedOffice, selectedStatus, selectedQ]);
 
   const officeName = (id: number) =>
     data?.offices.find((o) => o.id === id)?.name ?? "Unknown";

@@ -1,20 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { permissions } from "@/lib/permissions";
+import { STATUS_LABEL, mergeStatusCounts } from "@/lib/recordFilters";
 
 const MONTH_NAMES = [
   "", "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
 ];
-
-const STATUS_LABEL: Record<string, string> = {
-  FOR_RESOLUTION: "For Donation",
-  UNDER_ADJUDICATION: "For Appraisal",
-  CONFISCATED: "Donated",
-  DONATED: "Donated",
-  RELEASED: "Donated",
-  UNKNOWN: "For Appraisal",
-};
 
 const n = (v: number | null | undefined, decimals = 0) =>
   (v ?? 0).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: decimals });
@@ -147,7 +139,7 @@ export default async function ReportsPage({
     .sort((a, b) => b._count._all - a._count._all)
     .map((o) => [officeName(o.cenroOfficeId), n(o._count._all)]);
 
-  const statusRows = [...byStatus]
+  const statusRows = mergeStatusCounts(byStatus)
     .sort((a, b) => b._count._all - a._count._all)
     .map((s) => [STATUS_LABEL[s.status] ?? s.status, n(s._count._all)]);
 

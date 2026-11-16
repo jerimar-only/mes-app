@@ -1,12 +1,11 @@
 // app/api/dashboard/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { getSession } from "@/lib/auth";
 import { getOfficeScope, forcedOfficeId } from "@/lib/officeScope";
 import { narrowOfficeIds } from "@/lib/permissions";
-import { statusesForFilter } from "@/lib/recordFilters";
-
+import { statusesForFilter, mergeStatusCounts } from "@/lib/recordFilters";
 
 const OFFICE_ROWS = [
   { label: "Aparri", match: ["APARRI"] },
@@ -17,6 +16,11 @@ const OFFICE_ROWS = [
 ];
 
 const officeKey = (n: string) => n.replace(/^CENRO\s+/i, "").trim().toUpperCase();
+
+/** Escape % and _ for use in ILIKE patterns */
+function likePattern(q: string): string {
+  return `%${q.replace(/([\\%_])/g, "\\$1")}%`;
+}
 
 export async function GET(req: NextRequest) {
   const session = await getSession();
@@ -35,23 +39,20 @@ export async function GET(req: NextRequest) {
   const status = sp.get("status")?.trim() || undefined;
   const q = sp.get("q")?.trim() || undefined;
 
-  // Office filter narrowed to the user's area (PENRO admin → child CENROs, etc.)
   const officeIds = narrowOfficeIds(
     scope.allowedOfficeIds,
     office ? [office] : null
   );
 
+  // Narrow search to high-value fields (avoids scanning long text columns)
   const searchOr: Prisma.ApprehensionRecordWhereInput[] | undefined = q
     ? [
         { placeOfApprehension: { contains: q, mode: "insensitive" } },
         { sourcePlace: { contains: q, mode: "insensitive" } },
         { claimantRespondent: { contains: q, mode: "insensitive" } },
-        { apprehendingAgency: { contains: q, mode: "insensitive" } },
-        { circumstances: { contains: q, mode: "insensitive" } },
         { docketNumber: { contains: q, mode: "insensitive" } },
-        { remarks: { contains: q, mode: "insensitive" } },
-        { otherRemarks: { contains: q, mode: "insensitive" } },
         { caseStatus: { contains: q, mode: "insensitive" } },
+        { apprehendingAgency: { contains: q, mode: "insensitive" } },
       ]
     : undefined;
 
@@ -69,28 +70,63 @@ export async function GET(req: NextRequest) {
     ...(searchOr ? { OR: searchOr } : {}),
   };
 
-  const yearFilter = year ?? null;
-  const officeFilter = office ?? null;
+  // Provincial: one CTE query (was 4 separate scans). Same filters as main cards.
+  const provWhere: Prisma.Sql[] = [Prisma.sql`ar."isDeleted" = false`];
+
+  if (year != null) {
+    provWhere.push(Prisma.sql`ar.year = ${year}`);
+  }
+  if (officeIds && officeIds.length > 0) {
+    provWhere.push(
+      Prisma.sql`ar."cenroOfficeId" IN (${Prisma.join(officeIds)})`
+    );
+  } else if (officeIds && officeIds.length === 0) {
+    provWhere.push(Prisma.sql`FALSE`);
+  }
+  if (statusList && statusList.length > 0) {
+    provWhere.push(
+      Prisma.sql`ar.status::text IN (${Prisma.join(statusList)})`
+    );
+  }
+  if (q) {
+    const pat = likePattern(q);
+    provWhere.push(Prisma.sql`(
+      ar."placeOfApprehension" ILIKE ${pat} ESCAPE '\\'
+      OR ar."sourcePlace" ILIKE ${pat} ESCAPE '\\'
+      OR ar."claimantRespondent" ILIKE ${pat} ESCAPE '\\'
+      OR ar."docketNumber" ILIKE ${pat} ESCAPE '\\'
+      OR ar."caseStatus" ILIKE ${pat} ESCAPE '\\'
+      OR ar."apprehendingAgency" ILIKE ${pat} ESCAPE '\\'
+    )`);
+  }
+
+  const provWhereSql = Prisma.join(provWhere, " AND ");
+
+  type ProvincialRow = {
+    cenroOfficeId: number;
+    incidents: number;
+    resolved: number;
+    acpPenro: number;
+    acpRo: number;
+    acpToDo: number;
+    volume: number;
+    conveyanceQty: number;
+    chainsawQty: number;
+  };
 
   const [
     offices,
     byYear,
     byOffice,
     byStatus,
-    total,
     itemTotals,
-    provincialCountsRaw,
-    volumeRowsRaw,
-    convRowsRaw,
-    chainsawRowsRaw,
+    provincialRaw,
     allYears,
   ] = await Promise.all([
     prisma.cenroOffice.findMany({
       orderBy: { name: "asc" },
       select: { id: true, name: true },
     }),
-    // Same filters as the rest of the dashboard (including year) so the chart
-    // matches Total records — e.g. year=2025 shows only 2025.
     prisma.apprehensionRecord.groupBy({
       by: ["year"],
       where,
@@ -107,77 +143,84 @@ export async function GET(req: NextRequest) {
       where,
       _count: { _all: true },
     }),
-    prisma.apprehensionRecord.count({ where }),
     prisma.forestProductItem.aggregate({
       where: { apprehensionRecord: where },
       _sum: { volumeCuM: true, volumeBdFt: true, estimatedValue: true },
     }),
-
-    // All 5 provincial count metrics in one scan.
-    // Statuses hardcoded (same as RESOLVED_STATUSES) to avoid Prisma array-binding issues.
-    prisma.$queryRaw<
-      {
-        cenroOfficeId: number;
-        incidents: number;
-        resolved: number;
-        acpPenro: number;
-        acpRo: number;
-        acpToDo: number;
-      }[]
-    >`
+    prisma.$queryRaw<ProvincialRow[]>`
+      WITH base AS (
+        SELECT
+          ar.id,
+          ar."cenroOfficeId",
+          ar.status,
+          ar."acpEndorsedToPenro",
+          ar."acpEndorsedToRo"
+        FROM "ApprehensionRecord" ar
+        WHERE ${provWhereSql}
+      ),
+      metrics AS (
+        SELECT
+          "cenroOfficeId",
+          COUNT(*)::int AS incidents,
+          COUNT(*) FILTER (
+            WHERE status IN ('CONFISCATED', 'DONATED', 'RELEASED')
+          )::int AS resolved,
+          COUNT(*) FILTER (
+            WHERE "acpEndorsedToPenro" IS NOT NULL
+          )::int AS "acpPenro",
+          COUNT(*) FILTER (
+            WHERE "acpEndorsedToRo" IS NOT NULL
+          )::int AS "acpRo",
+          COUNT(*) FILTER (
+            WHERE "acpEndorsedToPenro" IS NULL
+              AND status NOT IN ('CONFISCATED', 'DONATED', 'RELEASED')
+          )::int AS "acpToDo"
+        FROM base
+        GROUP BY "cenroOfficeId"
+      ),
+      volumes AS (
+        SELECT
+          b."cenroOfficeId",
+          COALESCE(SUM(f."volumeBdFt"), 0)::float AS volume
+        FROM base b
+        LEFT JOIN "ForestProductItem" f ON f."apprehensionRecordId" = b.id
+        GROUP BY b."cenroOfficeId"
+      ),
+      convs AS (
+        SELECT
+          b."cenroOfficeId",
+          COALESCE(SUM(c.quantity), 0)::int AS qty
+        FROM base b
+        LEFT JOIN "Conveyance" c ON c."apprehensionRecordId" = b.id
+        GROUP BY b."cenroOfficeId"
+      ),
+      saws AS (
+        SELECT
+          b."cenroOfficeId",
+          COALESCE(SUM(e.quantity), 0)::int AS qty
+        FROM base b
+        LEFT JOIN "Equipment" e
+          ON e."apprehensionRecordId" = b.id
+          AND (
+            e.type ILIKE '%chainsaw%'
+            OR e.type ILIKE '%chain saw%'
+          )
+        GROUP BY b."cenroOfficeId"
+      )
       SELECT
-        ar."cenroOfficeId",
-        COUNT(*)::int AS incidents,
-        COUNT(*) FILTER (
-          WHERE ar.status IN ('CONFISCATED', 'DONATED', 'RELEASED')
-        )::int AS resolved,
-        COUNT(*) FILTER (
-          WHERE ar."acpEndorsedToPenro" IS NOT NULL
-        )::int AS "acpPenro",
-        COUNT(*) FILTER (
-          WHERE ar."acpEndorsedToRo" IS NOT NULL
-        )::int AS "acpRo",
-        COUNT(*) FILTER (
-          WHERE ar."acpEndorsedToPenro" IS NULL
-            AND ar.status NOT IN ('CONFISCATED', 'DONATED', 'RELEASED')
-        )::int AS "acpToDo"
-      FROM "ApprehensionRecord" ar
-      WHERE ar."isDeleted" = false
-        AND (${yearFilter}::int IS NULL OR ar.year = ${yearFilter})
-        AND (${officeFilter}::int IS NULL OR ar."cenroOfficeId" = ${officeFilter})
-      GROUP BY ar."cenroOfficeId"
-    `,
-
-    prisma.$queryRaw<{ cenroOfficeId: number; volume: number }[]>`
-      SELECT ar."cenroOfficeId",
-             COALESCE(SUM(f."volumeBdFt"), 0)::float AS volume
-      FROM "ApprehensionRecord" ar
-      LEFT JOIN "ForestProductItem" f ON f."apprehensionRecordId" = ar.id
-      WHERE ar."isDeleted" = false
-        AND (${yearFilter}::int IS NULL OR ar.year = ${yearFilter})
-        AND (${officeFilter}::int IS NULL OR ar."cenroOfficeId" = ${officeFilter})
-      GROUP BY ar."cenroOfficeId"
-    `,
-    prisma.$queryRaw<{ cenroOfficeId: number; qty: number }[]>`
-      SELECT ar."cenroOfficeId",
-             COALESCE(SUM(c.quantity), 0)::int AS qty
-      FROM "ApprehensionRecord" ar
-      LEFT JOIN "Conveyance" c ON c."apprehensionRecordId" = ar.id
-      WHERE ar."isDeleted" = false
-        AND (${yearFilter}::int IS NULL OR ar.year = ${yearFilter})
-        AND (${officeFilter}::int IS NULL OR ar."cenroOfficeId" = ${officeFilter})
-      GROUP BY ar."cenroOfficeId"
-    `,
-    prisma.$queryRaw<{ cenroOfficeId: number; qty: number }[]>`
-      SELECT ar."cenroOfficeId",
-             COALESCE(SUM(e.quantity), 0)::int AS qty
-      FROM "ApprehensionRecord" ar
-      LEFT JOIN "Equipment" e
-        ON e."apprehensionRecordId" = ar.id AND e.type ~* 'chain\\s*saw'
-      WHERE ar."isDeleted" = false
-        AND (${yearFilter}::int IS NULL OR ar.year = ${yearFilter})
-        AND (${officeFilter}::int IS NULL OR ar."cenroOfficeId" = ${officeFilter})
-      GROUP BY ar."cenroOfficeId"
+        m."cenroOfficeId",
+        m.incidents,
+        m.resolved,
+        m."acpPenro",
+        m."acpRo",
+        m."acpToDo",
+        COALESCE(v.volume, 0)::float AS volume,
+        COALESCE(c.qty, 0)::int AS "conveyanceQty",
+        COALESCE(s.qty, 0)::int AS "chainsawQty"
+      FROM metrics m
+      LEFT JOIN volumes v ON v."cenroOfficeId" = m."cenroOfficeId"
+      LEFT JOIN convs c ON c."cenroOfficeId" = m."cenroOfficeId"
+      LEFT JOIN saws s ON s."cenroOfficeId" = m."cenroOfficeId"
     `,
     prisma.apprehensionRecord.findMany({
       where: {
@@ -192,16 +235,15 @@ export async function GET(req: NextRequest) {
     }),
   ]);
 
-  // The raw SQL above is grouped per office; keep only offices in the user's area
-  const inArea = <T extends { cenroOfficeId: number }>(rows: T[]) =>
-    officeIds ? rows.filter((r) => officeIds.includes(r.cenroOfficeId)) : rows;
+  const byStatusMerged = mergeStatusCounts(byStatus);
+  // Derive total from status groups (drops a separate COUNT query)
+  const total = byStatusMerged.reduce((sum, s) => sum + s._count._all, 0);
+  const needsReview =
+    byStatusMerged.find((s) => s.status === "UNDER_ADJUDICATION")?._count._all ?? 0;
+
   const officesInArea = scope.allowedOfficeIds
     ? offices.filter((o) => scope.allowedOfficeIds!.includes(o.id))
     : offices;
-  const provincialCounts = inArea(provincialCountsRaw);
-  const volumeRows = inArea(volumeRowsRaw);
-  const convRows = inArea(convRowsRaw);
-  const chainsawRows = inArea(chainsawRowsRaw);
 
   type Row = {
     ids: number[];
@@ -227,14 +269,20 @@ export async function GET(req: NextRequest) {
     resolved: 0,
   });
 
-  const incidentsMap = new Map(provincialCounts.map((r) => [r.cenroOfficeId, r.incidents]));
-  const resolvedMap = new Map(provincialCounts.map((r) => [r.cenroOfficeId, r.resolved]));
-  const acpPenroMap = new Map(provincialCounts.map((r) => [r.cenroOfficeId, r.acpPenro]));
-  const acpRoMap = new Map(provincialCounts.map((r) => [r.cenroOfficeId, r.acpRo]));
-  const acpToDoMap = new Map(provincialCounts.map((r) => [r.cenroOfficeId, r.acpToDo]));
-  const volumeMap = new Map(volumeRows.map((r) => [r.cenroOfficeId, Number(r.volume)]));
-  const convMap = new Map(convRows.map((r) => [r.cenroOfficeId, Number(r.qty)]));
-  const chainsawMap = new Map(chainsawRows.map((r) => [r.cenroOfficeId, Number(r.qty)]));
+  const byOfficeId = new Map(
+    provincialRaw.map((r) => [
+      r.cenroOfficeId,
+      {
+        incidents: r.incidents,
+        resolved: r.resolved,
+        acpPenro: r.acpPenro,
+        acpRo: r.acpRo,
+        acpToDo: r.acpToDo,
+        volume: Number(r.volume),
+        conveyance: Number(r.conveyanceQty) + Number(r.chainsawQty),
+      },
+    ])
+  );
 
   const provincialRows: Row[] = OFFICE_ROWS.map((o) => {
     const matched = officesInArea.filter((x) => o.match.includes(officeKey(x.name)));
@@ -243,13 +291,15 @@ export async function GET(req: NextRequest) {
       o.label
     );
     for (const m of matched) {
-      row.incidents += incidentsMap.get(m.id) ?? 0;
-      row.resolved += resolvedMap.get(m.id) ?? 0;
-      row.acpPenro += acpPenroMap.get(m.id) ?? 0;
-      row.acpRo += acpRoMap.get(m.id) ?? 0;
-      row.acpToDo += acpToDoMap.get(m.id) ?? 0;
-      row.volume += volumeMap.get(m.id) ?? 0;
-      row.conveyance += (convMap.get(m.id) ?? 0) + (chainsawMap.get(m.id) ?? 0);
+      const d = byOfficeId.get(m.id);
+      if (!d) continue;
+      row.incidents += d.incidents;
+      row.resolved += d.resolved;
+      row.acpPenro += d.acpPenro;
+      row.acpRo += d.acpRo;
+      row.acpToDo += d.acpToDo;
+      row.volume += d.volume;
+      row.conveyance += d.conveyance;
     }
     return row;
   });
@@ -267,22 +317,18 @@ export async function GET(req: NextRequest) {
 
   const listedIds = new Set(provincialRows.flatMap((r) => r.ids));
   let notShown = 0;
-  for (const [id, count] of incidentsMap) {
-    if (!listedIds.has(id)) notShown += count;
+  for (const [id, d] of byOfficeId) {
+    if (!listedIds.has(id)) notShown += d.incidents;
   }
 
-  // CENRO: only expose their office in the filter list
-  const officesOut = officesInArea;
-
-  return NextResponse.json({
-    offices: officesOut,
+  const res = NextResponse.json({
+    offices: officesInArea,
     years: allYears.map((r) => r.year),
     scope: {
       isCenro: scope.isCenro,
       officeId: scope.officeId,
       officeName: scope.officeName,
     },
-
     total,
     itemTotals: {
       volumeCuM: itemTotals._sum.volumeCuM ?? 0,
@@ -291,13 +337,15 @@ export async function GET(req: NextRequest) {
     },
     byYear,
     byOffice,
-    byStatus,
-    needsReview: byStatus.find((s) => s.status === "UNKNOWN")?._count._all ?? 0,
-
+    byStatus: byStatusMerged,
+    needsReview,
     provincial: {
       rows: provincialRows,
       total: provincialTotal,
       notShown,
     },
   });
+
+  res.headers.set("Cache-Control", "private, max-age=15, stale-while-revalidate=30");
+  return res;
 }

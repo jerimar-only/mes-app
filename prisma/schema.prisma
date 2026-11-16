@@ -244,6 +244,10 @@ model ApprehensionRecord {
   @@index([month])
   @@index([status])
   @@index([penroOffice])
+  // Dashboard / list filters always include isDeleted = false
+  @@index([isDeleted, year])
+  @@index([isDeleted, cenroOfficeId, year])
+  @@index([isDeleted, status])
 }
 
 model ForestProductItem {
